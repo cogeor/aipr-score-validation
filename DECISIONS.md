@@ -25,8 +25,8 @@ this freeze.**
 > against the model card, and ensure the grading run has no inference-time access
 > to the venue's decision pages.
 
-- **Frozen at commit:** `__________`
-- **Frozen on date:** `__________`
+- **Frozen at commit:** `375ccb8`
+- **Frozen on date:** `2026-06-02T21:55:10+02:00`
 - **Approved by:** `cgeor (costa.georgantas@gmail.com)`
 
 ---
