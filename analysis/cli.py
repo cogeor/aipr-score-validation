@@ -93,10 +93,37 @@ def cmd_test(args):
         raise SystemExit(r.returncode)
 
 
+# Unicode chars used in DECISIONS.md -> ASCII, so the verbatim pre-registration
+# appendix compiles under plain pdflatex (the verbatim environment does not get
+# inputenc's UTF-8 handling).
+_PREREG_ASCII = {
+    "⊆": " subset of ", "⊇": " superset of ", "≈": "~",
+    "→": "->", "—": "--", "–": "-", "’": "'",
+    "‘": "'", "“": '"', "”": '"', "…": "...",
+    "×": "x", "∈": " in ", "≥": ">=", "≤": "<=", "•": "-",
+}
+
+
+def _render_prereg_verbatim() -> None:
+    """Generate ``paper/prereg_verbatim.tex``: the frozen ``DECISIONS.md``
+    reproduced verbatim (ASCII-normalized) in a ``verbatim`` block, for the
+    appendix ``\\input``. Generated + gitignored, so the appendix always shows the
+    committed pre-registration. Written at ``paper/`` root (NOT ``sections/``) so
+    the macro-lint — which scans ``sections/*.tex`` — never reads the verbatim
+    prose as LaTeX."""
+    text = (ANALYSIS_DIR.parent / "DECISIONS.md").read_text(encoding="utf-8")
+    for uni, asc in _PREREG_ASCII.items():
+        text = text.replace(uni, asc)
+    text = text.encode("ascii", "ignore").decode("ascii")  # drop any stray non-ASCII
+    body = "\\begin{verbatim}\n" + text.rstrip() + "\n\\end{verbatim}\n"
+    (PAPER_DIR / "prereg_verbatim.tex").write_text(body, encoding="utf-8")
+
+
 def cmd_paper(args):
     """Compile the paper. Returns page count; raises on a hard LaTeX error."""
     if shutil.which("pdflatex") is None:
         raise SystemExit("pdflatex not found on PATH (install MiKTeX/TeX Live).")
+    _render_prereg_verbatim()  # frozen DECISIONS.md -> appendix \input (verbatim)
     log = PAPER_DIR / "main.log"
 
     def run(tool, *a):
