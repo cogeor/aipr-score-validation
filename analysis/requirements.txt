@@ -1,0 +1,8 @@
+# Isolated analysis environment (NOT the project .venv).
+# python -m venv .venv && .venv/Scripts/pip install -r requirements.txt
+numpy>=2.0
+scipy>=1.13
+scikit-learn>=1.5
+matplotlib>=3.9
+pandas>=2.2
+pytest>=8.0

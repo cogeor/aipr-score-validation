@@ -1,0 +1,70 @@
+% ===========================================================================
+% Score-validation study — preprint skeleton.
+% Numbers are NOT hand-typed: they come from analysis/run_all.py via
+% macros/results_macros.tex. Figures/tables come from analysis/{figures,tables}.py.
+% Build:  latexmk -pdf main.tex   (run analysis/run_all.py first)
+% ===========================================================================
+\documentclass[11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xspace}
+\usepackage{xcolor}
+\usepackage{subcaption}
+\usepackage[round]{natbib}
+\usepackage[colorlinks=true,allcolors=blue]{hyperref}
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf}
+
+\graphicspath{{figures/}}
+
+% --- numbers from the analysis (override the placeholders below) -----------
+\IfFileExists{macros/results_macros.tex}{\input{macros/results_macros.tex}}{}
+\IfFileExists{macros/sim_macros.tex}{\input{macros/sim_macros.tex}}{}
+\IfFileExists{macros/secondary_macros.tex}{\input{macros/secondary_macros.tex}}{}
+\input{macros.tex} % \providecommand defaults; fills any gap so the doc always builds
+
+\title{\textbf{Validating an Automated Paper-Scoring System Against\\
+Peer-Review Outcomes}}
+
+\author{%
+  AIPR Team\\
+  \texttt{\small score-validation draft --- \today}%
+}
+\date{}
+
+\begin{document}
+\maketitle
+
+% A loud, removable banner whenever the build is on synthetic data.
+\IfFileExists{macros/SYNTHETIC.flag}{%
+  \begin{center}\fcolorbox{red}{red!8}{\parbox{0.9\linewidth}{\centering
+  \textcolor{red}{\textbf{DRAFT ON SYNTHETIC DATA.} All numbers and figures below
+  are generated from \texttt{synth.py} for formatting verification only and are
+  not results. Re-run \texttt{run\_all.py} against the real export to populate.}}}\end{center}
+}{}
+
+\input{sections/00_abstract}
+
+\input{sections/01_introduction}
+\input{sections/02_related_work}
+\input{sections/03_data}
+\input{sections/04_methods}
+\input{sections/05_results}
+\input{sections/06_failure_modes}
+\input{sections/06b_discussion}
+\input{sections/07_limitations}
+\input{sections/08_conclusion}
+
+\bibliographystyle{plainnat}
+\bibliography{refs}
+
+\appendix
+\input{sections/09_appendix}
+
+\end{document}

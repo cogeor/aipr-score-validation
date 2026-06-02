@@ -1,0 +1,28 @@
+\begin{abstract}
+\noindent
+Large language model (LLM) systems are increasingly proposed to assist scholarly
+peer review, yet most evaluations judge the prose of machine-generated review
+\emph{text} rather than the validity of the numeric \emph{score} a system assigns.
+We validate \textsc{AIPR}, which reads a submitted manuscript and emits five
+0--100 quality dimensions (novelty, rigor, applicability, clarity, citation) and a
+weighted overall score, against the public decision outcomes of a major machine
+learning venue. AIPR is deployed as an interactive assistant; here we validate its
+non-interactive baseline score, the first-pass signal produced before any reviewer
+engages with it. Across \NminiPrimary{} \mbox{ICLR} submissions with public
+decision tiers (reject/poster/spotlight/oral) and mean reviewer ratings, graded
+under a single frozen pipeline version with pre-registered hypotheses and
+thresholds, the overall score separates rejected from accepted submissions
+(AUROC~\aurocMiniFull), rises monotonically across the four tiers (Spearman
+$\rho=\trendRho$, permutation $\trendPrel$), and correlates with the mean reviewer
+rating ($\rho =$~\spearmanRatingMiniFull). The signal is strongest where we claim it:
+the lowest score quintile is rejected at \bottomRejectRate\% (a \bottomLift$\times$
+lift over the \baseRejectRate\% base rate), with oral papers nearly absent
+(\bottomOralRate\%). Crucially, this signal is a product of the engineered pipeline
+rather than the underlying model: against a generic one-paragraph prompt on the
+same model and PDF, the full pipeline discriminates better (AUROC \aurocFullFull{}
+vs.\ \aurocNaiveFull{}) and grades far more consistently (within-paper score SD
+\fullRunSD{} vs.\ \naiveRunSD{} points). We do not claim the score predicts
+acceptance or replaces reviewers; we characterize its failure modes directly. The result supports a
+narrow, defensible use: an automated first pass that reliably surfaces weak
+submissions for human attention.
+\end{abstract}

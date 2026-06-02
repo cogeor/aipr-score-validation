@@ -1,0 +1,32 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+We validated a structured LLM paper-scoring system against the public decisions
+and reviewer ratings of a major machine learning venue, under a pre-registered,
+fully reproducible protocol. The score separates rejected from accepted
+submissions (AUROC~$\aurocMini$), rises monotonically across decision tiers, and
+correlates with continuous reviewer ratings ($\rho=\spearmanRatingMini$). The
+signal is strongest at the low end: weak submissions are consistently flagged,
+with the lowest score quintile rejected at \bottomRejectRate\%, a
+\bottomLift$\times$ lift over base rate, and strong work nearly absent from that
+band. We confirmed the effect on a frontier-model cohort and showed that a cheap
+model proxies the frontier score well enough to establish the relationship at
+scale. Crucially, the signal is a product of the engineered pipeline rather than
+the model it runs on: against a generic one-paragraph prompt on the same model and
+PDF, the structured rubric-and-audit pipeline discriminates better and grades far
+more consistently.
+
+Pre-registering the claim, validating against two complementary ground truths,
+generating every number from the data, and cataloguing the failure modes together
+keep the result inside the boundary the evidence supports: an automated first pass that reliably
+surfaces weak work for human attention, not a replacement for the judgment that
+follows. That boundary follows the reliable-at-the-bottom asymmetry the human
+process itself exhibits.
+
+\paragraph{Reproducibility.}
+The de-identified scored table, the decision and rating labels, the analysis
+code, and the pre-registration are released; \texttt{run\_all.py} regenerates
+every figure, table, and number in this paper from the data with a single
+command. The grading rubric, prompts, and model configuration remain proprietary;
+the manuscript-to-score function is audited through its outputs rather than
+re-implemented.

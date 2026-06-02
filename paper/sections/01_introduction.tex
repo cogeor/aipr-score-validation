@@ -1,0 +1,97 @@
+\section{Introduction}
+\label{sec:intro}
+
+Peer review is the gate through which scientific work passes, and it is under
+strain: submission volumes at major venues have grown faster than the reviewer
+pool, and the process is demonstrably noisy. The NeurIPS consistency experiments
+found that a large fraction of accept/reject decisions would flip under a re-run
+of the same process \citep{cortes2021inconsistency,beygelzimer2023arbitrary},
+with the asymmetry that review is comparatively reliable at \emph{rejecting weak
+work} but poor at \emph{ranking strong work}. This is the backdrop against which
+automated, LLM-based assistance is now being proposed and used.
+
+Most studies of automated review evaluate the \emph{text} a model produces: how
+well its comments overlap a human reviewer's, how specific or factual they are
+\citep{liang2024llm,darcy2024marg,yuan2022automate,du2024llmsassist}. A
+complementary and, for deployment, more consequential question is whether the
+\emph{score} such a system assigns is a valid signal of the quality humans
+ultimately perceive. A score is what triages a queue, flags a submission for a
+second look, or summarizes a first pass; used that way, it must be validated as a
+measurement against an external outcome, with the discipline the noisy ground
+truth demands.
+
+We study \textsc{AIPR}, a system that reads a submitted PDF and produces five
+0--100 quality dimensions (novelty, rigor, applicability, clarity, and citation)
+and a weighted overall score (\S\ref{sec:methods}). In deployment AIPR is
+interactive: a reviewer questions its findings, requests evidence, and refines the
+review in dialogue. This paper isolates the \emph{baseline} score the system emits
+on first read, before any interaction, which is the hardest case for an automated
+signal and the one a triage use relies on. Our ground truth is the public record
+of a major machine learning venue on OpenReview: the decision tier of each
+submission (reject, poster, spotlight, oral) and the mean numeric rating its
+reviewers assigned. Because this venue publishes \emph{rejected} submissions, the
+class our central claim concerns is fully observable.
+
+This paper asks two questions. The first is whether the score is \emph{valid}:
+does it recover the human outcome? Our claim here is narrow. The AIPR score (i)
+flags weak submissions, in that papers it scores low are rejected at far above the
+base rate, and (ii) shows strong, not merely significant, agreement with human
+review outcomes across both the discrete decision tiers and the continuous reviewer
+rating. We do \emph{not} claim it predicts acceptance, ranks strong papers, or
+substitutes for a reviewer. The bound follows the empirical ``reliable at the
+bottom, noisy at the top'' structure of human review itself, and it is the use a
+deployment can support.
+
+The second question is whether that validity is \emph{earned by the system}. A
+frontier model is available to anyone; the case for building AIPR rests on the
+structured pipeline---a scored rubric, a grounded citation audit, and a two-pass
+read---producing a better signal than the same model asked the obvious way. We
+test this directly against a generic one-paragraph prompt on the identical model
+and PDF, and find the pipeline both discriminates better and grades far more
+consistently. This pre-registered comparison, not the headline correlation, is
+what distinguishes an engineered instrument from a chat transcript.
+
+Three practices set the study's standard of evidence. First, we pre-registered the
+hypotheses, the primary metric, and the low-score threshold before any score was
+joined to any outcome; the pre-registration is included verbatim
+(Appendix~\ref{app:prereg}). Second, every number in this paper is generated from
+the data by a single script, with no figure or statistic transcribed by hand, so
+the analysis is reproducible end to end from the released table. Third, we report
+the score's failure modes (\S\ref{sec:failure}): the rejected papers it rated
+highly and the unconventional accepted papers it underrated, with the human
+reviews that explain each.
+
+\paragraph{Contributions.}
+\begin{enumerate}\itemsep2pt
+  \item A pre-registered, reproducible validation of a structured LLM quality
+  \emph{score} against two complementary human ground truths (ordinal decision
+  tiers and continuous reviewer ratings) at the scale of \NminiPrimary{}
+  submissions.
+  \item Evidence for a bounded, deployable claim: weak submissions are
+  consistently flagged (lowest score quintile rejected at \bottomRejectRate\%, a
+  \bottomLift$\times$ lift), distinguished from the stronger claims it is often
+  conflated with.
+  \item A pre-registered demonstration that the engineered pipeline---not the base
+  model---produces the signal: against a generic one-paragraph prompt on the same
+  model and PDF, the full pipeline discriminates better (AUROC \aurocFullFull{}
+  vs.\ \aurocNaiveFull{}) and grades far more consistently (within-paper SD
+  \fullRunSD{} vs.\ \naiveRunSD{} points).
+  \item A cost design in which the full pipeline on a cheap model establishes the
+  relationship at scale and a frontier-model cohort confirms it, with the
+  mini-to-frontier agreement measured ($\rho =$~\bridgeRhoFull), not assumed.
+  \item A catalogue of the score's failure modes, aligned to the human reviews,
+  as a guide to the conditions under which automated scoring is reliable.
+\end{enumerate}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{fig0_design}
+  \caption{\textbf{Study design.} Each OpenReview submission supplies both the
+  artifact reviewers saw (the submitted PDF) and the ground truth (decision tier
+  and mean reviewer rating). AIPR grades the PDF with the full two-pass pipeline
+  under two strictly nested configurations ($H\subseteq M$: full-mini / full,
+  differing only in the reviewer model) plus the naive one-paragraph baseline (V1);
+  the resulting scores are validated against the ground truth (H1--H5). No model is
+  tuned on the venue, decisions, or ratings.}
+  \label{fig:design}
+\end{figure}

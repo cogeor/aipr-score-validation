@@ -1,0 +1,305 @@
+% Verified bibliography for the score-validation study.
+% Two entries carry soft flags (see UNVERIFIED comments): russolatona2024lottery
+% (full author list) and yuan2022automate (JAIR volume/pages). Confirm both
+% against a primary source before submission.
+
+% ===== Measurement validation framework =====
+
+@book{aera2014standards,
+  author    = {{American Educational Research Association} and {American Psychological Association} and {National Council on Measurement in Education}},
+  title     = {Standards for Educational and Psychological Testing},
+  year      = {2014},
+  publisher = {American Educational Research Association},
+  address   = {Washington, DC},
+}
+
+% ===== LLM-based / automated peer review & review generation =====
+
+@article{liang2024llm,
+  author  = {Liang, Weixin and Zhang, Yuhui and Cao, Hancheng and Wang, Binglu and Ding, Daisy Yi and Yang, Xinyu and Vodrahalli, Kailas and He, Siyu and Smith, Daniel Scott and Yin, Yian and McFarland, Daniel A. and Zou, James},
+  title   = {Can Large Language Models Provide Useful Feedback on Research Papers? A Large-Scale Empirical Analysis},
+  journal = {NEJM AI},
+  year    = {2024},
+  volume  = {1},
+  number  = {8},
+  doi     = {10.1056/AIoa2400196},
+  note    = {arXiv:2310.01783}
+}
+
+@article{darcy2024marg,
+  author  = {D'Arcy, Mike and Hope, Tom and Birnbaum, Larry and Downey, Doug},
+  title   = {{MARG}: Multi-Agent Review Generation for Scientific Papers},
+  journal = {arXiv preprint arXiv:2401.04259},
+  year    = {2024}
+}
+
+@article{lu2024aiscientist,
+  author  = {Lu, Chris and Lu, Cong and Lange, Robert Tjarko and Foerster, Jakob and Clune, Jeff and Ha, David},
+  title   = {The {AI} Scientist: Towards Fully Automated Open-Ended Scientific Discovery},
+  journal = {arXiv preprint arXiv:2408.06292},
+  year    = {2024}
+}
+
+@article{liu2023reviewergpt,
+  author  = {Liu, Ryan and Shah, Nihar B.},
+  title   = {{ReviewerGPT?} An Exploratory Study on Using Large Language Models for Paper Reviewing},
+  journal = {arXiv preprint arXiv:2306.00622},
+  year    = {2023}
+}
+
+@article{robertson2023gpt4,
+  author  = {Robertson, Zachary},
+  title   = {{GPT4} is Slightly Helpful for Peer-Review Assistance: A Pilot Study},
+  journal = {arXiv preprint arXiv:2307.05492},
+  year    = {2023}
+}
+
+@inproceedings{du2024llmsassist,
+  author    = {Du, Jiangshu and Wang, Yibo and Zhao, Wenting and Deng, Zhongfen and Liu, Shuaiqi and Lou, Renze and Zou, Henry Peng and Venkit, Pranav Narayanan and Zhang, Nan and Srinath, Mukund and others},
+  title     = {{LLMs} Assist {NLP} Researchers: Critique Paper (Meta-)Reviewing},
+  booktitle = {Proceedings of the 2024 Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  pages     = {5081--5099},
+  year      = {2024}
+}
+
+@inproceedings{zhou2024reliable,
+  author    = {Zhou, Ruiyang and Chen, Lu and Yu, Kai},
+  title     = {Is {LLM} a Reliable Reviewer? A Comprehensive Evaluation of {LLM} on Automatic Paper Reviewing Tasks},
+  booktitle = {Proceedings of LREC-COLING 2024},
+  year      = {2024}
+}
+
+@article{russolatona2024lottery,
+  author  = {Russo Latona, Giuseppe and Ribeiro, Manoel Horta and Davidson, Tim R. and Veselovsky, Veniamin and West, Robert},
+  title   = {The {AI} Review Lottery: Widespread {AI}-Assisted Peer Reviews Boost Paper Scores and Acceptance Rates},
+  journal = {arXiv preprint arXiv:2405.02150},
+  year    = {2024},
+  note    = {Verify full author list against primary source before submission}
+}
+
+@article{reviewbench2026,
+  author  = {Khalil, Natalie N. and Reed, T. J. and Ciccozzi, Matteo R.},
+  title   = {{ReviewBench}: An Extensible Framework for Benchmarking Human and {AI} Manuscript Review},
+  journal = {bioRxiv},
+  year    = {2026},
+  doi     = {10.64898/2026.04.17.719279},
+  note    = {Concurrent work (Reviewer3); comment-level benchmark}
+}
+
+% ===== Acceptance prediction from review/paper content (extrinsic-validity neighbors) =====
+
+@inproceedings{wang2018sentiment,
+  author    = {Wang, Ke and Wan, Xiaojun},
+  title     = {Sentiment Analysis of Peer Review Texts for Scholarly Papers},
+  booktitle = {Proceedings of the 41st International ACM SIGIR Conference on Research and Development in Information Retrieval (SIGIR)},
+  pages     = {175--184},
+  year      = {2018},
+  doi       = {10.1145/3209978.3210056}
+}
+
+@inproceedings{ghosal2019deepsentipeer,
+  author    = {Ghosal, Tirthankar and Verma, Rajeev and Ekbal, Asif and Bhattacharyya, Pushpak},
+  title     = {{DeepSentiPeer}: Harnessing Sentiment in Review Texts to Recommend Peer Review Decisions},
+  booktitle = {Proceedings of the 57th Annual Meeting of the Association for Computational Linguistics (ACL)},
+  pages     = {1120--1130},
+  year      = {2019},
+  doi       = {10.18653/v1/P19-1106}
+}
+
+@inproceedings{skorikov2020mlacceptance,
+  author    = {Skorikov, Mikhail and Momen, Sifat},
+  title     = {Machine Learning Approach to Predicting the Acceptance of Academic Papers},
+  booktitle = {2020 IEEE International Conference on Industry 4.0, Artificial Intelligence, and Communications Technology (IAICT)},
+  pages     = {113--117},
+  year      = {2020},
+  doi       = {10.1109/IAICT50021.2020.9172011}
+}
+
+@misc{jung2025whatdrives,
+  author        = {Jung, Sangkeun and Pyeon, Goun and Heo, Inbum and Ahn, Hyungjin},
+  title         = {What Drives Paper Acceptance? A Process-Centric Analysis of Modern Peer Review},
+  year          = {2025},
+  eprint        = {2509.25701},
+  archivePrefix = {arXiv}
+}
+
+% ===== Recent LLM-as-reviewer systems & AI-review prevalence =====
+
+@misc{gao2025reviewagents,
+  author        = {Gao, Xian and others},
+  title         = {{ReviewAgents}: Bridging the Gap Between Human and AI-Generated Paper Reviews},
+  year          = {2025},
+  eprint        = {2503.08506},
+  archivePrefix = {arXiv},
+  note          = {Confirm full author list before camera-ready}
+}
+
+@inproceedings{jin2024agentreview,
+  author    = {Jin, Yiqiao and Zhao, Qinlin and Wang, Yiyang and Chen, Hao and Zhu, Kaijie and Xiao, Yijia and Wang, Jindong},
+  title     = {{AgentReview}: Exploring Peer Review Dynamics with {LLM} Agents},
+  booktitle = {Proceedings of the 2024 Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  year      = {2024}
+}
+
+@misc{liang2024monitoring,
+  author        = {Liang, Weixin and Izzo, Zachary and Zhang, Yaohui and Lepp, Haley and Cao, Hancheng and Zhao, Xuandong and Chen, Lingjiao and Ye, Haotian and Liu, Sheng and Huang, Zhi and McFarland, Daniel A. and Zou, James Y.},
+  title         = {Monitoring {AI}-Modified Content at Scale: A Case Study on the Impact of {ChatGPT} on {AI} Conference Peer Reviews},
+  booktitle     = {Proceedings of the 41st International Conference on Machine Learning (ICML)},
+  year          = {2024},
+  eprint        = {2403.07183},
+  archivePrefix = {arXiv}
+}
+
+% ===== Peer review reliability, consistency & noise =====
+
+@article{cortes2021inconsistency,
+  author  = {Cortes, Corinna and Lawrence, Neil D.},
+  title   = {Inconsistency in Conference Peer Review: Revisiting the 2014 {NeurIPS} Experiment},
+  journal = {arXiv preprint arXiv:2109.09774},
+  year    = {2021}
+}
+
+@article{beygelzimer2023arbitrary,
+  author  = {Beygelzimer, Alina and Dauphin, Yann N. and Liang, Percy and Vaughan, Jennifer Wortman},
+  title   = {Has the Machine Learning Review Process Become More Arbitrary as the Field Has Grown? The {NeurIPS} 2021 Consistency Experiment},
+  journal = {arXiv preprint arXiv:2306.03262},
+  year    = {2023}
+}
+
+@article{tomkins2017reviewerbias,
+  author  = {Tomkins, Andrew and Zhang, Min and Heavlin, William D.},
+  title   = {Reviewer Bias in Single- versus Double-Blind Peer Review},
+  journal = {Proceedings of the National Academy of Sciences},
+  volume  = {114},
+  number  = {48},
+  pages   = {12708--12713},
+  year    = {2017},
+  doi     = {10.1073/pnas.1707323114}
+}
+
+@inproceedings{stelmakh2019biases,
+  author    = {Stelmakh, Ivan and Shah, Nihar B. and Singh, Aarti},
+  title     = {On Testing for Biases in Peer Review},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {32},
+  year      = {2019}
+}
+
+@article{shah2022challenges,
+  author  = {Shah, Nihar B.},
+  title   = {Challenges, Experiments, and Computational Solutions in Peer Review},
+  journal = {Communications of the ACM},
+  volume  = {65},
+  number  = {6},
+  pages   = {76--87},
+  year    = {2022},
+  doi     = {10.1145/3528086}
+}
+
+% ===== Datasets & benchmarks for peer review =====
+
+@inproceedings{kang2018peerread,
+  author    = {Kang, Dongyeop and Ammar, Waleed and Dalvi, Bhavana and van Zuylen, Madeleine and Kohlmeier, Sebastian and Hovy, Eduard and Schwartz, Roy},
+  title     = {A Dataset of Peer Reviews ({PeerRead}): Collection, Insights and {NLP} Applications},
+  booktitle = {Proceedings of NAACL-HLT 2018},
+  pages     = {1647--1661},
+  year      = {2018}
+}
+
+@inproceedings{hua2019argument,
+  author    = {Hua, Xinyu and Nikolov, Mitko and Badugu, Nikhil and Wang, Lu},
+  title     = {Argument Mining for Understanding Peer Reviews},
+  booktitle = {Proceedings of NAACL-HLT 2019},
+  pages     = {2131--2137},
+  year      = {2019}
+}
+
+@inproceedings{dycke2023nlpeer,
+  author    = {Dycke, Nils and Kuznetsov, Ilia and Gurevych, Iryna},
+  title     = {{NLPeer}: A Unified Resource for the Computational Study of Peer Review},
+  booktitle = {Proceedings of ACL 2023 (Volume 1: Long Papers)},
+  pages     = {5049--5073},
+  year      = {2023}
+}
+
+@article{kuznetsov2024whatcan,
+  author  = {Kuznetsov, Ilia and Afzal, Osama Mohammed and Dercksen, Koen and Dycke, Nils and Goldberg, Alexander and Hope, Tom and Hovy, Dirk and Kummerfeld, Jonathan K. and Lauscher, Anne and Leyton-Brown, Kevin and Lu, Sheng and Mausam and Mieskes, Margot and N{\'e}v{\'e}ol, Aur{\'e}lie and Pruthi, Danish and Qu, Lizhen and Schwartz, Roy and Smith, Noah A. and Solorio, Thamar and Wang, Jingyan and Zhu, Xiaodan and Rogers, Anna and Shah, Nihar B. and Gurevych, Iryna},
+  title   = {What Can Natural Language Processing Do for Peer Review?},
+  journal = {arXiv preprint arXiv:2405.06563},
+  year    = {2024}
+}
+
+@article{yuan2022automate,
+  author  = {Yuan, Weizhe and Liu, Pengfei and Neubig, Graham},
+  title   = {Can We Automate Scientific Reviewing?},
+  journal = {Journal of Artificial Intelligence Research},
+  volume  = {75},
+  pages   = {171--212},
+  year    = {2022},
+  note    = {Verify JAIR volume/pages against primary source before submission}
+}
+
+@article{checco2021aiassisted,
+  author  = {Checco, Alessandro and Bracciale, Lorenzo and Loreti, Pierpaolo and Pinfield, Stephen and Bianchi, Giuseppe},
+  title   = {{AI}-Assisted Peer Review},
+  journal = {Humanities and Social Sciences Communications},
+  volume  = {8},
+  number  = {1},
+  pages   = {25},
+  year    = {2021},
+  doi     = {10.1057/s41599-020-00703-8}
+}
+
+% ===== Validation methodology / metrics =====
+
+@article{spearman1904,
+  author  = {Spearman, Charles},
+  title   = {The Proof and Measurement of Association between Two Things},
+  journal = {The American Journal of Psychology},
+  volume  = {15},
+  number  = {1},
+  pages   = {72--101},
+  year    = {1904}
+}
+
+@article{bradley1952,
+  author  = {Bradley, Ralph Allan and Terry, Milton E.},
+  title   = {Rank Analysis of Incomplete Block Designs: I. The Method of Paired Comparisons},
+  journal = {Biometrika},
+  volume  = {39},
+  number  = {3/4},
+  pages   = {324--345},
+  year    = {1952},
+  doi     = {10.2307/2334029}
+}
+
+@inproceedings{guo2017calibration,
+  author    = {Guo, Chuan and Pleiss, Geoff and Sun, Yu and Weinberger, Kilian Q.},
+  title     = {On Calibration of Modern Neural Networks},
+  booktitle = {Proceedings of the 34th International Conference on Machine Learning (ICML)},
+  pages     = {1321--1330},
+  year      = {2017}
+}
+
+% ===== Citation-based quality proxies & pitfalls =====
+
+@article{aksnes2019citations,
+  author  = {Aksnes, Dag W. and Langfeldt, Liv and Wouters, Paul},
+  title   = {Citations, Citation Indicators, and Research Quality: An Overview of Basic Concepts and Theories},
+  journal = {SAGE Open},
+  volume  = {9},
+  number  = {1},
+  year    = {2019},
+  doi     = {10.1177/2158244019829575}
+}
+
+@article{tahamtan2016factors,
+  author  = {Tahamtan, Iman and Safipour Afshar, Askar and Ahamdzadeh, Khadijeh},
+  title   = {Factors Affecting Number of Citations: A Comprehensive Review of the Literature},
+  journal = {Scientometrics},
+  volume  = {107},
+  number  = {3},
+  pages   = {1195--1225},
+  year    = {2016},
+  doi     = {10.1007/s11192-016-1889-2}
+}

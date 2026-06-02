@@ -1,0 +1,68 @@
+\section{Data}
+\label{sec:data}
+
+\paragraph{Venue and ground truth.}
+We draw submissions from a recent edition of a major machine learning conference
+hosted on OpenReview (primary cohort: \mbox{ICLR}~2026). The venue is chosen for
+two properties. First, it operates open review, so \emph{rejected}
+submissions, their reviews, and the final decision are all public; venues that
+publish only accepted papers cannot support the central claim of this study,
+which concerns the reject class. Second, its decisions and reviews were released
+in January~2026, \emph{after} the grading model's August~2025 knowledge cutoff,
+so the model cannot have memorized the outcome (\S\ref{sec:discussion}); the
+earlier, fully pre-cutoff \mbox{ICLR}~2025 cohort is retained only as a
+contaminated contrast. For each submission we record two ground-truth signals:
+\begin{itemize}\itemsep1pt
+  \item the \textbf{decision tier} on the ordered ladder
+  reject $<$ poster $<$ spotlight $<$ oral, and its binary collapse into
+  accept/reject; and
+  \item the \textbf{mean reviewer rating}, a continuous signal that is richer
+  than the discrete decision and partially averages out individual reviewer
+  noise.
+\end{itemize}
+We grade the \textbf{submitted} version of each manuscript---the PDF a reviewer
+actually saw---never the camera-ready, so the score is computed on the same
+artifact the human signal responded to.
+
+\paragraph{Sampling.}
+The natural acceptance rate would starve the accepted tiers, so we sample
+\emph{balanced} across decision tiers and report metrics both as sampled and
+re-weighted to the venue's natural prevalence (\S\ref{sec:results},
+Appendix~\ref{app:robust}). Table~\ref{tab:sample} gives the realized counts.
+Sampling is reproducible from a committed cohort manifest, frozen before any
+frontier-model grading so the expensive budget is spent on exactly the
+pre-registered submissions.
+
+\paragraph{Exclusions (pre-registered).}
+We exclude desk-rejected and withdrawn-before-review submissions (no completed
+reviewer signal), submissions whose PDF failed to parse, and submissions the
+pipeline's self-identity step flags as an already-published manuscript under a
+different title (an arXiv-twin leakage risk for the citation audit). Excluded
+counts and reasons are reported and the excluded set never enters a primary
+metric.
+
+\paragraph{Nested cohorts.}
+To establish the relationship at scale while respecting a fixed frontier-model
+budget, gradings are organized into two strictly nested cohorts
+(Table~\ref{tab:sample}): every sampled submission is graded by the full pipeline
+on a cheap model (cohort $M$, full-mini); a stratified subset is additionally
+graded by the same full pipeline on a frontier model (cohort $H$, full), with
+$H \subseteq M$. The two configurations differ only in the reviewer model, so each
+frontier grading has a paired cheap-model score, enabling the mini-to-frontier
+bridge analysis of \S\ref{sec:results}.
+
+\begin{table}[t]
+  \centering
+  \caption{Realized sample. Cohort $M$ (full-mini, cheap model) carries the
+  statistical power; the nested frontier cohort $H$ (full) carries the production
+  model. Both run the full two-pass pipeline. Counts exclude pre-registered
+  exclusions.}
+  \label{tab:sample}
+  \input{tables/tab_sample}
+\end{table}
+
+\paragraph{Data contract and release.}
+All analysis reads a two-table contract (one row per submission for labels, one
+row per grading run for scores; full schema in Appendix~\ref{app:schema}). We
+release the de-identified scored table and the analysis code so every figure and
+number reproduces with a single command.

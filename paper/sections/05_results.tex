@@ -1,0 +1,144 @@
+\section{Results}
+\label{sec:results}
+
+Our results answer the study's two pre-registered questions in turn. First, does
+the AIPR score recover the human outcome (\S\ref{sec:res-validity}, hypotheses
+H1--H5)? Second, is that signal a product of the \emph{engineered pipeline} rather
+than of the underlying model alone---does it out-perform a generic one-paragraph
+prompt on the same model and PDF (\S\ref{sec:res-value}, the pre-registered value
+comparison V1)? Throughout we lead with the large full-mini cohort
+($n=\NminiPrimary$) and confirm on the frontier cohort ($n=\NfullPrimary$);
+headline metrics for both appear in Table~\ref{tab:headline}.
+
+\subsection{The score recovers the human outcome}
+\label{sec:res-validity}
+
+\begin{table}[t]
+  \centering
+  \caption{Headline metrics on the primary venue, for the cheap-model full-mini
+  configuration (statistical power) and the frontier full configuration
+  (production). Brackets are 95\% bootstrap confidence intervals.}
+  \label{tab:headline}
+  \input{tables/tab_headline}
+\end{table}
+
+\paragraph{H1: weak submissions are consistently flagged.}
+Binning submissions by AIPR overall-score quintile (sample-relative;
+Table~\ref{tab:bands}), the lowest-score band is rejected at \bottomRejectRate\%
+(95\% CI \bottomRejectCI), a \bottomLift$\times$ lift over the \baseRejectRate\%
+base reject rate, with oral papers making up \bottomOralRate\% of that band. The
+lift confidence interval is \bottomLiftCI{}, whose lower bound clears the
+pre-registered success rule (lift CI lower bound above one). The reliability
+curve (Fig.~\ref{fig:validation}b) shows the empirical reject rate falling
+monotonically as the score rises, crossing the base rate near the middle of the
+scale. A low score is therefore a high-precision flag that a submission is weak
+relative to the venue bar. The bottom-quintile threshold is sample-relative, not
+an absolute calibrated cutoff. Because the balanced cohort over-samples the
+accept tiers, we also report the flag at the venue's natural prevalence
+(\natAcceptRate\% accept; Appendix~\ref{app:robust}): the bottom-quintile reject
+precision is \natBottomPrecision\%.
+
+\begin{table}[t]
+  \centering
+  \caption{Reject rate, lift over base rate, and oral-paper share by AIPR-score
+  quintile (full-mini cohort). Band Q1 is the lowest-scoring fifth.}
+  \label{tab:bands}
+  \input{tables/tab_score_bands}
+\end{table}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{fig_validation}
+  \caption{\textbf{The AIPR score recovers the human outcome three ways} (full-mini
+  cohort). \textbf{(a)} Overall-score distribution across the ordered decision
+  tiers---violin (density), box (quartiles), jittered points---rising
+  monotonically (H3). \textbf{(b)} Empirical reject rate by score decile with
+  Wilson 95\% intervals; the shaded band is the bottom score quintile and the
+  dashed line the base reject rate---low scores reliably mark rejected work (H1).
+  \textbf{(c)} Overall score vs.\ mean reviewer rating, colored by tier, with a
+  least-squares trend and Spearman $\rho$ (H4). The discrimination scalar (AUROC,
+  H2) is in Table~\ref{tab:headline}; the ROC curve is Fig.~\ref{fig:roc}.}
+  \label{fig:validation}
+\end{figure}
+
+\paragraph{H2: reject/accept separation.}
+The overall score separates rejected from accepted submissions with
+AUROC~$=$~\aurocMiniFull on the full-mini cohort, confirmed at \aurocFullFull on the
+frontier cohort (Table~\ref{tab:headline}; ROC in Fig.~\ref{fig:roc}). The
+standardized mean gap between accepted and rejected scores is large (Cohen's
+$d=\cohensDMini$, Cliff's $\delta=\cliffsDeltaMini$).
+
+\paragraph{H3: monotone quality gradient.}
+Mean overall score increases monotonically across the four ordered decision tiers
+(Fig.~\ref{fig:validation}a); the Jonckheere--Terpstra trend test rejects the
+no-trend null with permutation $\trendPrel$, and the Spearman correlation between
+score and tier rank is $\rho=\trendRho$ (95\% CI \trendRhoCI). The gradient is
+consistent with the human-review asymmetry: tiers are cleanly ordered, with the
+largest separation at the reject boundary.
+
+\paragraph{H4: strong continuous agreement.}
+Beyond the discrete decision, the score correlates with the continuous mean
+reviewer rating at Spearman $\rho =$~\spearmanRatingMiniFull on the full-mini cohort and
+\spearmanRatingFullFull on the frontier cohort (Fig.~\ref{fig:validation}c).
+Because the reviewer rating averages over individual reviewer noise, this is the
+cleaner test of agreement with human-perceived quality, and the effect is strong
+rather than merely significant.
+
+\paragraph{H5: the cheap-model proxy is valid.}
+On the frontier cohort, the cheap-model full-mini score and the frontier full score
+correlate at $\rho =$~\bridgeRhoFull ($n=\bridgeN$; Fig.~\ref{fig:bridge}), clearing
+the pre-registered $\rho\ge0.8$ gate. Because a high global correlation can hide
+disagreement at the low end where the deployable claim lives, we check the bottom
+band directly: within the full-mini bottom quintile the two scores still correlate at
+$\rho =$~\bridgeLowRhoFull, and \bridgeOverlap\% of the full-mini bottom quintile is
+also in the frontier bottom quintile (Fig.~\ref{fig:bridge}, right). The large-$N$
+full-mini results therefore stand in for the production score's behavior, and the
+frontier cohort serves as confirmation rather than as the sole evidence.
+
+\subsection{The engineered pipeline, not the model, produces the signal}
+\label{sec:res-value}
+A validated score is only a reason to build AIPR if the validity comes from the
+\emph{system} and not from the frontier model that any user could prompt directly.
+This is the study's pre-registered primary value comparison (V1;
+\S\ref{sec:methods}, Appendix~\ref{app:naive}): we grade the frontier cohort a
+second way with a single one-paragraph prompt that asks the same model, on the
+same submitted PDF, for an overall quality score and an accept/reject call. The
+prompt mirrors what a researcher would paste into a chat assistant and is
+reproduced verbatim in Appendix~\ref{app:naive}, so the baseline is realistic
+rather than a strawman.
+
+The structured pipeline beats this generic prompt on every pre-registered axis
+(Fig.~\ref{fig:naive}, Table~\ref{tab:naive}). It separates rejected from accepted
+submissions better (AUROC \aurocFullFull{} vs.\ \aurocNaiveFull{}, a gap of
+\aurocFullVsNaive{} on $n=\naiveN$; Fig.~\ref{fig:naive}a), agrees with the human
+decision more often at the pre-registered AIPR@60 operating point
+(\opSixtyFullAcc\% vs.\ \opSixtyNaiveAcc\% balanced accuracy), and---most
+strikingly---grades far more consistently across repeated runs (median
+within-paper SD \fullRunSD{} vs.\ \naiveRunSD{} points; Fig.~\ref{fig:naive}b).
+The rubric, the grounded citation audit, and the two-pass structure are what
+convert a capable model into a stable, discriminating instrument: the same model
+asked the obvious way is both noisier and weaker. This is the engineering payoff,
+and it is why the validated score is a property of AIPR rather than of GPT.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{fig_naive}
+  \caption{\textbf{The structured pipeline vs.\ a generic one-paragraph prompt}
+  on the same frontier model and submitted PDF (cohort $H$; pre-registered
+  comparison V1). \textbf{(a)} Reject-vs-accept ROC---the pipeline discriminates
+  better. \textbf{(b)} Within-paper score SD over repeated runs---the pipeline
+  grades far more consistently. The win is the discrimination and reliability the
+  engineered system adds over the same model prompted directly; each method's
+  matched-accept-rate operating point is in Appendix~\ref{app:naive}.}
+  \label{fig:naive}
+\end{figure}
+
+\subsection{Secondary analyses}
+Per-dimension discrimination (Appendix~\ref{app:robust},
+Fig.~\ref{fig:subscore-auroc}) shows novelty and applicability carrying the most
+signal and clarity the least, consistent with the weighting of
+Eq.~\ref{eq:overall}. Whether the audit pass adds signal, run-to-run variance
+(median within-paper SD $\approx\runSDmedian$ points), prevalence re-weighting,
+weighting robustness, and a second-venue replication (\repVenue,
+AUROC~\aurocRepFull) are reported in Appendix~\ref{app:robust}; all point in the
+same direction.

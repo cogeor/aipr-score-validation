@@ -1,0 +1,60 @@
+\section{Failure Modes}
+\label{sec:failure}
+
+A score that is useful in deployment must be characterized where it errs as well
+as where it succeeds. We examine both directions of error on the frontier cohort,
+and because the venue is open we read the actual human reviews to explain each.
+The case studies are selected to span the recurring patterns.
+
+\subsection{What the score catches (and why)}
+For rejected submissions the score rated low, the in-depth review's stated
+weaknesses align closely with the reasons human reviewers gave.
+Table~\ref{tab:casestudy} (Appendix~\ref{app:cases}) places the AIPR weaknesses
+and omitted-citation findings beside excerpts from the human reviews for a set of
+matched examples. The recurring, correctly-flagged patterns are:
+\begin{itemize}\itemsep1pt
+  \item \textbf{Low novelty / derivative work}: the score's novelty dimension is
+  low and the audit pass surfaces the closely related prior method the
+  submission did not cite, the same omission reviewers raised.
+  \item \textbf{Thin or missing baselines}: the rigor dimension is low with a
+  justification naming the absent comparison.
+  \item \textbf{Overclaiming}: a gap between stated contribution and supporting
+  evidence, flagged in the rigor and applicability justifications.
+\end{itemize}
+% PLACEHOLDER (real data): replace the synthetic case-study table with 6--10
+% matched reject examples and verbatim review excerpts; confirm each alignment by
+% reading both the AIPR justification and the human review.
+
+\subsection{Where the score is wrong}
+We report both error classes explicitly.
+\paragraph{False negatives: rejected work the score rated highly.}
+% PLACEHOLDER (real data): characterize the rejected papers in the top score
+% bands. Expected dominant cause, to confirm against reviews: correctness or
+% reproducibility failures a reader cannot detect from the manuscript alone
+% (a flawed proof, an unreproducible result, a subtly broken experiment). The
+% score reads what is written; it cannot run the code or re-derive the math.
+The dominant expected cause is a class of defect the system structurally cannot
+see: the score evaluates the manuscript as written and cannot execute an
+experiment, reproduce a result, or re-derive a proof. Where rejection hinges on
+such a defect, a high score is expected and is not evidence against the bounded
+claim of \S\ref{sec:results}.
+
+\paragraph{False positives: strong work the score underrated.}
+% PLACEHOLDER (real data): characterize the oral/spotlight papers in the lower
+% score bands. Expected causes to confirm: unconventional framing, theory-heavy
+% papers penalized on the applicability dimension, or sub-fields under-represented
+% in the model's calibration.
+These cases concentrate where human reviewers reward what an automated reader
+discounts: unconventional framing, or theoretical contributions whose real-world
+applicability is not the point. They illustrate the ``poor at ranking the top''
+asymmetry and bound any use of the score for positive selection.
+
+\subsection{Reading of the failure modes}
+The two error classes differ in their consequences for deployment. A false
+negative at the \emph{top} of the score range (a weak paper scored high) is the
+dangerous case for a triage tool, and we quantify its rate directly in the
+reliability curve (Fig.~\ref{fig:validation}b). A false positive (a strong paper
+scored low) costs a second human look, which is the intended action anyway. This
+asymmetry is what makes the narrow claim, to flag weak work for human attention,
+defensible as a human-reviewed triage signal under the studied conditions even
+where the score ranks strong work poorly.

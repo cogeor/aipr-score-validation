@@ -1,0 +1,77 @@
+\section{Related Work}
+\label{sec:related}
+
+\paragraph{LLM-based and automated peer review.}
+The prospect of using large language models to assist scholarly peer review has
+moved rapidly from speculation to systematic study. The most influential
+empirical anchor is the large-scale analysis of \citet{liang2024llm}, who
+compared GPT-4 feedback against human reviews across thousands of Nature-family
+and ICLR papers and found that the overlap between model and human comments was
+comparable to the overlap between two human reviewers. Complementary pilot and
+exploratory studies reached more tempered conclusions: \citet{robertson2023gpt4}
+characterized GPT-4 as ``slightly helpful'' for review assistance, and
+\citet{liu2023reviewergpt} showed that targeted prompting (e.g., asking the model
+to find a specific error) substantially outperforms asking it to write a
+free-form review, while also exposing brittleness on deliberately injected
+errors. A second strand engineers multi-agent or pipeline architectures to
+overcome context limits and genericness: MARG \citep{darcy2024marg} distributes a
+paper across specialized agents to cut generic comments and raise specificity,
+and the AI Scientist \citep{lu2024aiscientist} embeds an automated reviewer
+inside an end-to-end discovery loop. More recent work turns a critical lens on
+the paradigm itself, with \citet{du2024llmsassist} building the ReviewCritique
+dataset to surface deficiencies in machine-written reviews and
+\citet{zhou2024reliable} documenting that high agreement on identified strengths
+and weaknesses does not translate into reliable decision prediction. The
+ecosystem-level risk is captured by \citet{russolatona2024lottery}, who estimate
+that AI-assisted reviews already inflate scores and acceptance probabilities at
+scale. Crucially, almost all of this work evaluates generated review \emph{text}
+rather than a calibrated numeric \emph{score}.
+
+\paragraph{Reliability and noise in the human ground truth.}
+Any claim that an automated signal tracks ``quality'' must be calibrated against
+the known unreliability of the human ground truth it is compared to. The NeurIPS
+consistency experiments are the canonical evidence: \citet{cortes2021inconsistency}
+revisited the 2014 experiment and \citet{beygelzimer2023arbitrary} replicated it
+at larger scale in 2021, both finding that roughly half of accepted papers would
+change under a re-run of the process, and that review largely succeeds at
+rejecting weak papers but struggles to rank strong ones. This asymmetry directly
+motivates the deliberately narrow claim of our study. The reliability literature
+also documents systematic bias, including affiliation-driven inflation under
+single-blind review \citep{tomkins2017reviewerbias} and the statistical
+subtleties of testing for such bias \citep{stelmakh2019biases};
+\citet{shah2022challenges} provides the integrative survey.
+
+\paragraph{Datasets, benchmarks, and validation methodology.}
+The computational study of peer review rests on a now-mature set of resources.
+PeerRead \citep{kang2018peerread} established the first public corpus pairing
+drafts with reviews and decisions and introduced the acceptance-prediction task;
+AMPERE \citep{hua2019argument} added argument-level structure, and NLPeer
+\citep{dycke2023nlpeer} contributed an ethically sourced, multi-venue
+unification. \citet{yuan2022automate} trained and evaluated review-generation
+models and concluded the technology was not ready for high-stakes settings, while
+the Dagstuhl-derived survey \citep{kuznetsov2024whatcan} sets the field's current
+agenda. On validation methodology for noisy, ordinal ground truth, the literature
+converges on rank correlation \citep{spearman1904}, paired-comparison modeling of
+ordinal outcomes \citep{bradley1952}, threshold-free discrimination via AUROC,
+and explicit calibration assessment \citep{guo2017calibration};
+\citet{checco2021aiassisted} is a direct precedent for validating a learned score
+against acceptance decisions and reviewer ratings, albeit with a neural text
+classifier rather than an LLM. Because citation count is a tempting but
+treacherous quality proxy, our secondary citation analysis is framed by
+\citet{aksnes2019citations} and \citet{tahamtan2016factors}, which document the
+field, age, and venue confounds that make citations a lagging, contaminated
+signal.
+
+\paragraph{Positioning.}
+Our contribution differs along three axes. First, we validate a structured LLM
+\emph{score}---five 0--100 dimensions plus an overall---against two complementary
+ground truths simultaneously (discrete decision tiers and continuous reviewer
+ratings), rather than judging the prose quality of generated review \emph{text}
+\citep{liang2024llm,darcy2024marg,yuan2022automate}. Second, we adopt the
+validation discipline the prior literature largely omits: pre-registered
+hypotheses and metrics, chosen because the human signal is demonstrably noisy and
+ordinal \citep{cortes2021inconsistency,beygelzimer2023arbitrary}. Third, our
+claim is deliberately bounded---the score consistently flags weak submissions and
+correlates with human outcomes, without predicting acceptance or replacing
+reviewers---mirroring the ``good at rejecting, poor at ranking'' asymmetry, and we
+report failure modes rather than headlining best-case overlap.

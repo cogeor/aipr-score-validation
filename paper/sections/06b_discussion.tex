@@ -1,0 +1,64 @@
+\section{Discussion}
+\label{sec:discussion}
+
+\paragraph{Relation to concurrent comment-quality benchmarks.}
+A concurrent line of work benchmarks the \emph{review comments} humans and AI
+systems produce. ReviewBench \citep{reviewbench2026} scores comments by structural
+completeness and an LLM-judged ``consequential'' flag, and---like us---concludes
+that AI is best framed as complementary to human review. Our study is orthogonal:
+ReviewBench measures \emph{intrinsic} properties of review text and, by its
+authors' own statement, ``not their correctness,'' whereas we measure the
+\emph{extrinsic} validity of a numeric \emph{score} against an external outcome. A
+well-structured, claim-targeting comment can still be wrong; a benchmark of comment
+form cannot see this, and an outcome-validated score is the complementary evidence.
+The two views are additive; Appendix~\ref{app:reviewbench} reports a comment-level
+comparison on the ReviewBench axis plus the correctness axis it omits.
+
+\paragraph{Relation to acceptance prediction.}
+Predicting editorial outcomes from text is not new: prior work predicts
+accept/reject from \emph{review} text and sentiment
+\citep{wang2018sentiment,ghosal2019deepsentipeer,kang2018peerread} and analyzes the
+drivers of acceptance \citep{jung2025whatdrives}. Our task differs in two ways that
+make it both harder and more useful: we score the \emph{manuscript}, not the
+reviews (so the signal is available before any review exists), and we validate the
+score as a \emph{measurement} against the outcome rather than training a classifier
+to maximize accuracy on it. We therefore report agreement and discrimination, not a
+tuned acceptance classifier, and we do not claim to predict acceptance.
+
+\paragraph{Contamination and temporal leakage.}
+The central threat to any score--outcome study built on a public venue is that the
+grading model may have memorized the outcome---the decision or the reviews---during
+training, which would inflate the relationship we measure; LLM-generated review
+content is already widespread at these venues \citep{liang2024monitoring}. We
+control for this by construction in the choice of cohort: the grading model's
+knowledge cutoff is August~2025, whereas the primary cohort's (ICLR~2026)
+decisions and reviews were released in January~2026, so the outcome could not have
+been in training. We add three checks. First, we flag submissions whose arXiv
+preprint predates the cutoff and report the headline metrics with and without
+them, bounding any residual \emph{paper-text} leakage (the model seeing the
+manuscript, as a reviewer would, is not itself a confound; memorizing its
+reception is). Second, we run the fully pre-cutoff ICLR~2025 cohort as a
+contaminated contrast: if the score--outcome relationship is no stronger there
+than on the clean 2026 cohort, memorization is not driving it. Third, a
+prospective confirmation grades a future venue's submissions before its decisions
+are released, making leakage logically impossible. The arXiv-before-cutoff
+sensitivity split and the contaminated contrast are reported in
+Appendix~\ref{app:robust}; the prospective confirmation is follow-up. The
+distinct question of whether the model's \emph{priors} on authors and
+institutions move the score, which matters for the non-blind venues AIPR also
+targets, is addressed by a separate prestige-perturbation experiment that holds
+the manuscript fixed and varies only the printed identity, reported separately.
+We report this threat explicitly; no current LLM-review study resolves it as
+directly.
+
+\paragraph{What the human signal's structure implies for our metric.}
+Individual reviewers are highly variable, with a bimodal per-reviewer distribution
+of claim-undermining comments that persists within accepted and rejected papers
+alike \citep{reviewbench2026}. This is why we validate against the \emph{mean}
+reviewer rating rather than any single reviewer: a score cannot agree with a ground
+truth more reliable than the ground truth is with itself, which is part of why we
+lead with the robust low-end claim (H1) rather than with ranking the top. AIPR
+also weights novelty and applicability most heavily
+(Eq.~\ref{eq:overall})---the contribution-facing axis humans prioritize over the
+validity-checking axis easiest for an LLM to produce---and that these dimensions
+carry the most signal against the human outcome (Appendix~\ref{app:robust}).
