@@ -31,7 +31,7 @@ from common import (
 )
 
 # Per-tier latent-quality mean (sd shared) — drives separation across tiers.
-TIER_Q_MEAN = {"reject": -0.9, "poster": 0.0, "spotlight": 0.6, "oral": 1.1}
+TIER_Q_MEAN = {"reject": -0.9, "poster": 0.0, "oral": 1.1}
 Q_SD = 0.6
 
 # Dimension loadings on latent quality (novelty/applicability strong; citation weak),
@@ -205,20 +205,18 @@ def generate() -> None:
     out.mkdir(parents=True, exist_ok=True)
 
     # Primary venue (ICLR 2026, post-cutoff): full-mini cohort M (n=300) with a
-    # nested frontier cohort H (n=100) + naive baseline.
+    # nested frontier cohort H (n=100) + naive baseline. The ICLR 2025
+    # replication is deferred (2026-only first analysis), so no second venue is
+    # generated; run_all's replication section self-skips when 2025 rows are absent.
     s1, g1, r1, f1 = _make_venue("ICLR", 2026, COHORT_M_SPLIT, COHORT_H_SPLIT, rng)
-    # Replication venue (ICLR 2025, pre-cutoff contaminated contrast): full-mini
-    # only — the cheap large-N config now that scan is gone.
-    rep_split = {"reject": 90, "poster": 50, "spotlight": 30, "oral": 30}
-    s2, g2, r2, f2 = _make_venue("ICLR", 2025, rep_split, None, rng)
 
-    subs = pd.DataFrame(s1 + s2)
-    grads = pd.DataFrame(g1 + g2)
+    subs = pd.DataFrame(s1)
+    grads = pd.DataFrame(g1)
     subs.to_csv(out / "submissions.csv", index=False)
     grads.to_csv(out / "gradings.csv", index=False)
-    pd.DataFrame(r1 + r2).to_csv(out / "reviews.csv", index=False)
+    pd.DataFrame(r1).to_csv(out / "reviews.csv", index=False)
     with open(out / "findings.jsonl", "w", encoding="utf-8") as fh:
-        for rec in f1 + f2:
+        for rec in f1:
             fh.write(json.dumps(rec) + "\n")
 
     print(f"wrote {len(subs)} submissions, {len(grads)} gradings -> {out}")

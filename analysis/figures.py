@@ -85,7 +85,7 @@ def fig_design(d, R):
 
 
 def _ax_tiers(ax, df, R):
-    """Panel: overall-score distribution across the four ordered decision tiers (H3)."""
+    """Panel: overall-score distribution across the three ordered decision tiers (H3)."""
     data = [df.loc[df["decision_tier"] == t, "overall"].values for t in TIER_ORDER]
     parts = ax.violinplot(data, showextrema=False, widths=0.8)
     for i, b in enumerate(parts["bodies"]):
@@ -160,8 +160,8 @@ def _ax_rating(ax, df, R):
 def fig_validation_panel(d, R):
     """F2 (headline): the AIPR score recovers the human outcome, three ways. One
     figure, one message; (a) ordinal decision tiers, (b) the deployable low-score
-    flag, (c) the continuous reviewer rating. Replaces the former four separate
-    score-vs-outcome figures (one finding shown four times)."""
+    flag, (c) the continuous reviewer rating. Replaces the former separate
+    score-vs-outcome figures (one finding shown several ways)."""
     df = _primary(d.config_frame(PRIMARY_CONFIG))
     fig, (axa, axb, axc) = plt.subplots(1, 3, figsize=(TEXT_WIDTH, 2.5))
     _ax_tiers(axa, df, R)

@@ -38,9 +38,13 @@ DIM_LABELS = {
 # v6 overall = weighted mean of the five subscores.
 SCORE_WEIGHTS = {"novelty": 4.0, "rigor": 2.0, "applicability": 4.0, "clarity": 1.0, "citation": 0.5}
 
-TIER_ORDER = ("reject", "poster", "spotlight", "oral")
+# Three ordinal tiers, low→high. ICLR 2026 (the only graded venue) awards
+# Poster + Oral only — there is no Spotlight tier (verified live 2026-06-04:
+# 5,128 posters / 224 orals / 0 spotlights). Mirrors aipr's
+# ``platform/openreview/decisions.py::TIER_ORDER`` — keep the two in lockstep.
+TIER_ORDER = ("reject", "poster", "oral")
 TIER_RANK = {t: i for i, t in enumerate(TIER_ORDER)}
-TIER_LABELS = {"reject": "Reject", "poster": "Poster", "spotlight": "Spotlight", "oral": "Oral"}
+TIER_LABELS = {"reject": "Reject", "poster": "Poster", "oral": "Oral"}
 
 # The cost ladder: two strictly nested grading configs. BOTH run the full v6
 # pipeline (reviewer pass + audit/grounding); they differ ONLY in the reviewer
@@ -88,10 +92,13 @@ PRODUCTION_CONFIG = "full"
 # (and the settled citation-outcome secondary).
 PRIMARY_VENUE = ("ICLR", 2026)       # decision 1 (revised for contamination)
 REPLICATION_VENUE = ("ICLR", 2025)   # contaminated contrast + citation secondary
-# Cohort M (full-mini, primary large-N) = 3x the frontier split, so H ⊆ M with
-# identical stratum proportions; Cohort H (full, frontier) ⊆ M.
-COHORT_M_SPLIT = {"reject": 135, "poster": 75, "spotlight": 45, "oral": 45}  # full-mini, n=300
-COHORT_H_SPLIT = {"reject": 45, "poster": 25, "spotlight": 15, "oral": 15}   # full, n=100 (⊆ M)
+# Cohort M (full-mini, primary large-N, n=300) ⊇ Cohort H (full, frontier,
+# n=100). H is reject-heavy (low-end emphasis where H1 lives) and oversamples
+# the accept tiers slightly relative to M; H ⊆ M is enforced by the nested draw.
+# Three tiers — ICLR 2026 has no Spotlight. Mirrors aipr's
+# ``cli/openreview.py::COHORT_*_SPLIT`` — keep in lockstep.
+COHORT_M_SPLIT = {"reject": 150, "poster": 100, "oral": 50}  # full-mini, n=300
+COHORT_H_SPLIT = {"reject": 50, "poster": 30, "oral": 20}    # full, n=100 (⊆ M)
 VARIANCE_SUBSTUDY_PAPERS = 10        # decision 3: ~10 papers re-graded for run variance
 BAND_QUANTILE = 0.2                  # primary low-end band = bottom quintile
 RELIABILITY_BINS = 10                # deciles for the reliability curve
@@ -121,7 +128,6 @@ SUBJECT_AREAS = (
 TIER_COLORS = {
     "reject": "#D55E00",     # vermillion
     "poster": "#E69F00",     # orange
-    "spotlight": "#56B4E9",  # sky blue
     "oral": "#0072B2",       # blue
 }
 CONFIG_COLORS = {

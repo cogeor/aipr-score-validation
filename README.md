@@ -3,7 +3,7 @@
 Reproducible analysis and manuscript for a pre-registered study that validates
 an automated LLM paper-scoring system (AIPR) against the public peer-review
 outcomes of a major machine-learning venue (ICLR on OpenReview): the decision
-tier of each submission (reject / poster / spotlight / oral) and its mean
+tier of each submission (reject / poster / oral) and its mean
 reviewer rating.
 
 Every number, figure, and table in the paper is generated from the data by a

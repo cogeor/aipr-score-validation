@@ -33,8 +33,8 @@ from sklearn.metrics import roc_auc_score
 
 from common import FIG_DIR, GLOBAL_SEED, MACRO_DIR, RESULTS_DIR, apply_style
 
-TIER_REL = np.array([-0.9, 0.0, 0.6, 1.1])  # relative tier quality means
-TIERS = np.array([0, 1, 2, 3])
+TIER_REL = np.array([-0.9, 0.0, 1.1])  # relative tier quality means (reject/poster/oral)
+TIERS = np.array([0, 1, 2])
 PLAN_N = {"H (frontier)": 100, "M (full-mini)": 300}
 
 
@@ -42,8 +42,8 @@ PLAN_N = {"H (frontier)": 100, "M (full-mini)": 300}
 # Generative model
 # ---------------------------------------------------------------------------
 def _sample(n: int, sep: float, noise_sd: float, rng: np.random.Generator):
-    """Balanced 4-tier sample. Returns (score, accept_bool, tier_rank, rating)."""
-    per = n // 4
+    """Balanced 3-tier sample. Returns (score, accept_bool, tier_rank, rating)."""
+    per = n // 3
     tier = np.repeat(TIERS, per)
     q = rng.normal(TIER_REL[tier] * sep, 0.6)
     score = np.clip(60 + 13 * q + rng.normal(0, noise_sd, len(q)), 0, 100)
@@ -120,7 +120,7 @@ def power_curves(n_sim: int, noise_sd: float, seed: int):
         true_auc = _population_auroc(sep, noise_sd, rng)
         row = {"sep": float(sep), "true_auroc": true_auc, "power": {}}
         for label, n in PLAN_N.items():
-            base = 0.25  # balanced 4-tier => reject prevalence 1/4
+            base = 1.0 / 3.0  # balanced 3-tier => reject prevalence 1/3
             hits = {"H1": 0, "H2": 0, "H3": 0, "H4": 0}
             for _ in range(n_sim):
                 s, a, t, r = _sample(n, sep, noise_sd, rng)

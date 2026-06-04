@@ -157,18 +157,21 @@ flag's precision remains above base rate across the plausible range. At the
 venue's actual prevalence (\natAcceptRate\% accept, base reject rate
 \natBaseReject\%), the bottom-quintile reject precision is \natBottomPrecision\%.
 
-\paragraph{Second-venue replication.} The headline discrimination and rating
-correlation are recomputed on a second venue/year (\repVenue) on the cheap-model
-full-mini configuration; AUROC~\aurocRepFull (Fig.~\ref{fig:replication}).
+\paragraph{Second-venue replication (deferred).} A second-venue replication
+(ICLR~2025, full-mini, as a fully pre-cutoff contaminated contrast) is reserved
+for future work; this first analysis is ICLR~2026 only. The analysis pipeline
+emits this section automatically once a 2025 export is present.
 
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=0.6\columnwidth]{figS_replication}
-  \caption{Reject-vs-accept ROC on the replication venue (\repVenue, full-mini
-  configuration). Same direction and magnitude as the primary cohort,
-  supporting year-to-year stability of the signal.}
-  \label{fig:replication}
-\end{figure}
+% DEFERRED (2026-only first analysis): figS_replication is not generated without
+% ICLR 2025 data. Restore this block when the replication is reinstated.
+% \begin{figure}[h]
+%   \centering
+%   \includegraphics[width=0.6\columnwidth]{figS_replication}
+%   \caption{Reject-vs-accept ROC on the replication venue (\repVenue, full-mini
+%   configuration). Same direction and magnitude as the primary cohort,
+%   supporting year-to-year stability of the signal.}
+%   \label{fig:replication}
+% \end{figure}
 
 \paragraph{Mini-to-frontier bridge (H5).} On the paired cohort $H$, the cheap-model
 full-mini score and the frontier full score agree closely
@@ -221,26 +224,23 @@ checks, not a search for a better weighting.
 \end{figure}
 
 \paragraph{Temporal leakage controls.} The primary cohort's decisions postdate
-the grading model's knowledge cutoff, so the outcome cannot have been memorized;
-we bound the residual risks with two comparisons of the full-mini discrimination
-(Table~\ref{tab:contam}, Fig.~\ref{fig:contamination}). First, the contaminated
-contrast: the fully pre-cutoff ICLR~2025 cohort (AUROC~\aurocRepFull) is no
-stronger than the clean primary cohort, so memorization of the outcome is not
-inflating the relationship. Second, excluding the \nArxivPrior{} submissions
-whose arXiv preprint predates the cutoff leaves the headline essentially
-unchanged (AUROC~\aurocNoArxivPriorFull), bounding residual paper-text leakage
-(the model reading the manuscript, as a reviewer would, is not itself a confound).
-The prospective check (grading a future venue before decisions are released)
-remains the only complete control and is reported as follow-up. Whether the
-model's priors on authors and institutions move the score is a separate question,
-addressed by the prestige-perturbation experiment rather than by a grading
-configuration.
+the grading model's knowledge cutoff, so the outcome cannot have been memorized.
+We bound the residual paper-text risk by excluding the \nArxivPrior{} submissions
+whose arXiv preprint predates the cutoff: this leaves the headline essentially
+unchanged (AUROC~\aurocNoArxivPriorFull), so the model reading the manuscript (as a
+reviewer would) is not itself a confound (Table~\ref{tab:contam},
+Fig.~\ref{fig:contamination}). A fully pre-cutoff contaminated contrast
+(ICLR~2025, full-mini) is deferred to future work; the prospective check (grading a
+future venue before decisions are released) remains the only complete control and
+is reported as follow-up. Whether the model's priors on authors and institutions
+move the score is a separate question, addressed by the prestige-perturbation
+experiment rather than by a grading configuration.
 
 \begin{table}[h]
   \centering
-  \caption{Temporal leakage controls (full-mini cohort): the clean primary cohort, the
-  fully pre-cutoff replication venue (contaminated contrast), and the primary
-  cohort with pre-cutoff arXiv papers excluded.}
+  \caption{Temporal leakage controls (full-mini cohort): the clean primary cohort
+  and the primary cohort with pre-cutoff arXiv papers excluded. The fully
+  pre-cutoff ICLR~2025 contaminated contrast is deferred to future work.}
   \label{tab:contam}
   \input{tables/tab_contamination}
 \end{table}
@@ -248,11 +248,10 @@ configuration.
 \begin{figure}[h]
   \centering
   \includegraphics[width=0.6\columnwidth]{figS_contamination}
-  \caption{Reject-vs-accept AUROC for the clean primary cohort, the pre-cutoff
-  replication venue (contaminated contrast), and the primary cohort excluding
-  pre-cutoff arXiv papers, with 95\% CIs. The clean cohort is no weaker than the
-  contaminated one and is unchanged by the arXiv exclusion: memorization and
-  paper-text leakage are not driving the result.}
+  \caption{Reject-vs-accept AUROC for the clean primary cohort and the primary
+  cohort excluding pre-cutoff arXiv papers, with 95\% CIs. The headline is
+  unchanged by the arXiv exclusion: paper-text leakage is not driving the result.
+  The fully pre-cutoff ICLR~2025 contaminated contrast is deferred to future work.}
   \label{fig:contamination}
 \end{figure}
 

@@ -29,8 +29,8 @@ appear in a posted draft.
 | `venue` | str | e.g. `ICLR` | |
 | `year` | int | e.g. `2025` | |
 | `decision_raw` | str | literal OpenReview venue tag | e.g. `ICLR.cc/2026/Conference/Oral`; lets a third party re-derive `decision_tier` from the raw label + the documented map |
-| `decision_tier` | str | `reject` \| `poster` \| `spotlight` \| `oral` | the ordinal ground truth |
-| `tier_rank` | int | `0,1,2,3` | reject=0 … oral=3; must agree with `decision_tier` |
+| `decision_tier` | str | `reject` \| `poster` \| `oral` | the ordinal ground truth (ICLR 2026 has no spotlight tier) |
+| `tier_rank` | int | `0,1,2` | reject=0, poster=1, oral=2; must agree with `decision_tier` |
 | `accept_bool` | int | `0`/`1` | `1` iff tier_rank ≥ 1 |
 | `mean_reviewer_rating` | float | venue rating scale (e.g. 1–10) | continuous ground truth (H4) |
 | `rating_std` | float | same units | dispersion across reviewers |
