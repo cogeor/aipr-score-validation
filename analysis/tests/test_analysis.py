@@ -339,7 +339,9 @@ def test_new_analyses_present_and_sane():
     # cohort are all present and comparable; the clean cohort is not driven by
     # memorization (synthetic: signal is identical across cohorts by construction)
     bars = R["contamination"]["bars"]
-    assert {"primary", "replication", "arxiv_no_prior"} <= set(bars)
+    # replication ("ICLR 2025") self-skips on the 2026-only synthetic cohort
+    # (synth.py defers the 2025 venue; _contamination omits it when absent).
+    assert {"primary", "arxiv_no_prior"} <= set(bars)
     for k in bars:
         assert 0.5 < bars[k]["auroc"]["point"] <= 1.0
     assert "auroc_no_prior" in R["contamination"]["arxiv_split"]

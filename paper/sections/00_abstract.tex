@@ -10,19 +10,27 @@ learning venue. AIPR is deployed as an interactive assistant; here we validate i
 non-interactive baseline score, the first-pass signal produced before any reviewer
 engages with it. Across \NminiPrimary{} \mbox{ICLR} submissions with public
 decision tiers (reject/poster/oral) and mean reviewer ratings, graded
-under a single frozen pipeline version with pre-registered hypotheses and
-thresholds, the overall score separates rejected from accepted submissions
+under a single frozen pipeline version (v6) with hypotheses and thresholds
+pre-registered before any score met any outcome, the overall score separates rejected from accepted submissions
 (AUROC~\aurocMiniFull), rises monotonically across the three tiers (Spearman
 $\rho=\trendRho$, permutation $\trendPrel$), and correlates with the mean reviewer
 rating ($\rho =$~\spearmanRatingMiniFull). The signal is strongest where we claim it:
-the lowest score quintile is rejected at \bottomRejectRate\% (a \bottomLift$\times$
-lift over the \baseRejectRate\% base rate), with oral papers nearly absent
-(\bottomOralRate\%). Crucially, this signal is a product of the engineered pipeline
-rather than the underlying model: against a generic one-paragraph prompt on the
-same model and PDF, the full pipeline discriminates better (AUROC \aurocFullFull{}
-vs.\ \aurocNaiveFull{}) and grades far more consistently (within-paper score SD
-\fullRunSD{} vs.\ \naiveRunSD{} points). We do not claim the score predicts
-acceptance or replaces reviewers; we characterize its failure modes directly. The result supports a
-narrow, defensible use: an automated first pass that reliably surfaces weak
-submissions for human attention.
+the lowest score quintile is rejected at \bottomRejectRateFrontier\% on the
+production model directly (\bottomRejectRate\% at scale on a cheap-model cohort, a
+\bottomLift$\times$ lift over the \baseRejectRate\% base rate), with oral papers
+absent from that band. Our central finding is about the model, not the pipeline. A
+generic one-paragraph prompt on the same frontier model and PDF---no rubric, no
+audit---already separates rejected from accepted submissions on its own
+(AUROC~\aurocNaiveFull), and the full pipeline discriminates no better (paired
+$\Delta$AUROC \aurocDiffFullNaive, 95\% CI \aurocDiffCI, \aurocDiffPrel).
+\emph{With or without our prompt, a frontier model is already intelligent enough to
+produce a trustworthy first-pass reviewing signal}: \emph{intelligence is not the
+bottleneck}, and the human keeps the decision. What the engineered pipeline adds is
+therefore not validity but deployability---it matches that score while grading far
+more consistently across repeated runs (within-paper SD \fullRunSD{} vs.\
+\naiveRunSD{} points) and returns a grounded, rubric-anchored review in a single
+pass. We do not claim the score predicts the acceptance decision or replaces reviewers; we
+characterize its failure modes directly. The result supports a narrow, defensible
+use: an automated first pass that reliably surfaces weak submissions for human
+attention.
 \end{abstract}

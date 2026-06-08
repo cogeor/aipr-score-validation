@@ -53,7 +53,10 @@ CONFIG_MODEL = {
     "full": "gpt-5.4-synthetic",
     "naive": "gpt-5.4-synthetic",  # same model as full — only the pipeline differs
 }
-CONFIG_RUNS = {"full_mini": 1, "full": 2, "naive": 3}
+# full + naive get 3 runs so the variance sub-study (run_variance with min_run=1,
+# which excludes run 0) has >=2 consistent-config runs to take an SD over — mirrors
+# the real export, where the ~10 variance papers are graded 3x on full_full+naive.
+CONFIG_RUNS = {"full_mini": 1, "full": 3, "naive": 3}
 
 # Naive overall = single noisy draw on latent quality (no five-subscore averaging,
 # so its run SD is larger than full's by construction).

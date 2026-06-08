@@ -177,6 +177,40 @@ def auroc_pvalue(y_true: np.ndarray, score: np.ndarray) -> float:
     return float(stats.mannwhitneyu(pos, neg, alternative="greater").pvalue)
 
 
+def paired_auroc_diff(
+    y_true, score_a, score_b, n_boot: int = 4000, alpha: float = 0.05, seed: int | None = None
+) -> dict:
+    """Paired difference in AUROC, ``delta = AUROC(a) - AUROC(b)``, with a
+    stratified paired bootstrap CI and a two-sided bootstrap p-value.
+
+    Both scores are evaluated against the SAME labels on the SAME resampled rows
+    in each replicate, so the difference is genuinely paired — the
+    correlated-AUROC comparison that two overlapping marginal CIs cannot resolve.
+    Resampling is stratified on the label (per-class counts preserved, as in
+    ``auroc_ci``). ``p`` is the two-sided bootstrap tail
+    ``2*min(P(delta*<=0), P(delta*>=0))`` with the +1 correction so p>0; a
+    non-significant result is the parity finding the analysis expects.
+    """
+    y = np.asarray(y_true).astype(int)
+    a = np.asarray(score_a, float)
+    b = np.asarray(score_b, float)
+    delta = auroc(y, a) - auroc(y, b)
+    rng = _rng(seed)
+    reps: list[float] = []
+    for _ in range(n_boot):
+        idx = _strata_resample(rng, y)
+        try:
+            reps.append(auroc(y[idx], a[idx]) - auroc(y[idx], b[idx]))
+        except Exception:
+            continue
+    r = np.asarray(reps)
+    lo, hi = np.percentile(r, [100 * alpha / 2, 100 * (1 - alpha / 2)])
+    p_left = (np.sum(r <= 0) + 1) / (len(r) + 1)
+    p_right = (np.sum(r >= 0) + 1) / (len(r) + 1)
+    p = float(min(1.0, 2 * min(p_left, p_right)))
+    return {"delta": float(delta), "lo": float(lo), "hi": float(hi), "p": p, "n": int(len(y))}
+
+
 def benjamini_hochberg(pvals: dict[str, float], alpha: float = 0.05) -> dict[str, dict]:
     """Benjamini-Hochberg FDR control over a family of named p-values.
 

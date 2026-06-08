@@ -152,25 +152,31 @@ def bootstrap_coverage(n_rep: int, n: int, n_boot: int, sep: float, noise_sd: fl
 
     rng = np.random.default_rng(seed)
     true_auc = _population_auroc(sep, noise_sd, rng)
-    idx_all = np.arange(n)
     covered = 0
+    m = n
     for _ in range(n_rep):
         s, a, _, _ = _sample(n, sep, noise_sd, rng)
+        # ``_sample`` returns a *balanced* 3-tier cohort, whose length is
+        # 3*(n//3) and so can be < n (e.g. 99 for n=100). Drive every resampling
+        # index off the ACTUAL sample length, never the requested n, so the
+        # bootstrap and jackknife match the data.
+        m = len(a)
+        idx_all = np.arange(m)
         point = roc_auc_score(a, s)
         reps = []
         for _b in range(n_boot):
-            idx = rng.integers(0, n, n)
+            idx = rng.integers(0, m, m)
             try:
                 reps.append(roc_auc_score(a[idx], s[idx]))
             except ValueError:
                 continue
         jack = []
-        for i in range(n):
+        for i in range(m):
             keep = np.delete(idx_all, i)
             jack.append(roc_auc_score(a[keep], s[keep]))
         lo, hi = bca_interval(point, np.array(reps), np.array(jack), 0.05)
         covered += int(lo <= true_auc <= hi)
-    return {"true_auroc": true_auc, "coverage": covered / n_rep, "target": 0.95, "n_rep": n_rep, "n": n, "method": "BCa"}
+    return {"true_auroc": true_auc, "coverage": covered / n_rep, "target": 0.95, "n_rep": n_rep, "n": m, "method": "BCa"}
 
 
 def jt_type_one(n_rep: int, n: int, n_perm: int, noise_sd: float, seed: int):

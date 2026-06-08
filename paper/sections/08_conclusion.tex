@@ -7,14 +7,19 @@ fully reproducible protocol. The score separates rejected from accepted
 submissions (AUROC~$\aurocMini$), rises monotonically across decision tiers, and
 correlates with continuous reviewer ratings ($\rho=\spearmanRatingMini$). The
 signal is strongest at the low end: weak submissions are consistently flagged,
-with the lowest score quintile rejected at \bottomRejectRate\%, a
-\bottomLift$\times$ lift over base rate, and strong work nearly absent from that
-band. We confirmed the effect on a frontier-model cohort and showed that a cheap
+with the lowest score quintile rejected at \bottomRejectRateFrontier\% on the
+production model (\bottomRejectRate\% at scale on the cheap-model cohort), a lift
+over base rate with strong work absent from that band. We confirmed the effect on a frontier-model cohort and showed that a cheap
 model proxies the frontier score well enough to establish the relationship at
-scale. Crucially, the signal is a product of the engineered pipeline rather than
-the model it runs on: against a generic one-paragraph prompt on the same model and
-PDF, the structured rubric-and-audit pipeline discriminates better and grades far
-more consistently.
+scale. The study's central result is about the model rather than the pipeline. A generic
+one-paragraph prompt on the same model and PDF already separates rejected from
+accepted submissions (AUROC~\aurocNaive), and the structured rubric-and-audit
+pipeline discriminates no better (the paired difference is not statistically
+significant): with or without our prompt, a frontier model is already intelligent
+enough to produce a trustworthy first-pass reviewing signal, so intelligence is not
+the bottleneck, and the reviewer keeps the decision. What the engineered pipeline
+adds is not a higher score but a deployable one---grading far more consistently
+across repeated runs and returning a grounded, anchored review in the same pass.
 
 Pre-registering the claim, validating against two complementary ground truths,
 generating every number from the data, and cataloguing the failure modes together

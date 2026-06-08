@@ -4,50 +4,52 @@
 A score that is useful in deployment must be characterized where it errs as well
 as where it succeeds. We examine both directions of error on the frontier cohort,
 and because the venue is open we read the actual human reviews to explain each.
-The case studies are selected to span the recurring patterns.
+Table~\ref{tab:casestudy} (Appendix~\ref{app:cases}) places AIPR's stated weakness
+beside a verbatim excerpt from the human reviews for a matched set of submissions
+spanning the patterns below; we paraphrase here and quote in full there.
 
 \subsection{What the score catches (and why)}
 For rejected submissions the score rated low, the in-depth review's stated
-weaknesses align closely with the reasons human reviewers gave.
-Table~\ref{tab:casestudy} (Appendix~\ref{app:cases}) places the AIPR weaknesses
-and omitted-citation findings beside excerpts from the human reviews for a set of
-matched examples. The recurring, correctly-flagged patterns are:
+weaknesses align closely with the reasons human reviewers gave---and at the level of
+the specific defect, not merely the overall verdict. The recurring,
+correctly-flagged patterns, each instantiated in Table~\ref{tab:casestudy}, are:
 \begin{itemize}\itemsep1pt
-  \item \textbf{Low novelty / derivative work}: the score's novelty dimension is
-  low and the audit pass surfaces the closely related prior method the
-  submission did not cite, the same omission reviewers raised.
-  \item \textbf{Thin or missing baselines}: the rigor dimension is low with a
-  justification naming the absent comparison.
-  \item \textbf{Overclaiming}: a gap between stated contribution and supporting
-  evidence, flagged in the rigor and applicability justifications.
+  \item \textbf{Unquantified or synthetic data construction}: AIPR flags that the
+  reported gains may hinge on how a synthetic benchmark was built, and the human
+  reviewers independently interrogate the same construction.
+  \item \textbf{Thin or missing baselines}: AIPR names the absent comparisons
+  (e.g.\ ``only ERM and static BIRM''); reviewers name the same gap (``too few
+  baselines'').
+  \item \textbf{Overclaiming and poor situating}: AIPR flags a gap between the
+  title/abstract claims and the evidence, and missing prior work; reviewers lead
+  with the identical objection.
 \end{itemize}
-% PLACEHOLDER (real data): replace the synthetic case-study table with 6--10
-% matched reject examples and verbatim review excerpts; confirm each alignment by
-% reading both the AIPR justification and the human review.
+In each case the model and the reviewers point at the same table, claim, or
+omission, which is what makes a low score a usable flag rather than a coincidence.
 
 \subsection{Where the score is wrong}
-We report both error classes explicitly.
+We report both error classes explicitly, with examples in Table~\ref{tab:casestudy}.
 \paragraph{False negatives: rejected work the score rated highly.}
-% PLACEHOLDER (real data): characterize the rejected papers in the top score
-% bands. Expected dominant cause, to confirm against reviews: correctness or
-% reproducibility failures a reader cannot detect from the manuscript alone
-% (a flawed proof, an unreproducible result, a subtly broken experiment). The
-% score reads what is written; it cannot run the code or re-derive the math.
-The dominant expected cause is a class of defect the system structurally cannot
-see: the score evaluates the manuscript as written and cannot execute an
-experiment, reproduce a result, or re-derive a proof. Where rejection hinges on
-such a defect, a high score is expected and is not evidence against the bounded
-claim of \S\ref{sec:results}.
+The dangerous case for a triage tool is a weak paper scored high. In the observed
+examples these concentrate where the rejection rests on a \emph{contribution-level
+judgment} that a competent manuscript surface does not betray: reviewers call the
+method ``an arguably trivial combination of existing'' techniques with ``little
+conceptual novelty,'' while AIPR, scoring a well-written and well-executed paper,
+places it in the upper band. A second, structural cause is a defect the system
+cannot see at all---it reads the manuscript as written and cannot execute an
+experiment, reproduce a result, or re-derive a proof---so where rejection hinges on
+such a defect a high score is expected and is not evidence against the bounded claim
+of \S\ref{sec:results}. Either way, the rate of these errors at the top of the score
+range is quantified directly in the reliability curve (Fig.~\ref{fig:validation}b).
 
 \paragraph{False positives: strong work the score underrated.}
-% PLACEHOLDER (real data): characterize the oral papers in the lower
-% score bands. Expected causes to confirm: unconventional framing, theory-heavy
-% papers penalized on the applicability dimension, or sub-fields under-represented
-% in the model's calibration.
-These cases concentrate where human reviewers reward what an automated reader
-discounts: unconventional framing, or theoretical contributions whose real-world
-applicability is not the point. They illustrate the ``poor at ranking the top''
-asymmetry and bound any use of the score for positive selection.
+The mirror error is accepted work scored low. In the observed examples AIPR's lower
+score reflects a \emph{genuine} concern---an over-reaching theoretical claim, or a
+theory whose assumptions do not match practice---that a human reviewer often raised
+as well, but that the community forgave in light of the contribution: the papers
+were accepted as orals on their merits. AIPR underweights a strong contribution when
+it carries a real but pardonable gap. These cost a second human look, which is the
+intended action anyway, and they bound any use of the score for positive selection.
 
 \subsection{Reading of the failure modes}
 The two error classes differ in their consequences for deployment. A false

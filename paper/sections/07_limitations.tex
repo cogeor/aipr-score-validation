@@ -32,7 +32,29 @@ present, inflates apparent agreement and is a ceiling on the interpretation of H
 The scale of the headline rests on the bridge (H5), which we measure and gate on
 rather than assume; had it failed, we would have led with the smaller frontier
 cohort ($n=\NfullPrimary$) and wider intervals. The frontier cohort is modest by
-budget and is used for confirmation, not as the sole evidence.
+budget and is used for confirmation, not as the sole evidence. The bridge is also
+strongest globally and weaker exactly where the deployable claim lives: within the
+full-mini bottom quintile the two scores agree at only $\rho=\bridgeLowRhoFull$ and
+\bridgeOverlap\% of that band recurs in the frontier bottom quintile
+(\S\ref{sec:res-validity}). The cheap-model score is therefore a valid large-$N$
+proxy for the relationship, but a low cheap-model flag is best read as a screen to
+be confirmed on the frontier score, not an exact substitute for it on an individual
+submission. This is exactly why we report the deployable bottom-flag (H1) on the
+frontier model directly (\S\ref{sec:res-validity},
+\bottomRejectRateFrontier\%): the production claim does not route through the weak
+low-end bridge, which constrains only the use of the cheap model as a standalone
+bottom screen, not the headline.
+
+\paragraph{An uninformative citation dimension.}
+The citation subscore is pinned at the maximum on \citationPinnedFull\% of frontier
+papers and discriminates at chance (AUROC \citationAUROC; \S\ref{sec:discussion}),
+because the citation audit returned no recommendations for the original frontier
+run and the pipeline scores an empty audit as a perfect bibliography---a silent
+fallback, confirmed against re-grades that produce real scores. It does not affect
+the headline---citation is the most lightly weighted dimension, and dropping it from
+the weighting leaves discrimination unchanged (AUROC \aurocDropCitationFull{} vs.\
+\aurocFull)---and the search-backed fix (and the lesson that grounded retrieval
+enhances the model) is discussed in \S\ref{sec:discussion}.
 
 \paragraph{Single venue and field.}
 The primary cohort is one venue in one field, and we do not claim cross-field
@@ -62,8 +84,10 @@ analysis reproduces independently. The grading rubric, prompts, and model
 configuration are proprietary: the manuscript-to-score function is audited through
 its outputs---and can be exercised on new manuscripts via the system---rather than
 re-implemented. This is the standard posture for validating a deployed instrument:
-the validation is open even though the instrument is closed. Additional minor
-threats (post-rebuttal rating drift, citation relevance vs.\ groundedness,
+the validation is open even though the instrument is closed. Because the design was
+frozen and pre-registered before unblinding, this openness is what lets a single
+author's validation be independently checked rather than taken on trust. Additional
+minor threats (post-rebuttal rating drift, citation relevance vs.\ groundedness,
 run-to-run variance) are detailed in Appendix~\ref{app:limits}.
 
 \paragraph{What we do not claim.}

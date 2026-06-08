@@ -1,6 +1,51 @@
 \section{Discussion}
 \label{sec:discussion}
 
+\paragraph{Intelligence is not the bottleneck.}
+The load-bearing result is that a bare one-paragraph prompt on the frontier model
+already separates rejected from accepted submissions on its own (AUROC
+\aurocNaiveFull; \S\ref{sec:res-value}), and the full pipeline does no better. The
+scoring parity, read on its face as a negative result for the pipeline, is the
+opposite: with or without our prompt the model is already intelligent enough to
+produce a trustworthy first-pass reviewing signal---the raw judgment is not what a
+deployment is short of, and the reviewer still owns the decision. The open problem is
+not building a model that \emph{can} judge, but turning that capability into an
+instrument a reviewer can rely on: one
+that returns the same verdict on the same paper across runs, grounds its claims in
+evidence rather than generating them, and surfaces an anchored, rubric-structured
+review instead of a bare number. That is an engineering problem, and it is the one
+AIPR addresses. Framed this way the contribution shifts from ``can an LLM judge
+quality?''---which our parity result, with a growing literature, answers yes---to
+``can a system judge quality \emph{reliably and accountably} at deployment?'',
+which is what the reliability gap (Fig.~\ref{fig:naive}b) and the grounded review
+speak to. The implication for the field is that effort is better spent on the
+processing layer---reliability, grounding, interaction---than on waiting for a more
+intelligent base model the task does not appear to need.
+
+\paragraph{The citation dimension: a silent scoring fallback, and what fixes it.}
+One dimension does not carry its weight in the graded cohort, and we report the
+cause rather than quietly drop it. The citation subscore is pinned at the maximum
+on \citationPinnedFull\% of frontier papers (\citationPinnedMini\% on full-mini),
+AUROC \citationAUROC{} (chance; \S\ref{sec:res-value}). The mechanism is a scoring
+fallback: the grounded citation audit issues literature-search queries and proposes
+missing references; when it proposes \emph{none}, the pipeline records a citation
+score of 100 (``no gaps found''). In the original frontier grading run the audit
+returned an empty recommendation list for every paper---the conservative frontier
+auditor proposed nothing---so every paper pinned to 100, and an empty or failed
+search is indistinguishable in the score from a genuinely complete bibliography.
+We confirmed this by re-grading a \runSDnPapers{}-paper subset on the same pipeline:
+the search and audit fire and produce real, varying citation scores, so the pin was
+a silent failure mode, not a measurement. The result does not move the validity
+finding---citation is the most lightly weighted dimension, and dropping it leaves
+the headline unchanged (AUROC \aurocDropCitationFull{} vs.\ \aurocFull{}). It does,
+though, point at a general lesson: equipping the model with a live literature-search
+tool---letting it look up and \emph{ground} citation recommendations against real
+records rather than generate them---is exactly the kind of tool use that turns a
+capable model into a more reliable instrument, the same theme as our headline
+result. That grounded, search-backed audit is what the deployed product runs; the
+fix to the study artifact is to score an empty or failed audit as \emph{unknown}
+rather than perfect, and to re-grade under the search-backed configuration.
+
 \paragraph{Relation to concurrent comment-quality benchmarks.}
 A concurrent line of work benchmarks the \emph{review comments} humans and AI
 systems produce. ReviewBench \citep{reviewbench2026} scores comments by structural
@@ -11,8 +56,8 @@ authors' own statement, ``not their correctness,'' whereas we measure the
 \emph{extrinsic} validity of a numeric \emph{score} against an external outcome. A
 well-structured, claim-targeting comment can still be wrong; a benchmark of comment
 form cannot see this, and an outcome-validated score is the complementary evidence.
-The two views are additive; Appendix~\ref{app:reviewbench} reports a comment-level
-comparison on the ReviewBench axis plus the correctness axis it omits.
+The two views are additive; a comment-level comparison on the ReviewBench axis,
+plus the correctness axis it omits, is left to future work.
 
 \paragraph{Relation to acceptance prediction.}
 Predicting editorial outcomes from text is not new: prior work predicts
@@ -23,7 +68,7 @@ make it both harder and more useful: we score the \emph{manuscript}, not the
 reviews (so the signal is available before any review exists), and we validate the
 score as a \emph{measurement} against the outcome rather than training a classifier
 to maximize accuracy on it. We therefore report agreement and discrimination, not a
-tuned acceptance classifier, and we do not claim to predict acceptance.
+tuned acceptance classifier, and we do not claim to predict the acceptance decision.
 
 \paragraph{Contamination and temporal leakage.}
 The central threat to any score--outcome study built on a public venue is that the

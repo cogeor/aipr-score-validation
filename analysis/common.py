@@ -46,35 +46,36 @@ TIER_ORDER = ("reject", "poster", "oral")
 TIER_RANK = {t: i for i, t in enumerate(TIER_ORDER)}
 TIER_LABELS = {"reject": "Reject", "poster": "Poster", "oral": "Oral"}
 
-# The cost ladder: two strictly nested grading configs. BOTH run the full v6
-# pipeline (reviewer pass + audit/grounding); they differ ONLY in the reviewer
-# model — `full_mini` on the cheap model, `full` on the frontier model. Cohort
-# nesting (H subset M) is asserted over these two; the naive baseline below is
-# an extra grading on cohort H and does not participate in the nesting invariant.
-# (A former `scan` config — a cheap single-call SCAN-mode grade, NOT the grading
-# pipeline — was dropped: that prompt is not how AIPR grades, so it never
-# belonged in a study validating the grading pipeline. The study now grades the
-# real pipeline at two model tiers.)
+# Two strictly nested configs, identical pipeline, differing only in MODEL TIER.
+# `full_mini` runs every call on the cheap model; the frontier arm runs every
+# call on the frontier model. In the released data the frontier config id is
+# `full_full` (all-frontier, adopted 2026-06); ``load_dataset`` maps it onto the
+# `full` slot used throughout the analysis. (The earlier mixed `full` — frontier
+# reviewer, mini editor — is superseded; a former single-call `scan` config was
+# also dropped: that prompt is not how AIPR grades.) This is now a clean
+# model-tier contrast over an identical pipeline. Cohort nesting (H subset M) is
+# asserted over these two; the naive baseline below is an extra grading on
+# cohort H and does not participate in the nesting invariant.
 CONFIGS = ("full_mini", "full")
-# Naive-judge baseline (the "why us" experiment): the SAME model as `full`, the
-# SAME PDF input, but a single one-paragraph prompt with no rubric/audit/grounding
-# — what a researcher gets pasting a paper into ChatGPT. Graded on cohort H so it
-# is paired with the full-pipeline score; this is rung 0 of the naive->full_mini->full
-# value ladder. It honestly produces only an OVERALL grade (no calibrated
-# subscores), so naive rows carry `overall` and leave the five subscores blank.
-# (The former `blinded`/`prior_only` leakage configs were dropped; leakage is now
-# handled by the temporal contamination controls plus a standalone
-# prestige-perturbation experiment — see the paper's Methods and appendix.)
+# Naive-judge baseline (the "why us" experiment): the SAME model as `full_full`,
+# the SAME PDF input, but a single one-paragraph prompt with no rubric/audit/
+# grounding — what a researcher gets pasting a paper into ChatGPT. Graded on
+# cohort H so it is paired with the full-pipeline score; this is rung 0 of the
+# naive->full_mini->full_full value ladder. It honestly produces only an OVERALL
+# grade (no calibrated subscores), so naive rows carry `overall` and leave the
+# five subscores blank. (The former `blinded`/`prior_only` leakage configs were
+# dropped; leakage is now handled by the temporal contamination controls plus a
+# standalone prestige-perturbation experiment — see the paper's Methods.)
 BASELINE_CONFIGS = ("naive",)
 ALL_CONFIGS = CONFIGS + BASELINE_CONFIGS
 CONFIG_LABELS = {
-    "full_mini": "Full (mini)",
-    "full": "Full (GPT-5.4)",
+    "full_mini": "Full (all-mini)",
+    "full": "Full (all-frontier)",
     "naive": "Naive judge",
 }
 
 # The config whose numbers become the paper's headline. Full-mini carries the
-# statistical power (large N: cohort M, n=300); the frontier `full` cohort
+# statistical power (large N: cohort M, n=300); the frontier `full_full` cohort
 # (n=100) confirms it. See the paper's Methods for the mini->frontier bridge
 # argument that licenses the large-N full-mini results as a proxy for the
 # production (frontier) score.
@@ -92,13 +93,13 @@ PRODUCTION_CONFIG = "full"
 # (and the settled citation-outcome secondary).
 PRIMARY_VENUE = ("ICLR", 2026)       # decision 1 (revised for contamination)
 REPLICATION_VENUE = ("ICLR", 2025)   # contaminated contrast + citation secondary
-# Cohort M (full-mini, primary large-N, n=300) ⊇ Cohort H (full, frontier,
+# Cohort M (full-mini, primary large-N, n=300) ⊇ Cohort H (frontier full_full,
 # n=100). H is reject-heavy (low-end emphasis where H1 lives) and oversamples
 # the accept tiers slightly relative to M; H ⊆ M is enforced by the nested draw.
 # Three tiers — ICLR 2026 has no Spotlight. Mirrors aipr's
 # ``cli/openreview.py::COHORT_*_SPLIT`` — keep in lockstep.
 COHORT_M_SPLIT = {"reject": 150, "poster": 100, "oral": 50}  # full-mini, n=300
-COHORT_H_SPLIT = {"reject": 50, "poster": 30, "oral": 20}    # full, n=100 (⊆ M)
+COHORT_H_SPLIT = {"reject": 50, "poster": 30, "oral": 20}    # full_full, n=100 (⊆ M)
 VARIANCE_SUBSTUDY_PAPERS = 10        # decision 3: ~10 papers re-graded for run variance
 BAND_QUANTILE = 0.2                  # primary low-end band = bottom quintile
 RELIABILITY_BINS = 10                # deciles for the reliability curve
@@ -131,9 +132,9 @@ TIER_COLORS = {
     "oral": "#0072B2",       # blue
 }
 CONFIG_COLORS = {
-    "full_mini": "#56B4E9",  # sky blue — the primary large-N cohort
-    "full": "#0072B2",       # blue — the frontier (production) cohort
-    "naive": "#F0E442",      # yellow — the baseline floor
+    "full_mini": "#56B4E9",   # sky blue — the primary large-N cohort
+    "full": "#0072B2",        # blue — the frontier (production) cohort
+    "naive": "#F0E442",       # yellow — the baseline floor
 }
 ACCENT = "#0072B2"
 NEUTRAL = "#555555"

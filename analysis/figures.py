@@ -10,6 +10,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.patches import Patch
 
 from common import (
     BAND_QUANTILE,
@@ -194,10 +195,15 @@ def fig_roc(d, R):
 
 
 def fig_naive_baseline(d, R):
-    """F3 (headline, the "why us" result): the structured AIPR pipeline vs a generic
-    one-paragraph LLM prompt on the same model + PDF. Left: ROC overlay
-    (discrimination). Right: within-paper run-SD distributions (reliability). This
-    is the pre-registered primary value comparison (V1); self-skips when the export
+    """F3 (the "why us" result, parity-first): the structured AIPR pipeline vs a
+    generic one-paragraph LLM prompt on the same model + PDF. Left
+    (non-inferiority): overall-score distributions split by the human
+    accept/reject outcome, for each grader — AIPR separates accepts from rejects
+    at least as well as the naive judge, and the paired AUROC difference is not
+    significant. Scoring parity shows the model is already capable; the engineering
+    is not buying raw discrimination. Right (the engineering payoff): within-paper
+    run-SD distributions — AIPR grades far more consistently across repeated runs.
+    Pre-registered primary value comparison (V1); self-skips when the export
     carries no naive gradings."""
     nb = R.get("naive_baseline", {})
     if not nb:
@@ -208,15 +214,31 @@ def fig_naive_baseline(d, R):
     naive = naive[naive["submission_id"].isin(h_ids)]
     fig, (axl, axr) = plt.subplots(1, 2, figsize=(TEXT_WIDTH, 2.6))
 
-    # Left: ROC overlay (full solid, naive dashed).
-    for df, cfg, ls in ((full, PRODUCTION_CONFIG, "-"), (naive, "naive", (0, (4, 1.5)))):
-        fpr, tpr = roc_points(df["accept_bool"].values, df["overall"].values)
-        a = nb["auroc_full"] if cfg == PRODUCTION_CONFIG else nb["auroc_naive"]
-        axl.plot(fpr, tpr, color=CONFIG_COLORS[cfg], ls=ls, lw=1.6,
-                 label=f"{CONFIG_LABELS[cfg]}: {a['point']:.2f}")
-    axl.plot([0, 1], [0, 1], ":", color="grey", lw=0.8)
-    axl.set_xlabel("False positive rate"); axl.set_ylabel("True positive rate")
-    axl.set_aspect("equal"); axl.legend(loc="lower right", fontsize=7.5, title="AUROC")
+    # Left: non-inferiority. Overall-score distributions split by the human
+    # accept/reject label, one violin pair per grader. If AIPR's reject and accept
+    # clouds separate at least as much as the naive judge's, AIPR is no worse —
+    # even at marginal-AUROC parity. The paired AUROC difference (CI straddling 0)
+    # is annotated so the reader sees parity, not a manufactured win.
+    rej_c, acc_c = TIER_COLORS["reject"], CONFIG_COLORS[PRODUCTION_CONFIG]
+    groups = [(full, 0), (full, 1), (naive, 0), (naive, 1)]
+    positions = [1, 2, 4, 5]
+    data = [g["overall"].values[g["accept_bool"].values == lbl] for g, lbl in groups]
+    parts = axl.violinplot(data, positions=positions, showmedians=True, widths=0.85)
+    for i, body in enumerate(parts["bodies"]):
+        body.set_facecolor(rej_c if groups[i][1] == 0 else acc_c)
+        body.set_alpha(0.6)
+    for key in ("cmedians", "cbars", "cmins", "cmaxes"):
+        parts[key].set_color("0.3"); parts[key].set_linewidth(0.8)
+    axl.set_xticks([1.5, 4.5])
+    axl.set_xticklabels([CONFIG_LABELS[PRODUCTION_CONFIG], CONFIG_LABELS["naive"]])
+    axl.set_ylabel("Overall score")
+    axl.legend(handles=[Patch(facecolor=rej_c, alpha=0.6, label="Rejected"),
+                        Patch(facecolor=acc_c, alpha=0.6, label="Accepted")],
+               fontsize=7.5, loc="lower center", ncol=2)
+    ad = nb["auroc_diff"]
+    sig = "n.s." if ad["p"] >= 0.05 else f"p={ad['p']:.3f}"
+    axl.annotate(rf"$\Delta$AUROC $= {ad['delta']:.2f}$ [{ad['lo']:.2f}, {ad['hi']:.2f}], {sig}",
+                 xy=(0.5, 1.02), xycoords="axes fraction", ha="center", va="bottom", fontsize=7)
     axl.set_title("(a)", loc="left", fontsize=9, fontweight="bold")
 
     # Right: within-paper run-to-run SD distributions (full vs naive).

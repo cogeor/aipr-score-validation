@@ -190,7 +190,9 @@ full-mini bottom quintile also in the frontier bottom quintile
   overall score, dashed line identity (global agreement). Right: bottom-quintile
   membership --- papers in both scores' bottom quintile vs.\ mini-only; dotted
   lines are the per-score quintile thresholds. The low-end recall and within-band
-  $\rho$ show the proxy holds where the claim lives, not only globally (H5).}
+  $\rho$ show the proxy holds where the claim lives, not only globally (H5).
+  An interactive version of this figure---each point reveals its per-dimension
+  subscores on hover---is available at \url{https://aipr.app/publications\#fig-bridge}.}
   \label{fig:bridge}
 \end{figure}
 
@@ -321,13 +323,18 @@ Because the naive judge produces only an overall score, the comparison is on
 score and decision alone (Table~\ref{tab:naive}, Fig.~\ref{fig:naive}):
 discrimination (AUROC), accept/reject agreement at the pre-registered AIPR@60
 operating point (predict accept iff overall $\ge 60$), and run-to-run reliability
-(median within-paper SD over repeated runs). So the win is not an artifact of
-forcing the baseline onto AIPR's cutoff, we also score each method at its own
-threshold matched to the human accept rate. The full pipeline leads on all three:
-AUROC \aurocFullFull{} against \aurocNaiveFull{}, balanced accuracy at AIPR@60
-\opSixtyFullAcc\% against \opSixtyNaiveAcc\%, and median within-paper SD
-\fullRunSD{} against \naiveRunSD{} points. The difference is the discrimination
-and reliability the engineered pipeline adds over the same model used directly.
+(median within-paper SD over repeated runs). To be sure the comparison is not an
+artifact of forcing the baseline onto AIPR's cutoff, we also score each method at
+its own threshold matched to the human accept rate. On discrimination the two are
+at parity---AUROC \aurocFullFull{} against \aurocNaiveFull{}, a paired difference
+that is not statistically significant (\aurocDiffFullNaive, 95\% CI \aurocDiffCI,
+\aurocDiffPrel)---and decision agreement at AIPR@60 is likewise comparable
+(\opSixtyFullAcc\% against \opSixtyNaiveAcc\% balanced accuracy), confirming the
+pipeline is no worse at the score itself. Where the pipeline separates from the
+bare prompt is reliability: median within-paper SD \fullRunSD{} against
+\naiveRunSD{} points. That reliability, with the grounded, anchored review produced
+in the same pass, is what the engineered pipeline adds over the same model used
+directly---not a higher score.
 
 \begin{table}[h]
   \centering
@@ -339,71 +346,40 @@ and reliability the engineered pipeline adds over the same model used directly.
   \input{tables/tab_naive_baseline}
 \end{table}
 
-\section{Secondary analysis: comment-quality comparison (ReviewBench axis)}
-\label{app:reviewbench}
-A concurrent benchmark, ReviewBench \citep{reviewbench2026}, compares the
-\emph{review comments} of human reviewers and AI systems by the presence of
-structural elements (specification, justification, remedy, anchor) and an
-LLM-judged ``consequential'' flag. By construction it does not assess whether a
-comment is \emph{correct}: its mapping prompt instructs the judge to ``assess
-what the reviewer is saying, not whether they are correct.'' We reproduce its
-axis and add the axis it omits.
-
-On the ReviewBench axis, AIPR is at parity with other AI systems: all AI sources
-saturate the structural metrics, and AIPR's consequential rate
-(\aiprConsequential\%) is comparable to R3's (\rThreeConsequential\%). The
-difference appears on \emph{correctness} (Table~\ref{tab:commentquality},
-Fig.~\ref{fig:commentquality}): AIPR's citation recommendations are grounded in a
-real bibliographic record \aiprGroundedness\% of the time (vs.\
-\rThreeGroundedness\% for R3) because they are produced by a retrieval-tool audit
-rather than free generation, its comment anchors are verbatim-verifiable
-\aiprAnchorFidelity\% of the time, and the share of its consequential comments
-that are actually correct (\aiprCorrectness\%) exceeds R3's
-(\rThreeCorrectness\%) even though R3 raises consequential-\emph{sounding}
-comments at a higher rate. A critical comment that is not correct is the failure a
-triage signal must avoid, and a presence/intent benchmark cannot see it; this is
-the comment-level analogue of the score-level claim.
-
-\emph{Status:} the numbers here are computed on synthetic comment data for the
-draft; the real comparison runs AIPR as an added source through the (vendored,
-self-hosted, judge-swapped) ReviewBench framework. This is a secondary analysis,
-not primary evidence; correctness is spot-checked by a judge from a different
-model family than any system under test.
-
-\begin{table}[h]
-  \centering
-  \caption{Comment-quality comparison. AI systems are at parity on the
-  ReviewBench (form + intent) axis; AIPR leads on the correctness axis ReviewBench
-  omits.}
-  \label{tab:commentquality}
-  \input{tables/tab_comment_quality}
-\end{table}
-
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=\textwidth]{figS_comment_quality}
-  \caption{Left: ReviewBench's form+intent axis (structure, consequential) ---
-  near parity across AI systems. Right: the correctness axis ReviewBench omits
-  (anchor fidelity, citation groundedness, correctness of consequential comments)
-  --- AIPR leads, with 95\% Wilson intervals.}
-  \label{fig:commentquality}
-\end{figure}
-
 \section{Failure-mode case studies}
 \label{app:cases}
-% PLACEHOLDER: matched table of AIPR weaknesses / omitted citations vs. verbatim
-% human-review excerpts for 6--10 examples spanning the patterns in
-% Section~\ref{sec:failure}.
+Table~\ref{tab:casestudy} gives the matched examples behind \S\ref{sec:failure}:
+AIPR's verbatim weakness beside a verbatim excerpt from the human reviews of the
+\emph{same} frontier-cohort submission. Submissions are described by outcome and
+AIPR overall rather than named (a courtesy to rejected authors), and the review
+excerpts are trimmed for length with ellipses; the untrimmed text lives in the
+unreleased study artifact. The top block is correctly-flagged rejects; the lower two
+are the error classes.
+
 \begin{table}[h]
   \centering
-  \caption{Matched case studies: AIPR-flagged weakness vs.\ human-review excerpt.
-  (Populated from the real export; synthetic placeholder shown in drafts.)}
+  \footnotesize
+  \caption{Matched case studies on the frontier cohort: AIPR's flagged weakness
+  beside a verbatim human-review excerpt for the same submission. Top: weak work the
+  score caught---the model and the reviewers name the same defect. Bottom: the two
+  error classes, a rejected paper the score rated highly and accepted (oral) papers
+  it underrated.}
   \label{tab:casestudy}
-  \begin{tabular}{p{0.18\columnwidth}p{0.36\columnwidth}p{0.36\columnwidth}}
+  \begin{tabular}{p{0.13\columnwidth}p{0.39\columnwidth}p{0.39\columnwidth}}
     \toprule
-    Submission & AIPR weakness / omitted citation & Human-review excerpt \\
+    Case & AIPR weakness (verbatim) & Human review (verbatim excerpt) \\
     \midrule
-    --- & --- & --- \\
+    \multicolumn{3}{l}{\emph{Correctly flagged --- low score, rejected}}\\[2pt]
+    Reject; AIPR 58 & ``Most graph experiments rely on a synthetic three-year timeline built from disconnected Ego4D clips, and the paper does not quantify how much the reported gains depend on that construction.'' & ``Dataset construction lacks transparency \ldots\ Ego4D consists of short clips \ldots\ from 931 different people---how were these transformed into a continuous 3-year personal diary?'' \\[3pt]
+    Reject; AIPR 66 & ``The experimental comparison is thin: only ERM and static BIRM are evaluated, with no representative domain-generalization or robust fine-tuning baselines.'' & ``Experiments are insufficient: too few baselines, limited models, and narrow evaluation.'' \ldots\ ``No comparison to CORAL, meta-learning, or other domain generalization methods.'' \\[3pt]
+    Reject; AIPR 60 & ``The title and parts of the abstract overclaim relative to the evidence \ldots\ a narrow slice of interpretability tooling.'' & ``Its poor situating within existing literature and \ldots\ major issues in clarity, rigor \ldots\ It makes strong claims about deception and interpretability without referencing key prior studies.'' \\
+    \midrule
+    \multicolumn{3}{l}{\emph{False negative --- high score, rejected}}\\[2pt]
+    Reject; AIPR 77 & ``Two claims are framed too strongly for the evidence provided \ldots\ size optimization is said not to hurt performance even though appendix tables show non-trivial drops on harder sets.'' & ``The contributions are not very strong \ldots\ an arguably trivial combination of existing neural circuit-synthesis, feedback-based fine-tuning, and expert-iteration methods.'' \\
+    \midrule
+    \multicolumn{3}{l}{\emph{False positive --- low score, accepted oral}}\\[2pt]
+    Oral; AIPR 74 & ``The theory assumes independent updates and ignores optimizer state, yet the paper makes broader optimizer-agnostic and decay-emulation claims; that gap is not bridged.'' & ``Algebra aside, the theory is a bit specious \ldots\ really I think this is `decay-inspired averaging'.'' \emph{(this reviewer rated it 10; accepted oral)} \\[3pt]
+    Oral; AIPR 75 & ``The paper's strongest theoretical claim overreaches the proof chain.'' & ``This method also has cryptographic overhead (Eq.\ 13). Hence, the `encryption-free' claim is potentially misleading.'' \emph{(accepted oral)} \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -430,14 +406,20 @@ mismatch between that artifact and the final rating adds noise against us rather
 than in our favor.
 
 \paragraph{Grounded is not relevant.}
-The citation-grounding advantage (Appendix~\ref{app:reviewbench}) establishes that
-a recommended reference is a real record returned by the retrieval tool, not that
-it is the \emph{most relevant} omission. Groundedness rules out hallucinated
+The citation-grounding advantage of the deployed product's search-backed audit
+establishes that a recommended reference is a real record returned by the retrieval
+tool, not that it is the \emph{most relevant} omission. Groundedness rules out hallucinated
 citations; it does not certify editorial judgment about which prior work matters
 most, which remains a human call.
 
 \paragraph{Run-to-run variance.}
-The score is stochastic across runs (median within-paper SD
-$\approx\runSDmedian$ points on the frontier configuration). All point estimates
-use per-submission means and the reported intervals incorporate sampling variance;
-the variance is small relative to the between-tier separation but is not zero.
+The score is stochastic across runs but only mildly so: median within-paper SD
+$\approx\runSDmedian$ points on the frontier configuration, estimated from
+\runSDnPapers{} papers re-graded multiple times (\S\ref{sec:res-value}). Cross-paper
+point estimates use each paper's original single run (the pre-registered
+single-run design); the variance sub-study's re-runs are an augmentation and do not
+enter the headline metrics. The re-grade estimate is computed over the
+consistent-configuration re-runs, excluding the original frontier run whose citation
+audit returned empty (the pinned-100 artifact of \S\ref{sec:discussion}), so the SD
+reflects stochastic grading noise rather than that one-off scoring difference. The
+variance is small relative to the between-tier separation but is not zero.

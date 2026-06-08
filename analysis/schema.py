@@ -56,13 +56,21 @@ class Dataset:
     gradings: pd.DataFrame  # one row per (submission, config, run_index)
 
     # ---- convenience accessors -------------------------------------------
-    def config_frame(self, config: str, *, include_excluded: bool = False) -> pd.DataFrame:
-        """Submissions joined with their mean grading for `config`.
+    def config_frame(
+        self, config: str, *, include_excluded: bool = False, run_index: int = 0
+    ) -> pd.DataFrame:
+        """Submissions joined with their grading for `config` at `run_index`.
 
-        Multiple run_index rows per (submission, config) are averaged for point
-        estimates. Excluded submissions are dropped unless requested.
+        Point estimates use the original single run (`run_index=0`) — the
+        pre-registered design is "100 distinct papers, single frontier run each";
+        the variance sub-study's extra runs (run_index>=1 on ~10 papers) are an
+        augmentation that must NOT perturb the cross-paper headline. Pinning to
+        run 0 keeps the main metrics identical whether or not the variance runs are
+        present. Excluded submissions are dropped unless requested.
         """
-        g = self.gradings[self.gradings["config"] == config]
+        g = self.gradings[
+            (self.gradings["config"] == config) & (self.gradings["run_index"] == run_index)
+        ]
         agg = {c: "mean" for c in SCORE_COLS}
         gmean = g.groupby("submission_id", as_index=False).agg(agg)
         merged = self.submissions.merge(gmean, on="submission_id", how="inner")
@@ -76,9 +84,17 @@ class Dataset:
         b = self.config_frame(config_b)[["submission_id", "overall", *DIMENSIONS]]
         return a.merge(b, on="submission_id", suffixes=(f"_{config_a}", f"_{config_b}"))
 
-    def run_variance(self, config: str) -> pd.DataFrame:
-        """Per-submission within-config SD of `overall` (run-to-run noise)."""
-        g = self.gradings[self.gradings["config"] == config]
+    def run_variance(self, config: str, *, min_run: int = 0) -> pd.DataFrame:
+        """Per-submission within-config SD of `overall` (run-to-run noise).
+
+        `min_run` restricts to run_index>=min_run. The variance sub-study passes
+        `min_run=1` so the estimate covers only the consistent-config re-runs and
+        excludes run 0, whose full_full citation audit returned empty (pinned 100)
+        for the original cohort — a config-state difference, not stochastic noise.
+        """
+        g = self.gradings[
+            (self.gradings["config"] == config) & (self.gradings["run_index"] >= min_run)
+        ]
         return (
             g.groupby("submission_id")["overall"]
             .agg(["mean", "std", "count"])
@@ -179,9 +195,13 @@ def validate(subs: pd.DataFrame, grad: pd.DataFrame, *, require_metadata: bool =
         lc_ids = set(grad.loc[grad["config"] == lc, "submission_id"])
         assert lc_ids <= ids["full"], f"{lc} gradings must be a subset of cohort H"
 
-    # 10. exclusion reasons present
+    # 10. exclusion reasons present. ``astype(str)`` so the check survives a
+    # dataset with zero exclusions, where ``exclude_reason`` is an all-NaN float
+    # column (the .str accessor rejects float dtype); empty -> .all() is True.
     exc = subs[subs["excluded"] == 1]
-    assert (exc["exclude_reason"].fillna("").str.len() > 0).all(), "excluded row missing reason"
+    assert (
+        exc["exclude_reason"].fillna("").astype(str).str.len() > 0
+    ).all(), "excluded row missing reason"
 
     # 11. run_kind discipline
     assert set(grad["run_kind"].unique()) <= {"adhoc"}, "study grades must be run_kind=adhoc"
@@ -222,6 +242,11 @@ def load_dataset(name: str) -> Dataset:
     base = DATA_DIR / name
     subs = _read_csv(base / "submissions.csv")
     grad = _read_csv(base / "gradings.csv")
+    # The released frontier config id is `full_full` (all-frontier, every call on
+    # the frontier model). The analysis uses `full` as its single frontier slot
+    # (see common.CONFIGS); map the released id onto it so the published data
+    # plugs in unchanged. The legacy mixed `full` is no longer produced.
+    grad["config"] = grad["config"].replace({"full_full": "full"})
     validate(subs, grad)
     _fill_metadata_defaults(subs, grad)
     is_synth = name == "synthetic" or bool(grad["model_name"].str.contains("synthetic").any())

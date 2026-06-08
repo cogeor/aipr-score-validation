@@ -2,15 +2,14 @@
 \label{sec:results}
 
 Our results answer the study's two pre-registered questions in turn. First, does
-the AIPR score recover the human outcome (\S\ref{sec:res-validity}, hypotheses
-H1--H5)? Second, is that signal a product of the \emph{engineered pipeline} rather
-than of the underlying model alone---does it out-perform a generic one-paragraph
-prompt on the same model and PDF (\S\ref{sec:res-value}, the pre-registered value
-comparison V1)? Throughout we lead with the large full-mini cohort
+the AIPR score agree with the human outcome (\S\ref{sec:res-validity}, hypotheses
+H1--H5)? Second, what does the \emph{engineered pipeline} add over the underlying
+model alone---a generic one-paragraph prompt on the same model and PDF
+(\S\ref{sec:res-value}, the pre-registered value comparison V1)? Throughout we lead with the large full-mini cohort
 ($n=\NminiPrimary$) and confirm on the frontier cohort ($n=\NfullPrimary$);
 headline metrics for both appear in Table~\ref{tab:headline}.
 
-\subsection{The score recovers the human outcome}
+\subsection{The score agrees with the human outcome}
 \label{sec:res-validity}
 
 \begin{table}[t]
@@ -23,12 +22,19 @@ headline metrics for both appear in Table~\ref{tab:headline}.
 \end{table}
 
 \paragraph{H1: weak submissions are consistently flagged.}
-Binning submissions by AIPR overall-score quintile (sample-relative;
-Table~\ref{tab:bands}), the lowest-score band is rejected at \bottomRejectRate\%
-(95\% CI \bottomRejectCI), a \bottomLift$\times$ lift over the \baseRejectRate\%
-base reject rate, with oral papers making up \bottomOralRate\% of that band. The
-lift confidence interval is \bottomLiftCI{}, whose lower bound clears the
-pre-registered success rule (lift CI lower bound above one). The reliability
+We report the deployable flag on the production (frontier) model directly. Binning
+its scores into quintiles, the lowest-score band is rejected at
+\bottomRejectRateFrontier\% (95\% CI \bottomRejectCIFrontier), a
+\bottomLiftFrontier$\times$ lift over the \baseRejectRate\% base reject rate, with no
+oral papers in that band (\bottomOralRateFrontier\%). We lead with the production
+model here, rather than the cheap-model proxy, precisely because the
+mini-to-frontier bridge is weakest at the low end where the flag fires
+(H5; \S\ref{sec:res-validity}): computing the flag on the frontier score sidesteps
+the proxy entirely. The same pattern holds at larger scale on the cheap-model cohort
+(sample-relative quintiles; Table~\ref{tab:bands}): the lowest band is rejected at
+\bottomRejectRate\% (95\% CI \bottomRejectCI), a \bottomLift$\times$ lift, with the
+lift CI \bottomLiftCI{} clearing the pre-registered success rule (lower bound above
+one) and oral papers making up \bottomOralRate\% of the band. The reliability
 curve (Fig.~\ref{fig:validation}b) shows the empirical reject rate falling
 monotonically as the score rises, crossing the base rate near the middle of the
 scale. A low score is therefore a high-precision flag that a submission is weak
@@ -49,7 +55,7 @@ precision is \natBottomPrecision\%.
 \begin{figure}[t]
   \centering
   \includegraphics[width=\textwidth]{fig_validation}
-  \caption{\textbf{The AIPR score recovers the human outcome three ways} (full-mini
+  \caption{\textbf{The AIPR score agrees with the human outcome three ways} (full-mini
   cohort). \textbf{(a)} Overall-score distribution across the ordered decision
   tiers---violin (density), box (quartiles), jittered points---rising
   monotonically (H3). \textbf{(b)} Empirical reject rate by score decile with
@@ -57,7 +63,9 @@ precision is \natBottomPrecision\%.
   dashed line the base reject rate---low scores reliably mark rejected work (H1).
   \textbf{(c)} Overall score vs.\ mean reviewer rating, colored by tier, with a
   least-squares trend and Spearman $\rho$ (H4). The discrimination scalar (AUROC,
-  H2) is in Table~\ref{tab:headline}; the ROC curve is Fig.~\ref{fig:roc}.}
+  H2) is in Table~\ref{tab:headline}; the ROC curve is Fig.~\ref{fig:roc}.
+  An interactive version of this figure---each point reveals its per-dimension
+  subscores on hover---is available at \url{https://aipr.app/publications\#fig-validation}.}
   \label{fig:validation}
 \end{figure}
 
@@ -95,10 +103,10 @@ also in the frontier bottom quintile (Fig.~\ref{fig:bridge}, right). The large-$
 full-mini results therefore stand in for the production score's behavior, and the
 frontier cohort serves as confirmation rather than as the sole evidence.
 
-\subsection{The engineered pipeline, not the model, produces the signal}
+\subsection{Intelligence is not the bottleneck: what the engineering adds}
 \label{sec:res-value}
-A validated score is only a reason to build AIPR if the validity comes from the
-\emph{system} and not from the frontier model that any user could prompt directly.
+A validated score raises an obvious question: a frontier model is available to
+anyone, so what does the engineered pipeline add over simply asking that model?
 This is the study's pre-registered primary value comparison (V1;
 \S\ref{sec:methods}, Appendix~\ref{app:naive}): we grade the frontier cohort a
 second way with a single one-paragraph prompt that asks the same model, on the
@@ -107,37 +115,72 @@ prompt mirrors what a researcher would paste into a chat assistant and is
 reproduced verbatim in Appendix~\ref{app:naive}, so the baseline is realistic
 rather than a strawman.
 
-The structured pipeline beats this generic prompt on every pre-registered axis
-(Fig.~\ref{fig:naive}, Table~\ref{tab:naive}). It separates rejected from accepted
-submissions better (AUROC \aurocFullFull{} vs.\ \aurocNaiveFull{}, a gap of
-\aurocFullVsNaive{} on $n=\naiveN$; Fig.~\ref{fig:naive}a), agrees with the human
-decision more often at the pre-registered AIPR@60 operating point
-(\opSixtyFullAcc\% vs.\ \opSixtyNaiveAcc\% balanced accuracy), and---most
-strikingly---grades far more consistently across repeated runs (median
-within-paper SD \fullRunSD{} vs.\ \naiveRunSD{} points; Fig.~\ref{fig:naive}b).
-The rubric, the grounded citation audit, and the two-pass structure are what
-convert a capable model into a stable, discriminating instrument: the same model
-asked the obvious way is both noisier and weaker. This is the engineering payoff,
-and it is why the validated score is a property of AIPR rather than of GPT.
+The first thing the comparison shows is about the model. The bare one-paragraph
+prompt, with no rubric and no audit, already separates rejected from accepted
+submissions on its own at AUROC \aurocNaiveFull{}---real discrimination against the
+human outcome from raw model judgment alone. The full pipeline reaches AUROC
+\aurocFullFull{} on the same papers, and the paired difference between them is small
+and not statistically significant (\aurocDiffFullNaive, 95\% CI \aurocDiffCI,
+\aurocDiffPrel; $n=\naiveN$); the score distributions split by the human outcome are
+at least as well separated for AIPR as for the naive judge (Fig.~\ref{fig:naive}a).
+The validity is therefore not manufactured by the engineering: \emph{with or without
+our prompt, a frontier model is already intelligent enough to produce a trustworthy
+first-pass reviewing signal---intelligence is not the bottleneck}, and the reviewer,
+not the model, keeps the decision. This also settles the pre-registered V1
+prediction, which was directional: we pre-declared that the pipeline would
+\emph{out}-discriminate the naive judge, with the AUROC-difference CI excluding zero
+(\S\ref{sec:methods}). That criterion is not met---the CI includes zero---so we
+report the null plainly, as the pre-registration committed us to, and read it as
+evidence about the model's capability rather than a deficiency of the pipeline.
+
+What the engineered pipeline adds is not a higher score but a deployable one.
+First, reliability: AIPR grades far more consistently across repeated runs (median
+within-paper SD \fullRunSD{} vs.\ \naiveRunSD{} points across repeated gradings of
+\runSDnPapers{} papers; Fig.~\ref{fig:naive}b), so the same submission earns nearly
+the same verdict rather than a different number each time---the run-to-run noise is
+small against the between-tier separation. Second, the same pass that
+produces the score produces a structured review---five rubric dimensions, a
+grounded citation audit, and verbatim-anchored comments---rather than the bare
+number the prompt returns; that review, not the scalar, is what a reviewer acts
+on. The scoring rule does several things at once and pays no accuracy penalty for
+it: the validated overall is a by-product of the pass that yields the review
+(\opSixtyFullAcc\% vs.\ \opSixtyNaiveAcc\% balanced accuracy at the pre-registered
+AIPR@60 operating point confirms the pipeline is no worse at the decision itself).
+The value of AIPR is therefore the processing it wraps around an already-capable
+model, and the case for building it does not rest on out-scoring that model.
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=\textwidth]{fig_naive}
-  \caption{\textbf{The structured pipeline vs.\ a generic one-paragraph prompt}
-  on the same frontier model and submitted PDF (cohort $H$; pre-registered
-  comparison V1). \textbf{(a)} Reject-vs-accept ROC---the pipeline discriminates
-  better. \textbf{(b)} Within-paper score SD over repeated runs---the pipeline
-  grades far more consistently. The win is the discrimination and reliability the
-  engineered system adds over the same model prompted directly; each method's
-  matched-accept-rate operating point is in Appendix~\ref{app:naive}.}
+  \caption{\textbf{Scoring parity, and what the engineering adds}, on the same
+  frontier model and submitted PDF (cohort $H$; pre-registered comparison V1).
+  \textbf{(a)} Overall-score distributions split by the human accept/reject
+  outcome for each grader; the paired AUROC difference is annotated and not
+  significant---AIPR separates the classes at least as well as the bare prompt,
+  not better. \textbf{(b)} Within-paper score SD over repeated runs---AIPR grades
+  far more consistently. A capable model already scores competently (a); the
+  engineered pipeline's contribution is reliability (b) and a grounded,
+  rubric-anchored review produced in the same pass. Each method's
+  matched-accept-rate operating point is in Appendix~\ref{app:naive}.
+  An interactive version of this figure is available at
+  \url{https://aipr.app/publications\#fig-naive}.}
   \label{fig:naive}
 \end{figure}
 
 \subsection{Secondary analyses}
 Per-dimension discrimination (Appendix~\ref{app:robust},
 Fig.~\ref{fig:subscore-auroc}) shows novelty and applicability carrying the most
-signal and clarity the least, consistent with the weighting of
-Eq.~\ref{eq:overall}. Whether the audit pass adds signal, run-to-run variance
-(median within-paper SD $\approx\runSDmedian$ points), prevalence re-weighting,
-and weighting robustness are reported in Appendix~\ref{app:robust}; all point in the
-same direction. A second-venue replication (ICLR~2025) is deferred to future work.
+signal, consistent with the weighting of Eq.~\ref{eq:overall}. The citation
+dimension carries none: it is pinned at the maximum on \citationPinnedFull\% of
+frontier papers (\citationPinnedMini\% on full-mini) and its reject/accept AUROC is
+\citationAUROC{} (chance). This is a scoring artifact rather than a property of the
+manuscripts---an empty audit result is recorded as a perfect bibliography---which
+we diagnose in \S\ref{sec:discussion} and treat as a limitation in
+\S\ref{sec:limits}.
+Because citation is the most lightly weighted dimension, the headline is unchanged
+when it is dropped from the weighting entirely (AUROC \aurocDropCitationFull{}
+vs.\ \aurocFull{} on the frontier cohort; Appendix~\ref{app:robust}). Whether the
+audit pass adds signal, run-to-run variance (median within-paper SD
+$\approx\runSDmedian$ points), prevalence re-weighting, and weighting robustness
+are reported in Appendix~\ref{app:robust}; all point in the same direction. A
+second-venue replication (ICLR~2025) is deferred to future work.

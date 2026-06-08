@@ -43,6 +43,7 @@ from stats import (
     cohens_d,
     jonckheere_trend,
     low_band_spearman,
+    paired_auroc_diff,
     prevalence_reweighted_bottom_precision,
     quantile_membership_overlap,
     score_band_table,
@@ -103,6 +104,14 @@ def compute(d: Dataset) -> dict:
     sub_p = {dim: auroc_pvalue(mini["accept_bool"].values, mini[dim].values) for dim in DIMENSIONS}
     R["subscore_bh"] = benjamini_hochberg(sub_p, alpha=0.05)
 
+    # ---- citation subscore: the "always-100%" bug -------------------------
+    # In this frozen offline grading config the citation dimension is pinned high
+    # (no live retrieval wired), so it carries no reject/accept signal. Surface
+    # the pinned rate + its (chance) AUROC, and a sensitivity dropping citation
+    # from the weighting on BOTH cohorts — the headline must not hinge on it.
+    R["citation_pinned"] = _citation_pinned(d, R)
+    R["citation_sensitivity"] = _citation_sensitivity(mini, full)
+
     # ---- null guardrail: shuffled labels must give AUROC ~ 0.5 ------------
     rng = np.random.default_rng(20260601)
     y = mini["accept_bool"].values
@@ -124,6 +133,17 @@ def compute(d: Dataset) -> dict:
     R["score_bands"] = [b.__dict__ for b in bands]
     R["bottom_band"] = bands[0].__dict__
     R["top_band"] = bands[-1].__dict__
+
+    # ---- H1 on the FRONTIER (production) cohort directly. The deployable
+    # bottom-flag claim should rest on the model that ships, not on the cheap
+    # proxy whose low-end bridge to the frontier score is weak (H5). Smaller n
+    # and wider CI, but it sidesteps the proxy entirely: the flag is computed on
+    # the production score itself.
+    bands_full = score_band_table(
+        full["overall"].values, full["accept_bool"].values, full["tier_rank"].values,
+        n_bins=_N_BANDS, seed=GLOBAL_SEED,
+    )
+    R["bottom_band_full"] = bands_full[0].__dict__
 
     # ---- H1 under natural prevalence: reject precision at real ICLR accept rate
     R["prevalence_point"] = prevalence_reweighted_bottom_precision(
@@ -172,12 +192,18 @@ def compute(d: Dataset) -> dict:
     # ---- grading cost: tokens used per config (the cost-design numbers) ----
     R["cost"] = _cost_by_config(d)
 
-    # ---- run-to-run variance on full -------------------------------------
-    rv = _primary(d.run_variance(PRODUCTION_CONFIG).merge(d.submissions[["submission_id", "venue", "year"]], on="submission_id"))
+    # ---- run-to-run variance on full (consistent-config re-runs only) -----
+    # min_run=1: exclude run 0 (its full_full citation audit returned empty ->
+    # pinned 100 for the original cohort, a config-state artifact); the variance
+    # sub-study measures stochastic noise under the working-audit re-runs.
+    rv = _primary(d.run_variance(PRODUCTION_CONFIG, min_run=1).merge(d.submissions[["submission_id", "venue", "year"]], on="submission_id"))
     R["run_variance_full"] = {
         "median_sd": float(np.nanmedian(rv["run_sd"])) if len(rv) else float("nan"),
         "mean_sd": float(np.nanmean(rv["run_sd"])) if len(rv) else float("nan"),
         "n_runs_each": int(np.nanmax(rv["n_runs"])) if len(rv) else 0,
+        # papers actually re-graded (n_runs>1): lets the paper say "n=10 papers
+        # re-graded 3x" honestly rather than implying all 100 were repeated.
+        "n_variance_papers": int((rv["n_runs"] > 1).sum()) if len(rv) else 0,
     }
 
     # ---- model-tier comparison: AUROC across configs on the shared cohort H -
@@ -273,9 +299,18 @@ def _naive_baseline(d: Dataset, full) -> dict:
         return out
     out["n"] = int(len(naive))
 
-    # (a) discrimination
+    # (a) discrimination. Marginal AUROCs side by side, PLUS the paired
+    # difference (same labels, same papers) — the parity test the overlapping
+    # marginal CIs cannot resolve. Expected non-significant: a frontier model
+    # already scores competently, so the structured pipeline's value is not raw
+    # discrimination but the reliability + grounded output it adds (intelligence
+    # is not the bottleneck; processing is).
     out["auroc_full"] = auroc_ci(full["accept_bool"].values, full["overall"].values).as_dict()
     out["auroc_naive"] = auroc_ci(naive["accept_bool"].values, naive["overall"].values).as_dict()
+    paired = full.merge(naive[["submission_id", "overall"]], on="submission_id", suffixes=("_full", "_naive"))
+    out["auroc_diff"] = paired_auroc_diff(
+        paired["accept_bool"].values, paired["overall_full"].values, paired["overall_naive"].values, seed=GLOBAL_SEED
+    )
 
     # (b) operating point. AIPR@60 = predict accept iff overall >= 60, applied to
     # BOTH graders; plus each grader at its own threshold matched to the human
@@ -300,7 +335,9 @@ def _naive_baseline(d: Dataset, full) -> dict:
 
     # (c) reliability: within-paper run-SD distribution, naive vs full
     def _median_sd(cfg: str) -> tuple[float, int]:
-        rv = d.run_variance(cfg)
+        # min_run=1: same consistent-config re-runs as run_variance_full, so the
+        # full-vs-naive reliability comparison is apples-to-apples on runs 1..N-1.
+        rv = d.run_variance(cfg, min_run=1)
         rv = rv[rv["submission_id"].isin(h_ids)]
         sd = float(np.nanmedian(rv["run_sd"])) if len(rv) else float("nan")
         nr = int(np.nanmax(rv["n_runs"])) if len(rv) else 0
@@ -312,6 +349,50 @@ def _naive_baseline(d: Dataset, full) -> dict:
         "full_median_sd": full_sd, "naive_median_sd": naive_sd,
         "full_n_runs": full_nr, "naive_n_runs": naive_nr,
     }
+    return out
+
+
+def _citation_pinned(d: Dataset, R: dict) -> dict:
+    """The citation "always-100%" bug, as numbers. Fraction of citation subscores
+    pinned at 100 on the primary venue (frontier `full` and `full_mini`), plus the
+    citation dimension's reject/accept AUROC on the frontier cohort (≈0.5, i.e.
+    chance) pulled from the already-computed subscore block. In this frozen
+    offline config the audit pass had no live retrieval, so citation defaulted
+    high and carries no scoring signal."""
+    prim = d.submissions[(d.submissions["venue"] == PRIMARY_VENUE[0]) & (d.submissions["year"] == PRIMARY_VENUE[1])]
+    prim_ids = set(prim["submission_id"])
+    # run 0 only: the original single-run study cohort. The variance sub-study's
+    # re-runs (run_index>=1) have a working audit and would dilute the cohort's
+    # pinned rate; the bug statistic is about the cohort that was actually graded.
+    g = d.gradings[(d.gradings["submission_id"].isin(prim_ids)) & (d.gradings["run_index"] == 0)]
+
+    def pinned(cfg: str) -> float:
+        gc = g[(g["config"] == cfg) & g["citation"].notna()]
+        return float((gc["citation"] >= 100).mean()) if len(gc) else float("nan")
+
+    return {
+        "full_pinned_100": pinned(PRODUCTION_CONFIG),
+        "mini_pinned_100": pinned(PRIMARY_CONFIG),
+        "full_citation_auroc": R[PRODUCTION_CONFIG]["subscore_auroc"]["citation"]["point"],
+    }
+
+
+def _citation_sensitivity(mini, full) -> dict:
+    """Robustness: recompute the overall WITHOUT citation in the weighting and
+    re-measure discrimination, on both cohorts. Because citation is pinned (no
+    signal) and lightly weighted (0.5/11.5), dropping it should leave the headline
+    AUROC essentially unchanged — so the validity result does not depend on the
+    broken dimension."""
+    out: dict = {}
+    w_no_cit = {dd: SCORE_WEIGHTS[dd] for dd in DIMENSIONS if dd != "citation"}
+    for tag, df in (("mini", mini), ("full", full)):
+        y = df["accept_bool"].values
+        s = _weighted_overall(df, w_no_cit)
+        out[tag] = {
+            "auroc_with": auroc_ci(y, df["overall"].values).as_dict(),
+            "auroc_drop_citation": auroc_ci(y, s).as_dict(),
+            "rho_vs_deployed": float(spearman(s, df["overall"].values)),
+        }
     return out
 
 
@@ -328,6 +409,125 @@ def _length_confound(mini) -> dict:
             if len(m) > 10:
                 out[col] = spearman_ci(m[col].values.astype(float), m["overall"].values).as_dict()
     return out
+
+
+# Dimensions surfaced on the interactive hover. Citation is deliberately omitted:
+# in the graded cohort it is uninformative (pinned at the max, AUROC ~0.5; see the
+# paper's results/discussion), so showing it would mislead rather than inform.
+WEB_SUBSCORES = ("novelty", "rigor", "applicability", "clarity")
+
+
+def _num(v) -> float | None:
+    """NaN-safe float for JSON (NaN is not valid JSON). Returns None for missing or
+    NaN values — e.g. the naive judge emits only an overall, so its per-dimension
+    subscores are absent."""
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return None
+    return None if f != f else round(f, 1)
+
+
+def _subscores(r, suffix: str = "") -> dict:
+    """The four informative dimension scores for one row, NaN -> None."""
+    return {dim: _num(r.get(f"{dim}{suffix}")) for dim in WEB_SUBSCORES}
+
+
+def _safe(x) -> float | None:
+    """NaN/inf -> None so the emitted JSON is valid for a browser's JSON.parse
+    (Python json writes bare `NaN`, which JS rejects). Used only for points.json,
+    the web bundle — results.json keeps NaN for the analysis/paper side."""
+    try:
+        xf = float(x)
+    except (TypeError, ValueError):
+        return None
+    return xf if np.isfinite(xf) else None
+
+
+def _web_stats(R: dict) -> dict:
+    """Compact, JS-safe headline numbers for the interactive page's callouts —
+    parallel to the paper's macros but as JSON (NaN -> null). One source of truth:
+    the same `R` the paper reads, so the page and the PDF never drift."""
+    fu, mi = R[PRODUCTION_CONFIG], R[PRIMARY_CONFIG]
+    nb = R.get("naive_baseline", {})
+    cp = R.get("citation_pinned", {})
+    cs = R.get("citation_sensitivity", {}).get("full", {})
+    rel = nb.get("reliability", {})
+    return {
+        "n_validation": R["sample"]["n_mini"],
+        "n_full": R["sample"]["n_full"],
+        "auroc_full": _safe(fu["auroc"]["point"]),
+        "auroc_mini": _safe(mi["auroc"]["point"]),
+        "auroc_naive": _safe(nb.get("auroc_naive", {}).get("point")),
+        "auroc_diff": {k: _safe(v) for k, v in nb.get("auroc_diff", {}).items()},
+        "spearman_rating_full": _safe(fu["spearman_rating"]["point"]),
+        "bottom_reject_rate": _safe(R["bottom_band"]["reject_rate"]),
+        "bottom_reject_rate_frontier": _safe(R["bottom_band_full"]["reject_rate"]),
+        "bottom_lift": _safe(R["bottom_band"]["lift"]),
+        "bridge_rho": _safe(R["bridge"]["spearman"]["point"]),
+        "citation_pinned_full": _safe(cp.get("full_pinned_100")),
+        "citation_pinned_mini": _safe(cp.get("mini_pinned_100")),
+        "citation_auroc": _safe(cp.get("full_citation_auroc")),
+        "auroc_drop_citation_full": _safe(cs.get("auroc_drop_citation", {}).get("point")),
+        "run_sd_full": _safe(rel.get("full_median_sd")),
+        "run_sd_naive": _safe(rel.get("naive_median_sd")),
+        "run_sd_n_papers": R["run_variance_full"]["n_variance_papers"],
+    }
+
+
+def _points(d: Dataset, R: dict) -> dict:
+    """Per-point data for the INTERACTIVE web figures (not the static paper). Each
+    point carries its four informative subscores (novelty/rigor/applicability/
+    clarity; `WEB_SUBSCORES`) so the hover shows the dimension breakdown behind the
+    overall. Released only via the frontend bundle, never the paper. Bundles a
+    JS-safe `stats` block (NaN -> null) so the page needs only this one file."""
+    mini = _primary(d.config_frame(PRIMARY_CONFIG))
+    full = _primary(d.config_frame(PRODUCTION_CONFIG))
+    naive = _primary(d.config_frame("naive"))
+    naive = naive[naive["submission_id"].isin(set(full["submission_id"]))]
+
+    def rows(df) -> list:
+        out = []
+        for _, r in df.iterrows():
+            out.append({
+                "submission_id": r["submission_id"],
+                "overall": float(r["overall"]),
+                "mean_reviewer_rating": float(r["mean_reviewer_rating"]),
+                "decision_tier": r["decision_tier"],
+                "tier_rank": int(r["tier_rank"]),
+                "accept_bool": int(r["accept_bool"]),
+                **_subscores(r),
+            })
+        return out
+
+    paired = _primary_pair(d)
+    bridge = []
+    for _, r in paired.iterrows():
+        bridge.append({
+            "submission_id": r["submission_id"],
+            "overall_mini": float(r[f"overall_{PRIMARY_CONFIG}"]),
+            "overall_full": float(r[f"overall_{PRODUCTION_CONFIG}"]),
+            # frontier (full) subscores for the hover
+            **_subscores(r, suffix=f"_{PRODUCTION_CONFIG}"),
+        })
+
+    # Per-paper within-paper score SD over repeated runs (runs 1..N-1; min_run=1
+    # excludes the run-0 citation artifact, matching run_variance_full). Drives the
+    # reliability plot: AIPR clustered near zero, the naive judge spread wide.
+    def _run_sds(cfg: str) -> list:
+        rv = d.run_variance(cfg, min_run=1)
+        rv = rv[rv["n_runs"] > 1]
+        return [round(float(x), 2) for x in rv["run_sd"].dropna()]
+
+    return {
+        "venue": f"{PRIMARY_VENUE[0]} {PRIMARY_VENUE[1]}",
+        "stats": _web_stats(R),
+        "validation": rows(mini),  # fig_validation (full-mini, n=300)
+        "full": rows(full),        # frontier cohort
+        "naive": rows(naive),      # naive judge — overall only, no subscores (null)
+        "bridge": bridge,          # fig_bridge (paired mini<->full; frontier subscores)
+        "variance": {"full": _run_sds(PRODUCTION_CONFIG), "naive": _run_sds("naive")},
+    }
 
 
 def _cost_by_config(d: Dataset) -> dict:
@@ -400,6 +600,15 @@ def write_macros(R: dict) -> None:
     cmd("topAcceptRate", _pct(tb["accept_rate"]))
     cmd("topOralRate", _pct(tb["oral_rate"]))
 
+    # H1 on the production (frontier) cohort directly — the deployable number that
+    # does not route through the cheap-model proxy (Frontier suffix; "Full" is
+    # already taken by the CI-text convention above).
+    bbf = R["bottom_band_full"]
+    cmd("bottomRejectRateFrontier", _pct(bbf["reject_rate"]))
+    cmd("bottomRejectCIFrontier", f"[{_pct(bbf['reject_ci'][0])}, {_pct(bbf['reject_ci'][1])}]")
+    cmd("bottomLiftFrontier", f"{bbf['lift']:.2f}")
+    cmd("bottomOralRateFrontier", _pct(bbf["oral_rate"]))
+
     ci_macro("bridgeRho", R["bridge"]["spearman"])
     cmd("bridgeN", str(R["bridge"]["n"]))
 
@@ -443,6 +652,15 @@ def write_macros(R: dict) -> None:
         cmd("naiveN", str(nb["n"]))
         ci_macro("aurocNaive", nb["auroc_naive"])
         cmd("aurocFullVsNaive", f"{nb['auroc_full']['point'] - nb['auroc_naive']['point']:.2f}")
+        # Paired AUROC difference (full - naive) with CI + two-sided bootstrap p.
+        # The parity test: CI straddles 0 / p not significant => scoring parity,
+        # which is the "intelligence is not the bottleneck" result.
+        ad = nb["auroc_diff"]
+        cmd("aurocDiffFullNaive", f"{ad['delta']:.2f}")
+        cmd("aurocDiffCI", f"[{ad['lo']:.2f}, {ad['hi']:.2f}]")
+        pd = ad["p"]
+        cmd("aurocDiffP", ("<0.001" if pd < 1e-3 else f"{pd:.2f}"))
+        cmd("aurocDiffPrel", ("p<0.001" if pd < 1e-3 else f"p={pd:.2f}"))
         op = nb["op_at60"]
         cmd("opSixtyFullAcc", _pct(op["full"]["balanced_accuracy"]))
         cmd("opSixtyNaiveAcc", _pct(op["naive"]["balanced_accuracy"]))
@@ -468,6 +686,18 @@ def write_macros(R: dict) -> None:
         cmd("costFullVsMini", f"{cost['full']['total'] / cost['full_mini']['total']:.1f}")
 
     cmd("runSDmedian", f"{R['run_variance_full']['median_sd']:.1f}")
+    cmd("runSDnPapers", str(R["run_variance_full"]["n_variance_papers"]))
+
+    # Citation "always-100%" bug + the sensitivity that contains it.
+    cp = R.get("citation_pinned", {})
+    if cp:
+        cmd("citationPinnedFull", _pct(cp["full_pinned_100"]))
+        cmd("citationPinnedMini", _pct(cp["mini_pinned_100"]))
+        cmd("citationAUROC", f"{cp['full_citation_auroc']:.2f}")
+    cs = R.get("citation_sensitivity", {})
+    if cs:
+        cmd("aurocDropCitationMini", f"{cs['mini']['auroc_drop_citation']['point']:.2f}")
+        cmd("aurocDropCitationFull", f"{cs['full']['auroc_drop_citation']['point']:.2f}")
 
     if "replication" in R:
         ci_macro("aurocRep", R["replication"]["auroc"])
@@ -500,6 +730,13 @@ def main():
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     (RESULTS_DIR / "results.json").write_text(json.dumps(R, indent=2, default=float), encoding="utf-8")
     print(f"wrote {RESULTS_DIR / 'results.json'}")
+
+    # Per-point data for the interactive web figures (carries evaluation_id so
+    # each AIPR point links to its live review). Static-paper build ignores this.
+    (RESULTS_DIR / "points.json").write_text(
+        json.dumps(_points(d, R), indent=2, default=float), encoding="utf-8"
+    )
+    print(f"wrote {RESULTS_DIR / 'points.json'}")
 
     write_macros(R)
     tables.write_all(d, R)

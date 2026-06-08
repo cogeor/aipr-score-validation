@@ -33,23 +33,28 @@ reviewers assigned. Because this venue publishes \emph{rejected} submissions, th
 class our central claim concerns is fully observable.
 
 This paper asks two questions. The first is whether the score is \emph{valid}:
-does it recover the human outcome? Our claim here is narrow. The AIPR score (i)
+does it agree with the human outcome? Our claim here is narrow. The AIPR score (i)
 flags weak submissions, in that papers it scores low are rejected at far above the
 base rate, and (ii) shows strong, not merely significant, agreement with human
 review outcomes across both the discrete decision tiers and the continuous reviewer
-rating. We do \emph{not} claim it predicts acceptance, ranks strong papers, or
+rating. We do \emph{not} claim it predicts the acceptance decision, ranks strong papers, or
 substitutes for a reviewer. The bound follows the empirical ``reliable at the
 bottom, noisy at the top'' structure of human review itself, and it is the use a
 deployment can support.
 
-The second question is whether that validity is \emph{earned by the system}. A
-frontier model is available to anyone; the case for building AIPR rests on the
-structured pipeline---a scored rubric, a grounded citation audit, and a two-pass
-read---producing a better signal than the same model asked the obvious way. We
-test this directly against a generic one-paragraph prompt on the identical model
-and PDF, and find the pipeline both discriminates better and grades far more
-consistently. This pre-registered comparison, not the headline correlation, is
-what distinguishes an engineered instrument from a chat transcript.
+The second question is what the \emph{system} adds over the model it runs on, and
+its answer is the paper's central result. A frontier model is available to anyone,
+so we test AIPR against a generic one-paragraph prompt on the identical model and
+PDF. The bare prompt, with no rubric and no audit, already separates rejected from
+accepted submissions on its own, and the full pipeline discriminates no better: the
+two are at parity. The lesson is about the model, not the pipeline---\emph{with or
+without our prompt, a frontier model is already intelligent enough to produce a
+trustworthy first-pass reviewing signal, so intelligence is not the bottleneck}, and
+the reviewer keeps the decision. What the engineered pipeline---a scored rubric, a
+grounded citation audit, and a two-pass read---adds is therefore not validity but
+\emph{deployability}: a score that is reliable across repeated runs and arrives with
+a grounded, anchored review, produced in a single pass. This pre-registered
+comparison, not the headline correlation, is what the study turns on.
 
 Three practices set the study's standard of evidence. First, we pre-registered the
 hypotheses, the primary metric, and the low-score threshold before any score was
@@ -59,7 +64,11 @@ the data by a single script, with no figure or statistic transcribed by hand, so
 the analysis is reproducible end to end from the released table. Third, we report
 the score's failure modes (\S\ref{sec:failure}): the rejected papers it rated
 highly and the unconventional accepted papers it underrated, with the human
-reviews that explain each.
+reviews that explain each. Together---a design frozen and pre-registered before
+unblinding, an analysis any reader can re-run from the released table, and an
+openly catalogued set of failure modes---these are the discipline that lets a
+single author's validation of a proprietary instrument be checked rather than
+trusted.
 
 \paragraph{Contributions.}
 \begin{enumerate}\itemsep2pt
@@ -71,16 +80,22 @@ reviews that explain each.
   consistently flagged (lowest score quintile rejected at \bottomRejectRate\%, a
   \bottomLift$\times$ lift), distinguished from the stronger claims it is often
   conflated with.
-  \item A pre-registered demonstration that the engineered pipeline---not the base
-  model---produces the signal: against a generic one-paragraph prompt on the same
-  model and PDF, the full pipeline discriminates better (AUROC \aurocFullFull{}
-  vs.\ \aurocNaiveFull{}) and grades far more consistently (within-paper SD
-  \fullRunSD{} vs.\ \naiveRunSD{} points).
+  \item A pre-registered comparison showing that the validity comes from the model,
+  not the pipeline: a bare one-paragraph prompt on the same model and PDF already
+  separates rejected from accepted submissions (AUROC \aurocNaiveFull) and the full
+  pipeline does no better (paired $\Delta$AUROC \aurocDiffFullNaive, \aurocDiffPrel),
+  so a frontier model is already intelligent enough to review competently with or
+  without our prompt---intelligence is not the bottleneck. What the pipeline adds is
+  consistency (within-paper SD \fullRunSD{} vs.\ \naiveRunSD{} points) and a
+  grounded, anchored review in the same pass.
   \item A cost design in which the full pipeline on a cheap model establishes the
   relationship at scale and a frontier-model cohort confirms it, with the
   mini-to-frontier agreement measured ($\rho =$~\bridgeRhoFull), not assumed.
-  \item A catalogue of the score's failure modes, aligned to the human reviews,
-  as a guide to the conditions under which automated scoring is reliable.
+  \item An analysis of the score's two error classes and their asymmetric
+  consequences for a triage use---a false negative at the top of the range is the
+  costly case and is quantified directly, while a false positive costs only a
+  second human look---with matched, verbatim human-review case studies for each
+  pattern (\S\ref{sec:failure}).
 \end{enumerate}
 
 \begin{figure}[t]
@@ -92,6 +107,7 @@ reviews that explain each.
   under two strictly nested configurations ($H\subseteq M$: full-mini / full,
   differing only in the reviewer model) plus the naive one-paragraph baseline (V1);
   the resulting scores are validated against the ground truth (H1--H5). No model is
-  tuned on the venue, decisions, or ratings.}
+  tuned on the venue, decisions, or ratings. An interactive version of this figure
+  is available at \url{https://aipr.app/publications\#fig-design}.}
   \label{fig:design}
 \end{figure}
