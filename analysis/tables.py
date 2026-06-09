@@ -357,6 +357,36 @@ def table_naive_baseline(d, R):
     _w("tab_naive_baseline.tex", body)
 
 
+def table_population_boundary(d, R):
+    """The sample/population boundary: the in-population eligible set (and the
+    graded sample drawn from it) beside the eligible-but-excluded ledger, broken
+    down by exclusion reason. Evidences the DECISIONS.md §4 "every eligible
+    submission is accounted for, never silently dropped" contract. Self-skips when
+    the export carries no ledger."""
+    pbd = R.get("population_boundary", {})
+    if not pbd:
+        return
+    reason_label = {"withdrawn": "Withdrawn before review",
+                    "desk_rejected": "Desk-rejected"}
+    rows = []
+    for row in pbd["by_reason"]:
+        label = reason_label.get(row["reason"], row["reason"].replace("_", "\\_"))
+        rows.append(rf"\quad {label} & {row['n']} & {100 * row['share']:.1f}\% \\")
+    body = (
+        "\\begin{tabular}{lrr}\n\\toprule\n"
+        "Disposition & Submissions & Share of excluded \\\\\n\\midrule\n"
+        + rf"In-population (eligible, not excluded) & {pbd['n_in_population']} & --- \\" + "\n"
+        + rf"\quad of which graded (cohort M sample) & {pbd['n_graded']} & --- \\" + "\n"
+        + "\\midrule\n"
+        + rf"\textbf{{Eligible-but-excluded}} & \textbf{{{pbd['n_excluded']}}} & \textbf{{100.0\%}} \\" + "\n"
+        + "\n".join(rows) + "\n"
+        + "\\midrule\n"
+        + rf"\textbf{{Total eligibility-screened}} & \textbf{{{pbd['n_eligible']}}} & --- \\" + "\n"
+        "\\bottomrule\n\\end{tabular}\n"
+    )
+    _w("tab_population_boundary.tex", body)
+
+
 def write_all(d, R):
     table_sample(d, R)
     table_headline(d, R)
@@ -372,4 +402,5 @@ def write_all(d, R):
     table_area_subgroup(d, R)
     table_cost(d, R)
     table_naive_baseline(d, R)
+    table_population_boundary(d, R)
     print(f"wrote tables -> {TAB_DIR}")

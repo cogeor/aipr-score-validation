@@ -502,6 +502,48 @@ def area_subgroup_audit(frame, min_n: int = 8) -> list[dict]:
     return rows
 
 
+def population_boundary(in_pop_df, out_of_pop_df, *, n_graded: int | None = None) -> dict:
+    """Account for every eligible submission: in-population vs.\\ excluded.
+
+    Evidences the DECISIONS.md §4 contract that no eligible submission is silently
+    dropped — each one is either IN-POPULATION (passed eligibility, eligible to be
+    graded) or in the eligible-but-excluded ledger with a stated reason.
+
+    ``in_pop_df`` is the in-population ``submissions`` frame (one row per eligible
+    submission; in the released export the analysis grades a stratified SAMPLE of
+    these, not all of them). ``out_of_pop_df`` is the covariate-free exclusion
+    ledger from :func:`schema.load_out_of_population` (or ``None`` when the export
+    carries no ledger, in which case an empty dict is returned so callers
+    self-skip). ``n_graded`` is the size of the graded cohort actually scored
+    (e.g. cohort M, n=300); when ``None`` it falls back to ``len(in_pop_df)``.
+
+    Returns ``n_in_population`` (eligible, not excluded), ``n_graded`` (the scored
+    sample drawn from them), ``n_excluded`` (ledger rows), ``n_eligible``
+    (in-population + excluded — every eligibility-screened submission accounted
+    for), and ``by_reason``: a list of ``{reason, n, share}`` rows over the
+    distinct ``exclude_reason`` values, sorted by descending count (``share`` is
+    the reason's fraction of the excluded set). No covariates are read: the ledger
+    carries none, by design (see the limitations note on why a covariate-level
+    sampled-vs-eligible comparison is not possible).
+    """
+    if out_of_pop_df is None or not len(out_of_pop_df):
+        return {}
+    n_in = int(len(in_pop_df))
+    n_excl = int(len(out_of_pop_df))
+    counts = out_of_pop_df["exclude_reason"].astype(str).value_counts()
+    by_reason = [
+        {"reason": str(r), "n": int(c), "share": (float(c) / n_excl if n_excl else 0.0)}
+        for r, c in counts.items()
+    ]
+    return {
+        "n_in_population": n_in,
+        "n_graded": int(n_graded) if n_graded is not None else n_in,
+        "n_excluded": n_excl,
+        "n_eligible": n_in + n_excl,
+        "by_reason": by_reason,
+    }
+
+
 # ----------------------------------------------------------------------------
 # Effect sizes for the two-group (reject vs accept) contrast
 # ----------------------------------------------------------------------------

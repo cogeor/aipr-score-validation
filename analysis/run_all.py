@@ -32,7 +32,7 @@ from common import (
     RESULTS_DIR,
     SCORE_WEIGHTS,
 )
-from schema import Dataset, base_reject_rate, load_dataset
+from schema import Dataset, base_reject_rate, load_dataset, load_out_of_population
 from stats import (
     area_subgroup_audit,
     auroc,
@@ -49,6 +49,7 @@ from stats import (
     low_band_spearman,
     low_score_harm,
     paired_auroc_diff,
+    population_boundary,
     prevalence_reweighted_bottom_precision,
     quantile_membership_overlap,
     score_band_table,
@@ -102,6 +103,16 @@ def compute(d: Dataset) -> dict:
             "subscore_auroc": {dim: auroc_ci(y, df[dim].values).as_dict() for dim in DIMENSIONS},
         }
         return out
+
+    # ---- population boundary: every eligible submission accounted for ------
+    # The in-population eligible set (d.submissions) and the graded sample drawn
+    # from it (cohort M, n_mini) vs. the eligible-but-excluded ledger
+    # (covariate-free counts + reasons), evidencing the DECISIONS.md §4
+    # "never silently dropped" contract. Self-skips (empty dict) when the export
+    # carries no ledger (e.g. the synthetic dataset).
+    R["population_boundary"] = population_boundary(
+        d.submissions, load_out_of_population(d.name), n_graded=int(len(mini))
+    )
 
     R[PRIMARY_CONFIG] = block(mini, "mini")
     R[PRODUCTION_CONFIG] = block(full, "full")
@@ -812,6 +823,26 @@ def write_macros(R: dict) -> None:
     if cs:
         cmd("aurocDropCitationMini", f"{cs['mini']['auroc_drop_citation']['point']:.2f}")
         cmd("aurocDropCitationFull", f"{cs['full']['auroc_drop_citation']['point']:.2f}")
+
+    # Population boundary: every eligible submission accounted for (graded vs.
+    # eligible-but-excluded ledger). Total excluded, the eligible total, and the
+    # top-two exclusion reasons by count + share. Self-skips with no ledger.
+    pbd = R.get("population_boundary", {})
+    if pbd:
+        cmd("NinPopulation", str(pbd["n_in_population"]))
+        cmd("NgradedSample", str(pbd["n_graded"]))
+        cmd("Nexcluded", str(pbd["n_excluded"]))
+        cmd("Neligible", str(pbd["n_eligible"]))
+        # Top reasons by count -> named macros for the appendix prose. The label
+        # is title-cased and underscores stripped so the emitted name is a clean
+        # LaTeX identifier (e.g. desk_rejected -> Desk Rejected -> DeskRejected).
+        for i, row in enumerate(pbd["by_reason"][:2]):
+            slug = row["reason"].replace("_", " ").title().replace(" ", "")
+            ordn = ("One", "Two")[i]
+            cmd(f"exclTop{ordn}Reason", row["reason"].replace("_", "\\_"))
+            cmd(f"exclTop{ordn}Count", str(row["n"]))
+            cmd(f"exclTop{ordn}Share", _pct(row["share"]))
+            cmd(f"excl{slug}Count", str(row["n"]))
 
     if "replication" in R:
         ci_macro("aurocRep", R["replication"]["auroc"])

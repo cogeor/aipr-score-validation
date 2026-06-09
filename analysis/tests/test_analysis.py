@@ -451,6 +451,39 @@ def test_area_subgroup_audit_pools_small_and_covers_all():
         assert (r["auroc"] != r["auroc"]) or (0.0 <= r["auroc"] <= 1.0)
 
 
+def test_population_boundary_counts_sum_and_nonneg():
+    import pandas as pd
+
+    in_pop = pd.DataFrame({"submission_id": [f"s{i}" for i in range(30)]})
+    out_of_pop = pd.DataFrame(
+        {
+            "submission_id": [f"x{i}" for i in range(12)],
+            "exclude_reason": ["withdrawn"] * 8 + ["desk_rejected"] * 4,
+        }
+    )
+    pbd = stats.population_boundary(in_pop, out_of_pop, n_graded=10)
+    assert pbd["n_in_population"] == 30
+    assert pbd["n_excluded"] == 12
+    # the graded sample is drawn from (and never exceeds) the in-population set
+    assert pbd["n_graded"] == 10
+    assert pbd["n_graded"] <= pbd["n_in_population"]
+    # eligible = in-population + excluded, every eligible submission accounted for
+    assert pbd["n_eligible"] == pbd["n_in_population"] + pbd["n_excluded"]
+    # n_graded defaults to the in-population size when not supplied
+    assert stats.population_boundary(in_pop, out_of_pop)["n_graded"] == 30
+    # per-reason breakdown sums back to the excluded total and is non-negative
+    assert sum(r["n"] for r in pbd["by_reason"]) == pbd["n_excluded"]
+    assert all(r["n"] >= 0 for r in pbd["by_reason"])
+    assert all(0.0 <= r["share"] <= 1.0 for r in pbd["by_reason"])
+    assert abs(sum(r["share"] for r in pbd["by_reason"]) - 1.0) < 1e-9
+    # sorted by descending count; reasons are distinct
+    counts = [r["n"] for r in pbd["by_reason"]]
+    assert counts == sorted(counts, reverse=True)
+    assert len({r["reason"] for r in pbd["by_reason"]}) == len(pbd["by_reason"])
+    # absent ledger -> empty dict so downstream consumers self-skip
+    assert stats.population_boundary(in_pop, None) == {}
+
+
 def test_benjamini_hochberg_known_case():
     out = stats.benjamini_hochberg({"a": 0.001, "b": 0.04, "c": 0.5, "d": 0.9}, alpha=0.05)
     assert out["a"]["significant"]

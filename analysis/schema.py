@@ -253,6 +253,37 @@ def load_dataset(name: str) -> Dataset:
     return Dataset(name=name, is_synthetic=is_synth, submissions=subs, gradings=grad)
 
 
+# Columns the out-of-population (eligible-but-excluded) ledger carries. This is a
+# COUNTS-AND-REASONS ledger, deliberately covariate-free: it accounts for every
+# eligible submission that did NOT enter the graded cohort, so it cannot be run
+# through the strict graded `validate()` contract (no decision_tier, no scores, no
+# manuscript covariates). It evidences the DECISIONS.md §4 "every eligible
+# submission is accounted for, never silently dropped" claim — nothing more.
+OUT_OF_POP_COLS = ("submission_id", "venue", "year", "decision_raw", "exclude_reason", "title")
+
+
+def load_out_of_population(name: str) -> pd.DataFrame | None:
+    """Load the eligible-but-excluded ledger for dataset ``name``, or ``None``.
+
+    Returns ``None`` when the export carries no ledger (e.g. the synthetic
+    dataset) so every downstream consumer self-skips the population-boundary
+    table rather than failing. The frame is read as-is and NOT run through the
+    graded `validate()` contract: it has no scores, tiers, or covariates, only
+    the per-submission exclusion reason. Required columns are checked with a
+    clear error so a malformed real ledger fails loudly.
+    """
+    path = DATA_DIR / name / "submissions_out_of_population.csv"
+    if not path.exists():
+        return None
+    df = pd.read_csv(path)
+    miss = [c for c in OUT_OF_POP_COLS if c not in df.columns]
+    assert not miss, f"submissions_out_of_population.csv missing required columns: {miss}"
+    assert (
+        df["exclude_reason"].fillna("").astype(str).str.len() > 0
+    ).all(), "out-of-population row missing exclude_reason"
+    return df
+
+
 def base_reject_rate(subs: pd.DataFrame) -> float:
     keep = subs[subs["excluded"] == 0]
     return float((keep["accept_bool"] == 0).mean())

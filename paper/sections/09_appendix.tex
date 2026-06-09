@@ -416,6 +416,45 @@ the budgeted frontier cohort.
   \label{fig:cost}
 \end{figure}
 
+\paragraph{Population boundary: every eligible submission accounted for.} The
+pre-registered exclusions (\S\ref{sec:data}; DECISIONS.md~\S4) commit to a
+ledger in which every eligibility-screened submission is either in-population
+(eligible to be graded) or excluded with a stated reason, never silently
+dropped. We report that ledger here (Table~\ref{tab:popboundary}):
+\NinPopulation{} submissions are in-population (passed eligibility), from which
+the stratified graded cohort M ($n=\NgradedSample$) is sampled, and \Nexcluded{}
+screened-out submissions are excluded before any primary metric, for \Neligible{}
+eligibility-screened submissions in total. The excluded set is dominated by
+submissions with no reviewer signal to validate against: \exclTopOneCount{}
+(\exclTopOneShare\% of the excluded set) are \exclTopOneReason{} and
+\exclTopTwoCount{} (\exclTopTwoShare\%) are \exclTopTwoReason{}. This ledger
+reports counts and reasons only: the excluded submissions are accounted for by
+disposition, but the manuscript covariates used in the confound checks above were
+not extracted for ungraded submissions, so a covariate-level comparison of the
+sampled cohort to the full eligible population is not available
+(\S\ref{sec:limits}).
+
+\begin{table}[h]
+  \centering
+  \caption{Population boundary: the in-population eligible set (and the graded
+  cohort M sampled from it) beside the eligible-but-excluded ledger, broken down
+  by exclusion reason. Every eligibility-screened submission is accounted for by
+  disposition (DECISIONS.md~\S4); the ledger carries counts and reasons only, not
+  manuscript covariates.}
+  \label{tab:popboundary}
+  \input{tables/tab_population_boundary}
+\end{table}
+
+\paragraph{Per-review rating sensitivities (available on request).} The released
+two-CSV contract carries the \emph{mean} reviewer rating per submission, not the
+individual per-review ratings. Sensitivities that require the per-review
+distribution---a human-review reliability ceiling (inter-reviewer agreement as an
+upper bound on any score--rating correlation) and alternate rating aggregations
+(median or trimmed mean in place of the mean)---are therefore not computed here.
+We flag them as future work rather than report them: synthesizing per-review
+ratings to populate these checks would be a fabrication, so they await a release
+that includes the per-review ratings and are available on request.
+
 \section{Naive-judge baseline (V1): full detail}
 \label{app:naive}
 This appendix is the detailed companion to the value comparison of
