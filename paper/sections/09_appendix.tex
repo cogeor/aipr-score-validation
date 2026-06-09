@@ -356,6 +356,8 @@ count, and figure count on the full-mini cohort (Table~\ref{tab:lengthconfound})
 rank correlations are weak ($\rho=\lenRhoPage$ with page count,
 $\rho=\lenRhoWord$ with word count, $\rho=\lenRhoRefs$ with reference count), so
 the discrimination is not explained by manuscript length.
+Figure~\ref{fig:covariate} shows the word-count relationship directly: the tiers
+overlap across the length axis rather than sorting along it.
 
 \begin{table}[h]
   \centering
@@ -364,6 +366,17 @@ the discrimination is not explained by manuscript length.
   \label{tab:lengthconfound}
   \input{tables/tab_length_confound}
 \end{table}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.62\columnwidth]{figS_covariate}
+  \caption{AIPR overall score against manuscript length (full-mini cohort),
+  coloured by the human decision tier. If the score rewarded length it would climb
+  with word count; instead the rank correlation is weak ($\rho=\lenRhoWord$) and the
+  decision tiers overlap across the length axis. Support check, not a headline
+  result.}
+  \label{fig:covariate}
+\end{figure}
 
 \paragraph{Covariate-control discrimination (descriptive).} A reviewer asked
 whether the score-outcome relationship is merely a proxy for manuscript surface

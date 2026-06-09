@@ -590,6 +590,36 @@ def fig_cost(d, R):
     _save(fig, "figS_cost", d.is_synthetic)
 
 
+def fig_covariate(d, R):
+    """Supp: AIPR overall vs manuscript length (full-mini cohort), coloured by the
+    human decision tier. The reviewer-facing answer to ``is the score just rewarding
+    long, polished papers?'': a length proxy would trend up and to the right, but the
+    rank correlation is weak. Plot twin of Table~\\ref{tab:lengthconfound} — the
+    annotated Spearman rho + 95\\% CI is that table's word-count row, read from the
+    same R['length_confound'] so figure and table never drift. Self-skips when the
+    export carries no manuscript-length covariate."""
+    wc = R.get("length_confound", {}).get("word_count")
+    if wc is None:
+        return
+    df = _primary(d.config_frame(PRIMARY_CONFIG))
+    df = df[df["word_count"].notna()]
+    if len(df) < 10:
+        return
+    x = df["word_count"].values.astype(float) / 1000.0  # thousands of words
+    y = df["overall"].values
+    fig, ax = plt.subplots(figsize=(COL_WIDTH, 2.6))
+    cols = [TIER_COLORS[t] for t in df["decision_tier"]]
+    ax.scatter(x, y, s=12, alpha=0.6, c=cols, edgecolors="none")
+    ax.text(0.03, 0.97,
+            rf"Spearman $\rho={wc['point']:.2f}$ [{wc['lo']:.2f}, {wc['hi']:.2f}], $n={len(df)}$",
+            transform=ax.transAxes, va="top", ha="left", fontsize=7)
+    ax.legend(handles=[Patch(facecolor=TIER_COLORS[t], label=TIER_LABELS[t]) for t in TIER_ORDER],
+              fontsize=6.5, loc="lower right", handletextpad=0.3, borderpad=0.3)
+    ax.set_xlabel("Manuscript length (thousand words)")
+    ax.set_ylabel("AIPR overall score")
+    _save(fig, "figS_covariate", d.is_synthetic)
+
+
 def fig_dummy_layout(d, R):
     """A pure formatting probe: a 2x2 grid mirroring the planned main layout, so
     column widths/margins are verifiable before real figures exist."""
@@ -628,5 +658,6 @@ def render_all(d, R):
     fig_contamination(d, R)
     fig_weight_robustness(d, R)
     fig_cost(d, R)
+    fig_covariate(d, R)
     # fig_dummy_layout: a pre-figure layout probe; not part of the paper.
     print(f"rendered figures -> {FIG_DIR}")
