@@ -575,12 +575,20 @@ def _points(d: Dataset, R: dict) -> dict:
         return out
 
     paired = _primary_pair(d)
+    # Human decision tier + mean reviewer rating, joined back for the bridge figure:
+    # colour by the 3 tiers and a hover vignette mirroring the validation figure
+    # (paired_frame keeps only scores, so look these up from the submission table).
+    tier_by = d.submissions.set_index("submission_id")["decision_tier"].to_dict()
+    rating_by = d.submissions.set_index("submission_id")["mean_reviewer_rating"].to_dict()
     bridge = []
     for _, r in paired.iterrows():
+        sid = r["submission_id"]
         bridge.append({
-            "submission_id": r["submission_id"],
+            "submission_id": sid,
             "overall_mini": float(r[f"overall_{PRIMARY_CONFIG}"]),
             "overall_full": float(r[f"overall_{PRODUCTION_CONFIG}"]),
+            "decision_tier": tier_by[sid],
+            "mean_reviewer_rating": float(rating_by[sid]),
             # frontier (full) subscores for the hover
             **_subscores(r, suffix=f"_{PRODUCTION_CONFIG}"),
         })
