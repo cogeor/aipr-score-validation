@@ -602,9 +602,13 @@ def _points(d: Dataset, R: dict) -> dict:
     TIER_PAIRS = [("reject", "poster"), ("poster", "oral"), ("reject", "oral")]
 
     def _roc(df) -> dict:
-        fpr, tpr = roc_points(df["accept_bool"].values, df["overall"].values)
+        y, s = df["accept_bool"].values, df["overall"].values
+        fpr, tpr = roc_points(y, s)
+        a = auroc_ci(y, s).as_dict()
         return {
-            "auc": round(float(auroc(df["accept_bool"].values, df["overall"].values)), 3),
+            "auc": round(float(a["point"]), 3),
+            "auc_lo": round(float(a["lo"]), 3),
+            "auc_hi": round(float(a["hi"]), 3),
             "points": [{"fpr": round(float(f), 4), "tpr": round(float(t), 4)} for f, t in zip(fpr, tpr)],
         }
 
