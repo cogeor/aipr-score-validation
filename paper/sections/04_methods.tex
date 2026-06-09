@@ -18,7 +18,10 @@ as a fixed weighted mean of the five dimensions,
   \label{eq:overall}
 \end{equation}
 with novelty and applicability carrying the top weight and citation the least;
-the model does not emit the overall directly. We treat the system as a fixed
+the model does not emit the overall directly. Because the citation dimension is a
+lightly weighted, audit-derived signal, we report it separately from the main
+outcome-validity claim and test whether the headline survives dropping it entirely
+(\S\ref{sec:res-value}). We treat the system as a fixed
 black box: it was not tuned on the venue, the decisions, or the reviewer ratings,
 and no model in this study was trained or fine-tuned on the evaluation data. The
 weighting was frozen before this study from separate internal calibration and was

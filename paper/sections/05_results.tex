@@ -187,9 +187,10 @@ signal, consistent with the weighting of Eq.~\ref{eq:overall}. The citation
 dimension carries none: it is pinned at the maximum on \citationPinnedFull\% of
 frontier papers (\citationPinnedMini\% on full-mini) and its reject/accept AUROC is
 \citationAUROC{} (chance). This is a scoring artifact rather than a property of the
-manuscripts---an empty audit result is recorded as a perfect bibliography---which
-we diagnose in \S\ref{sec:discussion} and treat as a limitation in
-\S\ref{sec:limits}.
+manuscripts: in the original study run, an empty audit result was recorded as a
+perfect bibliography. We therefore do not interpret the citation subscore as
+validated in this cohort; we diagnose the failure in \S\ref{sec:discussion} and
+treat it as a limitation in \S\ref{sec:limits}.
 Because citation is the most lightly weighted dimension, the headline is unchanged
 when it is dropped from the weighting entirely (AUROC \aurocDropCitationFull{}
 vs.\ \aurocFull{} on the frontier cohort; Appendix~\ref{app:robust}). Whether the
