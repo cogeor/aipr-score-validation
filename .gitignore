@@ -38,3 +38,5 @@ paper/*.fdb_latexmk
 paper/pass*.log
 paper/bibtex.log
 paper/main.pdf
+paper/main-anon.pdf
+paper/ANONYMOUS.flag

@@ -29,6 +29,15 @@
 \IfFileExists{macros/secondary_macros.tex}{\input{macros/secondary_macros.tex}}{}
 \input{macros.tex} % \providecommand defaults; fills any gap so the doc always builds
 
+% --- anonymized variant toggle ---------------------------------------------
+% The three named cohort exemplars (Sec.~5.1, Sec.~6, the case-study appendix) are
+% swapped for outcome-only descriptions when paper/ANONYMOUS.flag is present, for
+% an editor-facing blind variant. Default (flag absent) is the named build. Drive
+% it with `cli.py paper --anon`, which writes the flag, builds main-anon.pdf, and
+% removes the flag.
+\newif\ifanonymous\anonymousfalse
+\IfFileExists{ANONYMOUS.flag}{\anonymoustrue}{}
+
 \title{\textbf{Intelligence Is Not the Bottleneck:\\
 Results from the AIPR Study}}
 

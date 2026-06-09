@@ -162,9 +162,10 @@ decision labels permuted, the overall-score AUROC is $\approx 0.5$.
   \caption{Overall-score distribution across the three ordered decision tiers, the
   AIPR frontier pipeline vs.\ the naive one-paragraph judge (cohort $H$), as
   jittered points with a per-tier median bar. Brackets give pairwise two-sided
-  Mann--Whitney $p$-values. Both graders separate the tiers, AIPR at least as
-  cleanly: this is the discrimination parity of the overlaid ROC
-  (Fig.~\ref{fig:naive}a) seen as per-tier distributions. The three-grader ROC
+  Mann--Whitney $p$-values. Both graders separate the tiers; this is the same
+  strong-naive-baseline result as the overlaid ROC (Fig.~\ref{fig:naive}a), seen
+  as per-tier distributions. The paired AUROC difference is not statistically
+  resolved, so this figure should not be read as an equivalence result. The three-grader ROC
   curves themselves, with AUROC and 95\% CIs, are the main-text
   Fig.~\ref{fig:naive}a.}
   \label{fig:score-dist}
@@ -512,13 +513,13 @@ pre-registered exclusions (\S\ref{sec:data}; DECISIONS.md~\S4) commit to a
 ledger in which every eligibility-screened submission is either in-population
 (eligible to be graded) or excluded with a stated reason, never silently
 dropped. We report that ledger here (Table~\ref{tab:popboundary}):
-\NinPopulation{} submissions are in-population (passed eligibility), from which
-the stratified graded cohort M ($n=\NgradedSample$) is sampled, and \Nexcluded{}
-screened-out submissions are excluded before any primary metric, for \Neligible{}
+13{,}718 submissions are in-population (passed eligibility), from which
+the stratified graded cohort M ($n=300$) is sampled, and 6{,}096
+screened-out submissions are excluded before any primary metric, for 19{,}814
 eligibility-screened submissions in total. The excluded set is dominated by
-submissions with no reviewer signal to validate against: \exclTopOneCount{}
-(\exclTopOneShare\% of the excluded set) are \exclTopOneReason{} and
-\exclTopTwoCount{} (\exclTopTwoShare\%) are \exclTopTwoReason{}. This ledger
+submissions with no reviewer signal to validate against: 5{,}188
+(85.1\% of the excluded set) are withdrawn before review and
+908 (14.9\%) are desk-rejected. This ledger
 reports counts and reasons only: the excluded submissions are accounted for by
 disposition, but the manuscript covariates used in the confound checks above were
 not extracted for ungraded submissions, so a covariate-level comparison of the
@@ -571,10 +572,12 @@ discrimination (AUROC), accept/reject agreement at the pre-registered AIPR@60
 operating point (predict accept iff overall $\ge 60$), and run-to-run reliability
 (median within-paper SD over repeated runs). To be sure the comparison is not an
 artifact of forcing the baseline onto AIPR's cutoff, we also score each method at
-its own threshold matched to the human accept rate. On discrimination the two are
-at parity---AUROC \aurocFullFull{} against \aurocNaiveFull{}, a paired difference
-that is not statistically significant (\aurocDiffFullNaive, 95\% CI \aurocDiffCI,
-\aurocDiffPrel). The fixed AIPR@60 cutoff is a pre-registered diagnostic rather than
+its own threshold matched to the human accept rate. On discrimination the AIPR
+pipeline is higher but the paired difference is not statistically significant
+(\aurocFullFull{} against \aurocNaiveFull{}; $\Delta$AUROC
+\aurocDiffFullNaive, 95\% CI \aurocDiffCI, \aurocDiffPrel). This is not an
+equivalence test; the paired cohort cannot rule out a small AIPR advantage or a
+small naive advantage over an already strong baseline. The fixed AIPR@60 cutoff is a pre-registered diagnostic rather than
 evidence of decision parity: the production score is compressed high and anchored
 near the venue bar, so a 60 threshold predicts almost every paper accept and is not
 venue-calibrated (\opSixtyFullAcc\% against \opSixtyNaiveAcc\% balanced accuracy for
@@ -599,12 +602,13 @@ directly---not a higher score.
 \label{app:cases}
 Table~\ref{tab:casestudy} gives the matched examples behind \S\ref{sec:failure}:
 AIPR's verbatim weakness beside a verbatim excerpt from the human reviews of the
-\emph{same} frontier-cohort submission. Most rows are described by outcome and
-AIPR overall rather than named, as a courtesy to their authors; the three
-exemplars named in the main text (\S\ref{sec:results}, \S\ref{sec:failure}) are
-public ICLR~2026 submissions, cited there for concreteness. The review excerpts
-are trimmed for length with ellipses; the untrimmed text lives in the unreleased
-study artifact. The top block is correctly-flagged rejects; the lower two
+\emph{same} frontier-cohort submission. \ifanonymous Submissions are described by
+outcome and AIPR overall rather than named, as a courtesy to their authors.\else
+Most rows are described by outcome and AIPR overall rather than named, as a
+courtesy to their authors; the three exemplars named in the main text
+(\S\ref{sec:results}, \S\ref{sec:failure}) are public ICLR~2026 submissions, cited
+there for concreteness.\fi{} The review excerpts are trimmed for length with
+ellipses; the untrimmed text lives in the unreleased study artifact. The top block is correctly-flagged rejects; the lower two
 are the error classes.
 
 \begin{table}[h]
