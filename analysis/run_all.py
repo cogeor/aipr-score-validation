@@ -661,6 +661,32 @@ def _points(d: Dataset, R: dict) -> dict:
     ]
     rel = R.get("naive_baseline", {}).get("reliability", {})
 
+    # ---- covariate bundle: AIPR overall vs non-identifying manuscript-surface
+    # variables (the interactive twin of fig_covariate / the length-confound check),
+    # so the page can offer an x-axis selector answering "is the score just rewarding
+    # long or figure-heavy papers?". Manuscript covariates (word/page/token/figure
+    # counts) come from the submissions merge on the full-mini cohort; `review_tokens`
+    # is the grading run's OUTPUT length — a system-produced variable, deliberately
+    # kept distinct from the manuscript covariates (not a confound control). NaN->null;
+    # n_references is omitted (populated for too few papers to plot honestly).
+    out_tok: dict = {}
+    if "output_tokens" in d.gradings.columns:
+        g0 = d.gradings[(d.gradings["config"] == PRIMARY_CONFIG) & (d.gradings["run_index"] == 0)]
+        out_tok = {r["submission_id"]: r["output_tokens"] for _, r in g0.iterrows()}
+    covariates = [
+        {
+            "submission_id": r["submission_id"],
+            "overall": float(r["overall"]),
+            "decision_tier": r["decision_tier"],
+            "word_count": _num(r.get("word_count")),
+            "page_count": _num(r.get("page_count")),
+            "token_count": _num(r.get("token_count")),
+            "n_figures": _num(r.get("n_figures")),
+            "review_tokens": _num(out_tok.get(r["submission_id"])),
+        }
+        for _, r in mini.iterrows()
+    ]
+
     return {
         "venue": f"{PRIMARY_VENUE[0]} {PRIMARY_VENUE[1]}",
         "stats": _web_stats(R),
@@ -669,6 +695,7 @@ def _points(d: Dataset, R: dict) -> dict:
         "naive": rows(naive),      # naive judge — overall only, no subscores (null)
         "bridge": bridge,          # fig_bridge (paired mini<->full; frontier subscores)
         "discrimination": discrimination,  # ROC curves (full vs naive) + tier significance
+        "covariates": covariates,  # fig_covariate twin (score vs manuscript surface + review length)
         "variance": {
             "papers": variance_papers,
             "median_sd_full": _safe(rel.get("full_median_sd")),
