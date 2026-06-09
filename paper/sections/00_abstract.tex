@@ -21,8 +21,10 @@ production model directly (\bottomRejectRate\% at scale on a cheap-model cohort,
 absent from that band. Our central finding is about the model, not the pipeline. A
 generic one-paragraph prompt on the same frontier model and PDF---no rubric, no
 audit---already separates rejected from accepted submissions on its own
-(AUROC~\aurocNaiveFull), and the full pipeline discriminates no better (paired
-$\Delta$AUROC \aurocDiffFullNaive, 95\% CI \aurocDiffCI, \aurocDiffPrel).
+(AUROC~\aurocNaiveFull). The full pipeline is higher by
+$\Delta$AUROC \aurocDiffFullNaive{} (95\% CI \aurocDiffCI, \aurocDiffPrel), but this
+planned comparison is not statistically resolved; the study was not powered to
+rule in or rule out such a small difference over an already strong naive baseline.
 \emph{Within this ICLR cohort, with or without our prompt, a frontier model already
 produces a first-pass reviewing signal that agrees substantially with human
 outcomes}: \emph{intelligence is not the observed bottleneck}, and the human keeps

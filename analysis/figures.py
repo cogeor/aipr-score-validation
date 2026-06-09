@@ -197,13 +197,14 @@ def _pbracket(p) -> str:
 
 
 def fig_naive_baseline(d, R):
-    """F3 (the "why us" result, parity-first), restructured to lead with
+    """F3 (the "why us" result), restructured to lead with
     discrimination. Left (a): the three graders' reject-vs-accept ROC curves
     overlaid — frontier, full-mini, and the naive one-paragraph judge — each
     clearing the diagonal, with AUROC + 95\\% CI in the legend and the
     frontier-vs-naive paired AUROC difference (stratified bootstrap, CI straddling
-    zero) annotated. Scoring parity shows the model is already capable; the
-    engineering is not buying raw discrimination. Right (b, the engineering
+    zero) annotated. The bare prompt is already a strong baseline — its AUROC is
+    not statistically separable from AIPR's here — so the engineering is not buying
+    raw discrimination. Right (b, the engineering
     payoff): one dot per variance-sub-study paper at its within-paper run-to-run SD,
     frontier vs naive, coloured by the human tier with a median bar — AIPR grades
     far more consistently. Mirrors the interactive page's ROC + reliability
@@ -216,7 +217,7 @@ def fig_naive_baseline(d, R):
     h_ids = set(full["submission_id"])
     fig, (axl, axr) = plt.subplots(1, 2, figsize=(TEXT_WIDTH, 2.9))
 
-    # (a) discrimination parity: all three graders' ROC overlaid (reject vs accept).
+    # (a) discrimination: all three graders' ROC overlaid (reject vs accept).
     # The naive curve is on cohort H (where it is graded); full-mini carries the
     # large-N curve. AUROC scalars come straight from the computed CIs so the legend
     # and Table~\ref{tab:headline} never drift.
@@ -280,9 +281,9 @@ def fig_score_dist(d, R):
     """Supp (the interactive twin of the page's NaiveFigure): overall-score
     distribution across the three ordered decision tiers, AIPR frontier vs the naive
     judge, as jittered points with a per-tier median bar and pairwise Mann--Whitney
-    p-values. The discrimination-parity result of Fig.~\\ref{fig:naive}a seen as
-    per-tier distributions — both graders separate the tiers, AIPR at least as
-    cleanly. Self-skips when the export carries no naive gradings."""
+    p-values. The discrimination result of Fig.~\\ref{fig:naive}a seen as
+    per-tier distributions — both graders separate the tiers. Self-skips when the
+    export carries no naive gradings."""
     nb = R.get("naive_baseline", {})
     if not nb:
         return

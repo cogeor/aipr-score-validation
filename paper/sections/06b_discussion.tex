@@ -4,10 +4,12 @@
 \paragraph{Intelligence is not the bottleneck.}
 The load-bearing result is that a bare one-paragraph prompt on the frontier model
 already separates rejected from accepted submissions on its own (AUROC
-\aurocNaiveFull; \S\ref{sec:res-value}), and the full pipeline does no better. The
-scoring parity, read on its face as a negative result for the pipeline, points to
-a different bottleneck: with or without our prompt, the model already produces an
-outcome-aligned first-pass score in this setting---raw judgment is not what this
+\aurocNaiveFull; \S\ref{sec:res-value}). The full pipeline's AUROC is higher, but
+the planned paired comparison is not statistically resolved
+($\Delta$AUROC \aurocDiffFullNaive, 95\% CI \aurocDiffCI, \aurocDiffPrel), so the
+study does not prove either superiority or equivalence. Read that way, the result
+points to a different bottleneck: with or without our prompt, the model already
+produces an outcome-aligned first-pass score in this setting---raw judgment is not what this
 deployment is shortest of; stability, grounding, and accountable presentation are. The open problem is
 not building a model that \emph{can} judge, but turning that capability into an
 instrument a reviewer can rely on: one
@@ -15,7 +17,7 @@ that returns the same verdict on the same paper across runs, grounds its claims 
 evidence rather than generating them, and surfaces an anchored, rubric-structured
 review instead of a bare number. That is an engineering problem, and it is the one
 AIPR addresses. Framed this way the contribution shifts from ``can an LLM produce an outcome-aligned
-quality signal in this setting?''---which our parity result answers yes---to
+quality signal in this setting?''---which the strong naive baseline answers yes---to
 ``can a system deliver that signal \emph{reliably and accountably} at deployment?'',
 which is what the reliability gap (Fig.~\ref{fig:naive}b) and the grounded review
 speak to. The implication for the field is that effort is better spent on the

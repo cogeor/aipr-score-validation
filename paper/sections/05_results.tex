@@ -173,7 +173,7 @@ number the prompt returns; that review, not the scalar, is what a reviewer acts
 on. The scoring rule does several things at once without trading away
 discrimination: the validated overall is a by-product of the pass that yields the
 review, and the threshold-free AUROC and run-to-run reliability above are where the
-parity and the value live. The pre-registered AIPR@60 operating point is a
+discrimination and the value live. The pre-registered AIPR@60 operating point is a
 fixed-cutoff diagnostic, not the deployment claim: because the production score is
 compressed high and anchored near the venue bar (\S\ref{sec:discussion}), a fixed 60
 threshold predicts almost every paper accept and is not venue-calibrated
@@ -192,13 +192,14 @@ building it does not rest on out-scoring that model.
 \begin{figure}[t]
   \centering
   \includegraphics[width=\textwidth]{fig_naive}
-  \caption{\textbf{Scoring parity, and what the engineering adds}, on the same
+  \caption{\textbf{A strong naive baseline, and what the engineering adds}, on the same
   frontier model and submitted PDF (cohort $H$; pre-registered comparison V1).
   \textbf{(a)} Reject-vs-accept ROC for all three graders overlaid---frontier,
   full-mini, and the naive one-paragraph judge---each clearing the diagonal; the
   legend gives AUROC with 95\% CIs and the frontier$-$naive paired AUROC difference
-  (stratified bootstrap, $n=\naiveN$) is annotated, its CI straddling zero. AIPR
-  separates accepts from rejects at least as well as the bare prompt, not better.
+  (stratified bootstrap, $n=\naiveN$) is annotated, its CI straddling zero. AIPR's
+  AUROC is higher, but the paired gap is not statistically resolved---neither
+  superiority nor equivalence is established here.
   \textbf{(b)} Within-paper score SD over repeated runs---one dot per
   variance-sub-study paper, coloured by its human decision tier, with a median
   bar---AIPR grades far more consistently. A capable model already scores

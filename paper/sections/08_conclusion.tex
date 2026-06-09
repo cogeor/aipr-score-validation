@@ -14,8 +14,11 @@ model proxies the frontier score well enough to establish the relationship at
 scale. The study's central result is about the model rather than the pipeline. A generic
 one-paragraph prompt on the same model and PDF already separates rejected from
 accepted submissions (AUROC~\aurocNaive), and the structured rubric-and-audit
-pipeline discriminates no better (the paired difference is not statistically
-significant): with or without our prompt, a frontier model already produces a
+pipeline's observed AUROC is higher but not statistically resolved
+($\Delta$AUROC \aurocDiffFullNaive, 95\% CI \aurocDiffCI, \aurocDiffPrel). This
+does not prove equal performance; it shows that the naive baseline is already
+strong and that this paired cohort was not powered to resolve a small difference.
+With or without our prompt, a frontier model already produces a
 first-pass reviewing signal that substantially tracks human outcomes in this cohort,
 so raw model intelligence is not the observed bottleneck, and the reviewer keeps the
 decision. What the engineered pipeline
