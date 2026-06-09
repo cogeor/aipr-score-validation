@@ -23,7 +23,12 @@ from dataclasses import asdict, dataclass
 
 import numpy as np
 from scipy import stats
+from sklearn.compose import ColumnTransformer
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score, roc_curve
+from sklearn.model_selection import StratifiedKFold, cross_val_score
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 from common import GLOBAL_SEED, TIER_RANK
 
@@ -243,6 +248,91 @@ def spearman(x: np.ndarray, y: np.ndarray) -> float:
 
 def spearman_ci(x, y, **kw) -> Estimate:
     return bootstrap_ci(spearman, np.asarray(x, float), np.asarray(y, float), **kw)
+
+
+# ----------------------------------------------------------------------------
+# Descriptive supplementary checks (reviewer-requested, NOT confirmatory):
+#   1. covariate-control CV AUROC — does the score-outcome relationship survive
+#      conditioning on manuscript-surface + area covariates?
+#   2. within-tier score<->rating Spearman — is the score a fine ranking of
+#      strong papers, or a low-end triage signal?
+# ----------------------------------------------------------------------------
+_COVARIATE_NUMERIC = ("page_count", "word_count", "n_references", "n_figures", "rating_std", "n_reviews")
+_COVARIATE_CATEGORICAL = ("primary_area",)
+
+
+def covariate_control_auc(frame, score_col: str = "overall") -> dict:
+    """Cross-validated AUROC of a logistic model that adds manuscript-surface and
+    area covariates to the AIPR score, reported against a score-only CV AUROC.
+
+    Model: ``accept_bool ~ score + primary_area + page_count + word_count +
+    n_references + n_figures + rating_std + n_reviews``. Numerics are
+    standard-scaled and ``primary_area`` is one-hot encoded
+    (``handle_unknown="ignore"``) inside a single ``Pipeline`` so the fold-fit
+    transforms never leak across folds. AUROC is the mean of a stratified 5-fold
+    ``cross_val_score`` (``shuffle=True, random_state=GLOBAL_SEED``); the
+    score-only baseline reuses the SAME CV protocol with ``score`` as the only
+    feature (so the two AUROCs are comparable under one estimator and one split,
+    NOT the paper's headline point-AUROC). Descriptive/exploratory: this is a
+    confound audit, not a replacement for the pre-registered AUROC.
+
+    Self-restricts to the covariate columns actually present and the rows with no
+    missing covariate; returns ``n`` = rows used.
+    """
+    y = np.asarray(frame["accept_bool"].values).astype(int)
+    num_cols = [c for c in _COVARIATE_NUMERIC if c in frame.columns and frame[c].notna().any()]
+    cat_cols = [c for c in _COVARIATE_CATEGORICAL if c in frame.columns and frame[c].notna().any()]
+    use_cols = [score_col, *num_cols, *cat_cols]
+    sub = frame[[*use_cols, "accept_bool"]].dropna(subset=use_cols).reset_index(drop=True)
+    y = sub["accept_bool"].values.astype(int)
+    n = int(len(sub))
+    cv = StratifiedKFold(5, shuffle=True, random_state=GLOBAL_SEED)
+
+    def _cv_auc(feature_cols: list[str]) -> float:
+        x = sub[feature_cols]
+        num = [c for c in feature_cols if c in (score_col, *num_cols)]
+        cat = [c for c in feature_cols if c in cat_cols]
+        transformers = [("num", StandardScaler(), num)]
+        if cat:
+            transformers.append(("cat", OneHotEncoder(handle_unknown="ignore"), cat))
+        pipe = Pipeline(
+            [
+                ("pre", ColumnTransformer(transformers)),
+                ("clf", LogisticRegression(max_iter=1000)),
+            ]
+        )
+        return float(cross_val_score(pipe, x, y, cv=cv, scoring="roc_auc").mean())
+
+    return {
+        "cv_auc_covariate": _cv_auc([score_col, *num_cols, *cat_cols]),
+        "cv_auc_score_only": _cv_auc([score_col]),
+        "n": n,
+    }
+
+
+def within_tier_spearman(frame) -> dict:
+    """Spearman of the AIPR ``overall`` against ``mean_reviewer_rating`` WITHIN each
+    decision subgroup: reject-only, poster-only, oral-only, and accepted-only
+    (poster + oral). Supports the bounded claim — the score is a low-end triage
+    signal, not a fine ranking of strong papers, so the within-accepted
+    correlation is expected to be weak. Subgroups with ``n < 3`` report
+    ``rho = nan`` (rendered ``"--"`` downstream).
+    """
+    tr = np.asarray(frame["tier_rank"].values).astype(int)
+    overall = np.asarray(frame["overall"].values, float)
+    rating = np.asarray(frame["mean_reviewer_rating"].values, float)
+    masks = {
+        "reject": tr == TIER_RANK["reject"],
+        "poster": tr == TIER_RANK["poster"],
+        "oral": tr == TIER_RANK["oral"],
+        "accepted": tr >= TIER_RANK["poster"],
+    }
+    out: dict = {}
+    for name, mask in masks.items():
+        n = int(mask.sum())
+        rho = spearman(overall[mask], rating[mask]) if n >= 3 else float("nan")
+        out[name] = {"rho": float(rho), "n": n}
+    return out
 
 
 # ----------------------------------------------------------------------------

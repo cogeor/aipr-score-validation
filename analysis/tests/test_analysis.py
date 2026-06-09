@@ -308,6 +308,78 @@ def test_prevalence_reweight_matches_balanced_at_equal_prevalence():
 
 
 # --------------------------------------------------------------------------- BH
+def _synthetic_covariate_frame(n: int = 200, seed: int = 20260601):
+    """Seeded synthetic frame carrying the columns the two descriptive checks read:
+    an AIPR ``overall`` that genuinely predicts ``accept_bool``, plus area + the
+    manuscript-surface covariates and the reviewer rating / tier columns."""
+    import pandas as pd
+
+    rng = np.random.default_rng(seed)
+    q = rng.normal(0, 1, n)  # latent quality
+    overall = 60 + 12 * q + rng.normal(0, 4, n)
+    accept = (q + rng.normal(0, 0.5, n) > 0).astype(int)
+    rating = 5 + 1.5 * q + rng.normal(0, 1, n)
+    tier_rank = np.where(accept == 0, 0, rng.integers(1, 3, n))  # reject=0, poster=1, oral=2
+    return pd.DataFrame(
+        {
+            "accept_bool": accept,
+            "overall": overall,
+            "mean_reviewer_rating": rating,
+            "tier_rank": tier_rank,
+            "primary_area": rng.choice(["A", "B", "C"], n),
+            "page_count": rng.integers(8, 12, n),
+            "word_count": rng.integers(6000, 12000, n),
+            "n_references": rng.integers(20, 60, n),
+            "n_figures": rng.integers(2, 8, n),
+            "rating_std": np.abs(rng.normal(1.0, 0.3, n)),
+            "n_reviews": rng.integers(3, 6, n),
+        }
+    )
+
+
+def test_covariate_control_auc_finite_and_bounded():
+    frame = _synthetic_covariate_frame()
+    out = stats.covariate_control_auc(frame)
+    for k in ("cv_auc_covariate", "cv_auc_score_only"):
+        assert np.isfinite(out[k])
+        assert 0.0 <= out[k] <= 1.0
+    assert out["n"] == len(frame)
+    # determinism: same seed/protocol -> identical AUROCs
+    out2 = stats.covariate_control_auc(frame)
+    assert out["cv_auc_covariate"] == out2["cv_auc_covariate"]
+    # a score that genuinely predicts the outcome discriminates above chance
+    assert out["cv_auc_score_only"] > 0.5
+
+
+def test_within_tier_spearman_bounded():
+    frame = _synthetic_covariate_frame()
+    out = stats.within_tier_spearman(frame)
+    assert set(out) == {"reject", "poster", "oral", "accepted"}
+    for sub in out.values():
+        assert sub["n"] >= 0
+        rho = sub["rho"]
+        assert (rho != rho) or (-1.0 <= rho <= 1.0)  # nan or in [-1, 1]
+
+
+def test_within_tier_spearman_guards_tiny_subgroup():
+    import pandas as pd
+
+    # one oral, two posters, rest reject -> oral subgroup has n<3 -> rho nan
+    n = 20
+    tier_rank = np.array([2, 1, 1] + [0] * (n - 3))
+    accept = (tier_rank >= 1).astype(int)
+    frame = pd.DataFrame(
+        {
+            "accept_bool": accept,
+            "overall": np.arange(n, dtype=float),
+            "mean_reviewer_rating": np.arange(n, dtype=float),
+            "tier_rank": tier_rank,
+        }
+    )
+    out = stats.within_tier_spearman(frame)
+    assert out["oral"]["n"] == 1 and np.isnan(out["oral"]["rho"])
+
+
 def test_benjamini_hochberg_known_case():
     out = stats.benjamini_hochberg({"a": 0.001, "b": 0.04, "c": 0.5, "d": 0.9}, alpha=0.05)
     assert out["a"]["significant"]

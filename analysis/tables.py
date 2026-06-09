@@ -177,6 +177,55 @@ def table_length_confound(d, R):
     _w("tab_length_confound.tex", body)
 
 
+def table_covariate_control(d, R):
+    """Descriptive (NOT confirmatory) covariate-control CV AUROC: score-only vs
+    score+covariates (manuscript surface + primary area) under one stratified
+    5-fold protocol, both cohorts. Shows the score-outcome relationship is not
+    explained away by the covariate set."""
+    cc = R.get("covariate_control", {})
+    if not cc:
+        return
+    rows = []
+    for key, label in (("mini", "Full-mini"), ("full", "Frontier")):
+        if key in cc:
+            c = cc[key]
+            rows.append(
+                rf"{label} & {c['cv_auc_score_only']:.2f} & {c['cv_auc_covariate']:.2f} & {c['n']} \\"
+            )
+    body = (
+        "\\begin{tabular}{lccc}\n\\toprule\n"
+        "Cohort & Score-only AUROC & $+$covariates AUROC & $n$ \\\\\n\\midrule\n"
+        + "\n".join(rows)
+        + "\n\\bottomrule\n\\end{tabular}\n"
+    )
+    _w("tab_covariate_control.tex", body)
+
+
+def table_within_tier(d, R):
+    """Descriptive within-subgroup Spearman of the AIPR overall against the mean
+    reviewer rating (full-mini cohort). Reject/poster/oral and accepted (poster +
+    oral); the within-accepted correlation is expected weak (the score is a
+    low-end triage signal, not a fine ranking of strong papers)."""
+    wt = R.get("within_tier_rho", {})
+    if not wt:
+        return
+    label = {"reject": "Reject", "poster": "Poster", "oral": "Oral",
+             "accepted": "Accepted (poster $+$ oral)"}
+    rows = []
+    for key in ("reject", "poster", "oral", "accepted"):
+        if key in wt:
+            rho = wt[key]["rho"]
+            cell = "---" if rho != rho else f"{rho:.2f}"
+            rows.append(rf"{label[key]} & {wt[key]['n']} & {cell} \\")
+    body = (
+        "\\begin{tabular}{lcc}\n\\toprule\n"
+        "Subgroup & $n$ & Spearman $\\rho$ (overall vs.\\ rating) \\\\\n\\midrule\n"
+        + "\n".join(rows)
+        + "\n\\bottomrule\n\\end{tabular}\n"
+    )
+    _w("tab_within_tier.tex", body)
+
+
 def table_cost(d, R):
     """Mean tokens used per grading config (the cost-design numbers)."""
     cost = R.get("cost", {})
@@ -238,6 +287,8 @@ def write_all(d, R):
     table_contamination(d, R)
     table_weight_robustness(d, R)
     table_length_confound(d, R)
+    table_covariate_control(d, R)
+    table_within_tier(d, R)
     table_cost(d, R)
     table_naive_baseline(d, R)
     print(f"wrote tables -> {TAB_DIR}")

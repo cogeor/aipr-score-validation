@@ -41,6 +41,7 @@ from stats import (
     classify_at_threshold,
     cliffs_delta,
     cohens_d,
+    covariate_control_auc,
     jonckheere_trend,
     low_band_spearman,
     low_score_harm,
@@ -51,6 +52,7 @@ from stats import (
     spearman,
     spearman_ci,
     threshold_for_accept_rate,
+    within_tier_spearman,
 )
 
 _N_BANDS = int(round(1 / BAND_QUANTILE))  # 0.2 -> 5 (quintiles)
@@ -203,6 +205,14 @@ def compute(d: Dataset) -> dict:
 
     # ---- manuscript-length confounding: does AIPR just reward length? -----
     R["length_confound"] = _length_confound(mini)
+
+    # ---- reviewer-requested DESCRIPTIVE checks (not confirmatory) ----------
+    # (1) covariate-control CV AUROC on both cohorts: does the score-outcome
+    # relationship survive conditioning on manuscript-surface + area covariates?
+    # (2) within-tier score<->rating Spearman on full-mini: is the score a fine
+    # ranking of strong papers or a low-end triage signal? Both exploratory.
+    R["covariate_control"] = {"mini": covariate_control_auc(mini), "full": covariate_control_auc(full)}
+    R["within_tier_rho"] = within_tier_spearman(mini)
 
     # ---- grading cost: tokens used per config (the cost-design numbers) ----
     R["cost"] = _cost_by_config(d)
@@ -705,6 +715,24 @@ def write_macros(R: dict) -> None:
                       ("n_references", "lenRhoRefs"), ("n_figures", "lenRhoFigs")):
         if col in lc:
             ci_macro(name, lc[col])
+
+    # Reviewer-requested descriptive checks (NOT confirmatory): covariate-control
+    # CV AUROC (covariate vs score-only, both cohorts) and within-tier score<->
+    # rating Spearman. Point values, formatted like the aurocFull style.
+    cc = R.get("covariate_control", {})
+    if cc:
+        cmd("covAucMini", f"{cc['mini']['cv_auc_covariate']:.2f}")
+        cmd("scoreAucMini", f"{cc['mini']['cv_auc_score_only']:.2f}")
+        cmd("covAucFrontier", f"{cc['full']['cv_auc_covariate']:.2f}")
+        cmd("scoreAucFrontier", f"{cc['full']['cv_auc_score_only']:.2f}")
+        cmd("nCovMini", str(cc["mini"]["n"]))
+        cmd("nCovFrontier", str(cc["full"]["n"]))
+    wt = R.get("within_tier_rho", {})
+    for tier, name in (("reject", "rhoWithinReject"), ("poster", "rhoWithinPoster"),
+                       ("oral", "rhoWithinOral"), ("accepted", "rhoWithinAccepted")):
+        if tier in wt:
+            rho = wt[tier]["rho"]
+            cmd(name, ("--" if rho != rho else f"{rho:.2f}"))
 
     # Grading cost (tokens used per config; k = thousands).
     cost = R.get("cost", {})

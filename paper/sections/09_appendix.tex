@@ -273,6 +273,53 @@ the discrimination is not explained by manuscript length.
   \input{tables/tab_length_confound}
 \end{table}
 
+\paragraph{Covariate-control discrimination (descriptive).} A reviewer asked
+whether the score-outcome relationship is merely a proxy for manuscript surface
+features or subject area. We audit this descriptively---this is an exploratory
+confound check, not a replacement for the pre-registered AUROC, so we read it for
+direction rather than as a confirmatory test. We fit a logistic model of the
+accept outcome on the AIPR overall together with primary area and six
+manuscript-surface covariates (page, word, reference, and figure counts, rating
+SD, and review count), and compare its cross-validated AUROC against a score-only
+model under the same stratified five-fold protocol (Table~\ref{tab:covcontrol}).
+Adding the covariates does not collapse the discrimination---full-mini moves from
+\scoreAucMini{} (score only) to \covAucMini{} ($n=\nCovMini$) and the frontier
+cohort from \scoreAucFrontier{} to \covAucFrontier{} ($n=\nCovFrontier$)---so no
+single area or covariate set explains away the score-outcome relationship; the
+covariates carry incremental signal but the score is not a stand-in for them.
+
+\begin{table}[h]
+  \centering
+  \caption{Covariate-control cross-validated AUROC (descriptive): the AIPR
+  overall alone vs.\ the overall plus primary area and manuscript-surface
+  covariates, under one stratified five-fold protocol per cohort. Exploratory
+  confound audit, not a confirmatory replacement for the headline AUROC.}
+  \label{tab:covcontrol}
+  \input{tables/tab_covariate_control}
+\end{table}
+
+\paragraph{Within-tier score--rating agreement (descriptive).} The bounded claim
+is that the score is a low-end triage signal, not a fine ranking of strong
+papers. As a descriptive check we compute the Spearman correlation between the
+AIPR overall and the mean reviewer rating \emph{within} each decision subgroup on
+the full-mini cohort (Table~\ref{tab:withintier}). Within the reject tier the
+correlation is the strongest ($\rho=\rhoWithinReject$); within the accepted
+subgroup (poster $+$ oral) it is weaker ($\rho=\rhoWithinAccepted$, with
+$\rho=\rhoWithinPoster$ poster-only and $\rho=\rhoWithinOral$ oral-only).
+The within-accepted correlation is weaker, consistent with the bounded low-end
+claim---the score separates clearly weak work from the rest but does not finely
+rank papers that have already cleared the bar.
+
+\begin{table}[h]
+  \centering
+  \caption{Within-subgroup Spearman correlation of the AIPR overall with the mean
+  reviewer rating (full-mini cohort, descriptive). The within-accepted
+  correlation is weaker, consistent with a low-end triage signal rather than a
+  fine ranking of strong papers.}
+  \label{tab:withintier}
+  \input{tables/tab_within_tier}
+\end{table}
+
 \paragraph{Grading cost.} The cost design (\S\ref{sec:methods}) rests on the
 cheap-model full-mini configuration being far cheaper than the frontier full
 configuration. Mean tokens used per grading (Table~\ref{tab:cost},
