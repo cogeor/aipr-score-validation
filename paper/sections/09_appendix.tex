@@ -158,12 +158,16 @@ decision labels permuted, the overall-score AUROC is $\approx 0.5$.
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=0.7\columnwidth]{figS_roc}
-  \caption{ROC for reject-vs-accept discrimination, full-mini (headline) and frontier
-  (production) configurations; legends report AUROC with 95\% CIs (H2). The AUROC
-  scalars also appear in Table~\ref{tab:headline} and the deployable-end
-  discrimination is the reliability panel Fig.~\ref{fig:validation}b.}
-  \label{fig:roc}
+  \includegraphics[width=\textwidth]{figS_score_dist}
+  \caption{Overall-score distribution across the three ordered decision tiers, the
+  AIPR frontier pipeline vs.\ the naive one-paragraph judge (cohort $H$), as
+  jittered points with a per-tier median bar. Brackets give pairwise two-sided
+  Mann--Whitney $p$-values. Both graders separate the tiers, AIPR at least as
+  cleanly: this is the discrimination parity of the overlaid ROC
+  (Fig.~\ref{fig:naive}a) seen as per-tier distributions. The three-grader ROC
+  curves themselves, with AUROC and 95\% CIs, are the main-text
+  Fig.~\ref{fig:naive}a.}
+  \label{fig:score-dist}
 \end{figure}
 
 \begin{figure}[h]
@@ -273,7 +277,8 @@ full-mini bottom quintile also in the frontier bottom quintile
   \centering
   \includegraphics[width=\textwidth]{fig5_bridge}
   \caption{Mini-to-frontier bridge on the paired cohort $H$. Left: full-mini vs.\ full
-  overall score, dashed line identity (global agreement). Right: bottom-quintile
+  overall score, coloured by the human decision tier, dashed line identity (global
+  agreement). Right: bottom-quintile
   membership --- papers in both scores' bottom quintile vs.\ mini-only; dotted
   lines are the per-score quintile thresholds. The low-end recall and within-band
   $\rho$ show the proxy holds where the claim lives, not only globally (H5).

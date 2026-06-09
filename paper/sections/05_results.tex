@@ -63,7 +63,8 @@ precision is \natBottomPrecision\%.
   dashed line the base reject rate---low scores reliably mark rejected work (H1).
   \textbf{(c)} Overall score vs.\ mean reviewer rating, colored by tier, with a
   least-squares trend and Spearman $\rho$ (H4). The discrimination scalar (AUROC,
-  H2) is in Table~\ref{tab:headline}; the ROC curve is Fig.~\ref{fig:roc}.
+  H2) is in Table~\ref{tab:headline}; the ROC curves (all three graders overlaid)
+  are Fig.~\ref{fig:naive}a.
   An interactive version of this figure---each point reveals its per-dimension
   subscores on hover---is available at \url{https://aipr.app/publications\#fig-validation}.}
   \label{fig:validation}
@@ -72,7 +73,7 @@ precision is \natBottomPrecision\%.
 \paragraph{H2: reject/accept separation.}
 The overall score separates rejected from accepted submissions with
 AUROC~$=$~\aurocMiniFull on the full-mini cohort, confirmed at \aurocFullFull on the
-frontier cohort (Table~\ref{tab:headline}; ROC in Fig.~\ref{fig:roc}). The
+frontier cohort (Table~\ref{tab:headline}; ROC in Fig.~\ref{fig:naive}a). The
 standardized mean gap between accepted and rejected scores is large (Cohen's
 $d=\cohensDMini$, Cliff's $\delta=\cliffsDeltaMini$).
 
@@ -121,8 +122,10 @@ submissions on its own at AUROC \aurocNaiveFull{}---real discrimination against 
 human outcome from raw model judgment alone. The full pipeline reaches AUROC
 \aurocFullFull{} on the same papers, and the paired difference between them is small
 and not statistically significant (\aurocDiffFullNaive, 95\% CI \aurocDiffCI,
-\aurocDiffPrel; $n=\naiveN$); the score distributions split by the human outcome are
-at least as well separated for AIPR as for the naive judge (Fig.~\ref{fig:naive}a).
+\aurocDiffPrel; $n=\naiveN$): both graders' reject-vs-accept ROC curves clear the
+diagonal and overlap closely (Fig.~\ref{fig:naive}a), and the per-tier score
+distributions tell the same story (Appendix~\ref{app:robust},
+Fig.~\ref{fig:score-dist}).
 The score-outcome agreement is therefore not manufactured by the engineering:
 \emph{with or without our prompt, a frontier model already produces a first-pass
 score that substantially tracks the human outcome in this cohort---raw model
@@ -167,14 +170,18 @@ building it does not rest on out-scoring that model.
   \includegraphics[width=\textwidth]{fig_naive}
   \caption{\textbf{Scoring parity, and what the engineering adds}, on the same
   frontier model and submitted PDF (cohort $H$; pre-registered comparison V1).
-  \textbf{(a)} Overall-score distributions split by the human accept/reject
-  outcome for each grader; the paired AUROC difference is annotated and not
-  significant---AIPR separates the classes at least as well as the bare prompt,
-  not better. \textbf{(b)} Within-paper score SD over repeated runs---AIPR grades
-  far more consistently. A capable model already scores competently (a); the
-  engineered pipeline's contribution is reliability (b) and a grounded,
-  rubric-anchored review produced in the same pass. Each method's
-  matched-accept-rate operating point is in Appendix~\ref{app:naive}.
+  \textbf{(a)} Reject-vs-accept ROC for all three graders overlaid---frontier,
+  full-mini, and the naive one-paragraph judge---each clearing the diagonal; the
+  legend gives AUROC with 95\% CIs and the frontier$-$naive paired AUROC difference
+  (stratified bootstrap, $n=\naiveN$) is annotated, its CI straddling zero. AIPR
+  separates accepts from rejects at least as well as the bare prompt, not better.
+  \textbf{(b)} Within-paper score SD over repeated runs---one dot per
+  variance-sub-study paper, coloured by its human decision tier, with a median
+  bar---AIPR grades far more consistently. A capable model already scores
+  competently (a); the engineered pipeline's contribution is reliability (b) and a
+  grounded, rubric-anchored review produced in the same pass. The per-tier score
+  distributions behind (a) are Appendix~\ref{app:robust}, Fig.~\ref{fig:score-dist};
+  each method's matched-accept-rate operating point is Appendix~\ref{app:naive}.
   An interactive version of this figure is available at
   \url{https://aipr.app/publications\#fig-naive}.}
   \label{fig:naive}

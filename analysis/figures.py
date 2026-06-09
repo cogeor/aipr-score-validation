@@ -33,7 +33,7 @@ from common import (
     apply_style,
     watermark,
 )
-from stats import reliability_table, roc_points
+from stats import mwu_pvalue, reliability_table, roc_points
 
 _N_BANDS = int(round(1 / BAND_QUANTILE))
 
@@ -175,37 +175,114 @@ def fig_validation_panel(d, R):
     _save(fig, "fig_validation", d.is_synthetic)
 
 
-def fig_roc(d, R):
-    """Supp: ROC for reject-vs-accept, full-mini (headline) + full (production).
-    The AUROC scalars already appear in the headline table and the reliability
-    panel shows discrimination at the deployable end, so the curve is supplementary."""
-    fig, ax = plt.subplots(figsize=(COL_WIDTH, COL_WIDTH))
-    styles = {PRIMARY_CONFIG: "-", PRODUCTION_CONFIG: (0, (4, 1.5))}
-    for cfg in (PRIMARY_CONFIG, PRODUCTION_CONFIG):
-        df = _primary(d.config_frame(cfg))
-        fpr, tpr = roc_points(df["accept_bool"].values, df["overall"].values)
-        a = R[cfg]["auroc"]
-        ax.plot(fpr, tpr, color=CONFIG_COLORS[cfg], ls=styles[cfg], lw=1.6,
-                label=f"{CONFIG_LABELS[cfg]}: AUROC {a['point']:.2f} [{a['lo']:.2f}, {a['hi']:.2f}]")
-    ax.plot([0, 1], [0, 1], ":", color="grey", lw=0.8)
-    ax.set_xlabel("False positive rate (accepted scored low)")
-    ax.set_ylabel("True positive rate (accepted scored high)")
-    ax.legend(loc="lower right", fontsize=7.5)
-    ax.set_aspect("equal")
-    _save(fig, "figS_roc", d.is_synthetic)
+# Colours for the three-grader ROC overlay, matching the interactive page's
+# RocFigure (frontier / full-mini / naive). Naive is orange here: a ROC panel
+# carries no decision tiers, so there is no clash with the poster-tier colour.
+ROC_OVERLAY = (
+    (PRODUCTION_CONFIG, "Frontier", "#0072B2"),
+    (PRIMARY_CONFIG, "Full-mini", "#56B4E9"),
+    ("naive", "Naive judge", "#E69F00"),
+)
+
+
+def _pbracket(p) -> str:
+    """A relation-aware p fragment for a figure annotation: ``p<0.001``,
+    ``p=0.00N`` (3 sig figs below 0.01 so a small p never rounds to ``0.00``), or
+    ``p=0.NN`` — never ``n.s.`` (we always report the value and name the test)."""
+    if p is None or p != p:
+        return ""
+    if p < 1e-3:
+        return "p<0.001"
+    return f"p={p:.3f}" if p < 1e-2 else f"p={p:.2f}"
 
 
 def fig_naive_baseline(d, R):
-    """F3 (the "why us" result, parity-first): the structured AIPR pipeline vs a
-    generic one-paragraph LLM prompt on the same model + PDF. Left
-    (non-inferiority): overall-score distributions split by the human
-    accept/reject outcome, for each grader — AIPR separates accepts from rejects
-    at least as well as the naive judge, and the paired AUROC difference is not
-    significant. Scoring parity shows the model is already capable; the engineering
-    is not buying raw discrimination. Right (the engineering payoff): within-paper
-    run-SD distributions — AIPR grades far more consistently across repeated runs.
-    Pre-registered primary value comparison (V1); self-skips when the export
-    carries no naive gradings."""
+    """F3 (the "why us" result, parity-first), restructured to lead with
+    discrimination. Left (a): the three graders' reject-vs-accept ROC curves
+    overlaid — frontier, full-mini, and the naive one-paragraph judge — each
+    clearing the diagonal, with AUROC + 95\\% CI in the legend and the
+    frontier-vs-naive paired AUROC difference (stratified bootstrap, CI straddling
+    zero) annotated. Scoring parity shows the model is already capable; the
+    engineering is not buying raw discrimination. Right (b, the engineering
+    payoff): one dot per variance-sub-study paper at its within-paper run-to-run SD,
+    frontier vs naive, coloured by the human tier with a median bar — AIPR grades
+    far more consistently. Mirrors the interactive page's ROC + reliability
+    figures. Pre-registered primary value comparison (V1); self-skips when the
+    export carries no naive gradings."""
+    nb = R.get("naive_baseline", {})
+    if not nb:
+        return
+    full = _primary(d.config_frame(PRODUCTION_CONFIG))
+    h_ids = set(full["submission_id"])
+    fig, (axl, axr) = plt.subplots(1, 2, figsize=(TEXT_WIDTH, 2.9))
+
+    # (a) discrimination parity: all three graders' ROC overlaid (reject vs accept).
+    # The naive curve is on cohort H (where it is graded); full-mini carries the
+    # large-N curve. AUROC scalars come straight from the computed CIs so the legend
+    # and Table~\ref{tab:headline} never drift.
+    auroc_by = {
+        PRODUCTION_CONFIG: R[PRODUCTION_CONFIG]["auroc"],
+        PRIMARY_CONFIG: R[PRIMARY_CONFIG]["auroc"],
+        "naive": nb["auroc_naive"],
+    }
+    for cfg, label, color in ROC_OVERLAY:
+        df = _primary(d.config_frame(cfg))
+        if cfg == "naive":
+            df = df[df["submission_id"].isin(h_ids)]
+        fpr, tpr = roc_points(df["accept_bool"].values, df["overall"].values)
+        a = auroc_by[cfg]
+        axl.plot(fpr, tpr, color=color, lw=1.7,
+                 label=f"{label}: {a['point']:.2f} [{a['lo']:.2f}, {a['hi']:.2f}]")
+    axl.plot([0, 1], [0, 1], ":", color="grey", lw=0.8)
+    ad = nb["auroc_diff"]
+    axl.annotate(
+        rf"frontier$-$naive $\Delta$AUROC $={ad['delta']:.2f}$ "
+        rf"[{ad['lo']:.2f}, {ad['hi']:.2f}], {_pbracket(ad['p'])}"
+        "\n(paired stratified bootstrap)",
+        xy=(0.5, -0.30), xycoords="axes fraction", ha="center", va="top", fontsize=6.3)
+    axl.set_xlabel("False positive rate"); axl.set_ylabel("True positive rate")
+    axl.set_aspect("equal")
+    axl.legend(loc="lower right", fontsize=6.3, title="AUROC [95% CI]", title_fontsize=6.3)
+    axl.set_title("(a)", loc="left", fontsize=9, fontweight="bold")
+
+    # (b) reliability: one dot per variance paper = its within-paper SD over the
+    # consistent-config re-runs (min_run=1 drops the run-0 citation-pinned artifact),
+    # frontier vs naive, coloured by the human tier; median bar per grader.
+    rv_full = d.run_variance(PRODUCTION_CONFIG, min_run=1)
+    rv_full = rv_full[rv_full["submission_id"].isin(h_ids) & (rv_full["n_runs"] > 1)]
+    rv_naive = d.run_variance("naive", min_run=1)
+    rv_naive = rv_naive[rv_naive["submission_id"].isin(h_ids) & (rv_naive["n_runs"] > 1)]
+    tier_of = d.submissions.set_index("submission_id")["decision_tier"].to_dict()
+    rel = nb["reliability"]
+    for frame, x0, sd_key in ((rv_full, 1.0, "full_median_sd"), (rv_naive, 2.0, "naive_median_sd")):
+        rng = np.random.default_rng(int(x0))
+        xs = x0 + rng.uniform(-0.12, 0.12, len(frame))
+        cols = [TIER_COLORS[tier_of[sid]] for sid in frame["submission_id"]]
+        axr.scatter(xs, frame["run_sd"].values, s=26, c=cols, alpha=0.9,
+                    edgecolors="white", linewidths=0.4, zorder=2)
+        sd = rel.get(sd_key)
+        if sd is not None and not np.isnan(sd):
+            axr.hlines(sd, x0 - 0.28, x0 + 0.28, color="0.25", lw=1.6, zorder=3)
+            axr.annotate(f"med {sd:.1f}", xy=(x0 + 0.31, sd), fontsize=7, va="center",
+                         ha="left", color="0.25")
+    axr.set_xticks([1, 2])
+    axr.set_xticklabels([CONFIG_LABELS[PRODUCTION_CONFIG], CONFIG_LABELS["naive"]])
+    axr.set_ylabel("Within-paper SD (pts)")
+    axr.set_xlim(0.5, 2.7); axr.set_ylim(bottom=0)
+    axr.legend(handles=[Patch(facecolor=TIER_COLORS[t], label=TIER_LABELS[t]) for t in TIER_ORDER],
+               fontsize=6.3, loc="upper left", title="human tier", title_fontsize=6.3)
+    axr.set_title("(b)", loc="left", fontsize=9, fontweight="bold")
+    fig.tight_layout(w_pad=1.4)
+    _save(fig, "fig_naive", d.is_synthetic)
+
+
+def fig_score_dist(d, R):
+    """Supp (the interactive twin of the page's NaiveFigure): overall-score
+    distribution across the three ordered decision tiers, AIPR frontier vs the naive
+    judge, as jittered points with a per-tier median bar and pairwise Mann--Whitney
+    p-values. The discrimination-parity result of Fig.~\\ref{fig:naive}a seen as
+    per-tier distributions — both graders separate the tiers, AIPR at least as
+    cleanly. Self-skips when the export carries no naive gradings."""
     nb = R.get("naive_baseline", {})
     if not nb:
         return
@@ -213,49 +290,31 @@ def fig_naive_baseline(d, R):
     h_ids = set(full["submission_id"])
     naive = _primary(d.config_frame("naive"))
     naive = naive[naive["submission_id"].isin(h_ids)]
-    fig, (axl, axr) = plt.subplots(1, 2, figsize=(TEXT_WIDTH, 2.6))
-
-    # Left: non-inferiority. Overall-score distributions split by the human
-    # accept/reject label, one violin pair per grader. If AIPR's reject and accept
-    # clouds separate at least as much as the naive judge's, AIPR is no worse —
-    # even at marginal-AUROC parity. The paired AUROC difference (CI straddling 0)
-    # is annotated so the reader sees parity, not a manufactured win.
-    rej_c, acc_c = TIER_COLORS["reject"], CONFIG_COLORS[PRODUCTION_CONFIG]
-    groups = [(full, 0), (full, 1), (naive, 0), (naive, 1)]
-    positions = [1, 2, 4, 5]
-    data = [g["overall"].values[g["accept_bool"].values == lbl] for g, lbl in groups]
-    parts = axl.violinplot(data, positions=positions, showmedians=True, widths=0.85)
-    for i, body in enumerate(parts["bodies"]):
-        body.set_facecolor(rej_c if groups[i][1] == 0 else acc_c)
-        body.set_alpha(0.6)
-    for key in ("cmedians", "cbars", "cmins", "cmaxes"):
-        parts[key].set_color("0.3"); parts[key].set_linewidth(0.8)
-    axl.set_xticks([1.5, 4.5])
-    axl.set_xticklabels([CONFIG_LABELS[PRODUCTION_CONFIG], CONFIG_LABELS["naive"]])
-    axl.set_ylabel("Overall score")
-    axl.legend(handles=[Patch(facecolor=rej_c, alpha=0.6, label="Rejected"),
-                        Patch(facecolor=acc_c, alpha=0.6, label="Accepted")],
-               fontsize=7.5, loc="lower center", ncol=2)
-    ad = nb["auroc_diff"]
-    sig = "n.s." if ad["p"] >= 0.05 else f"p={ad['p']:.3f}"
-    axl.annotate(rf"$\Delta$AUROC $= {ad['delta']:.2f}$ [{ad['lo']:.2f}, {ad['hi']:.2f}], {sig}",
-                 xy=(0.5, 1.02), xycoords="axes fraction", ha="center", va="bottom", fontsize=7)
-    axl.set_title("(a)", loc="left", fontsize=9, fontweight="bold")
-
-    # Right: within-paper run-to-run SD distributions (full vs naive).
-    rv_full = d.run_variance(PRODUCTION_CONFIG); rv_full = rv_full[rv_full["submission_id"].isin(h_ids)]
-    rv_naive = d.run_variance("naive"); rv_naive = rv_naive[rv_naive["submission_id"].isin(h_ids)]
-    sd_max = float(np.nanmax([rv_full["run_sd"].max(), rv_naive["run_sd"].max(), 1.0]))
-    bins = np.linspace(0, sd_max, 16)
-    axr.hist(rv_full["run_sd"].dropna(), bins=bins, color=CONFIG_COLORS[PRODUCTION_CONFIG],
-             alpha=0.7, label=CONFIG_LABELS[PRODUCTION_CONFIG])
-    axr.hist(rv_naive["run_sd"].dropna(), bins=bins, color=CONFIG_COLORS["naive"],
-             alpha=0.7, label=CONFIG_LABELS["naive"])
-    axr.set_xlabel("Within-paper SD of overall (repeated runs)"); axr.set_ylabel("Submissions")
-    axr.legend(fontsize=7.5)
-    axr.set_title("(b)", loc="left", fontsize=9, fontweight="bold")
-    fig.tight_layout(w_pad=1.4)
-    _save(fig, "fig_naive", d.is_synthetic)
+    fig, ax = plt.subplots(figsize=(TEXT_WIDTH, 2.9))
+    for frame, base in ((full, 0), (naive, 4)):
+        s_by = {t: frame[frame["decision_tier"] == t]["overall"].values for t in TIER_ORDER}
+        for ti, t in enumerate(TIER_ORDER):
+            s = s_by[t]
+            x0 = base + 1 + ti
+            rng = np.random.default_rng(base * 10 + ti)
+            xs = x0 + rng.uniform(-0.28, 0.28, len(s))
+            ax.scatter(xs, s, s=11, color=TIER_COLORS[t], alpha=0.6,
+                       edgecolors="white", linewidths=0.3, zorder=2)
+            if len(s):
+                ax.hlines(np.median(s), x0 - 0.34, x0 + 0.34, color="0.25", lw=1.4, zorder=3)
+        # pairwise Mann--Whitney brackets in the headroom above the 0--100 range, so
+        # they never overlap the points: adjacent pairs low, the wide pair above.
+        for i, j, y in ((0, 1, 106), (1, 2, 106), (0, 2, 114)):
+            p = mwu_pvalue(s_by[TIER_ORDER[i]], s_by[TIER_ORDER[j]])
+            x1, x2 = base + 1 + i, base + 1 + j
+            ax.plot([x1, x1, x2, x2], [y - 1.5, y, y, y - 1.5], color="0.45", lw=0.8)
+            ax.text((x1 + x2) / 2, y + 0.5, _pbracket(p), ha="center", va="bottom", fontsize=6)
+    ax.set_xticks([2, 6])
+    ax.set_xticklabels([CONFIG_LABELS[PRODUCTION_CONFIG], CONFIG_LABELS["naive"]])
+    ax.set_ylabel("Overall score"); ax.set_ylim(0, 122); ax.set_yticks([0, 25, 50, 75, 100])
+    ax.legend(handles=[Patch(facecolor=TIER_COLORS[t], label=TIER_LABELS[t]) for t in TIER_ORDER],
+              fontsize=7, loc="lower center", ncol=3)
+    _save(fig, "figS_score_dist", d.is_synthetic)
 
 
 def fig_bridge(d, R):
@@ -270,13 +329,19 @@ def fig_bridge(d, R):
     lim = [min(xs.min(), ys.min()) - 2, max(xs.max(), ys.max()) + 2]
     fig, (axL, axR) = plt.subplots(1, 2, figsize=(TEXT_WIDTH, COL_WIDTH))
 
-    # Left: global agreement.
+    # Left: global agreement, coloured by the human decision tier (matching the
+    # interactive page's BridgeFigure) so the reader sees the mini<->frontier
+    # agreement holds within each outcome tier, not just in aggregate.
     br = R["bridge"]["spearman"]
-    axL.scatter(xs, ys, s=10, alpha=0.5, color=CONFIG_COLORS[PRODUCTION_CONFIG], edgecolors="none")
+    tier_by = d.submissions.set_index("submission_id")["decision_tier"].to_dict()
+    cols = [TIER_COLORS[tier_by[sid]] for sid in p["submission_id"]]
+    axL.scatter(xs, ys, s=11, alpha=0.6, c=cols, edgecolors="none")
     axL.plot(lim, lim, "--", color="grey", lw=0.8)
     axL.text(0.03, 0.97, rf"global $\rho={br['point']:.2f}$, $n={R['bridge']['n']}$",
              transform=axL.transAxes, va="top", ha="left", fontsize=7)
-    axL.set_xlabel("Full-mini overall"); axL.set_ylabel("Full (GPT-5.4) overall")
+    axL.legend(handles=[Patch(facecolor=TIER_COLORS[t], label=TIER_LABELS[t]) for t in TIER_ORDER],
+               fontsize=6, loc="lower right", handletextpad=0.3, borderpad=0.3)
+    axL.set_xlabel("Full-mini overall"); axL.set_ylabel("Full (frontier) overall")
     axL.set_xlim(lim); axL.set_ylim(lim); axL.set_aspect("equal")
 
     # Right: bottom-quintile membership agreement.
@@ -294,7 +359,7 @@ def fig_bridge(d, R):
     axR.text(0.03, 0.97,
              f"bottom-Q recall {100 * ov['recall']:.0f}%\n" + rf"low-band $\rho={lbr['point']:.2f}$",
              transform=axR.transAxes, va="top", ha="left", fontsize=7)
-    axR.set_xlabel("Full-mini overall"); axR.set_ylabel("Full (GPT-5.4) overall")
+    axR.set_xlabel("Full-mini overall"); axR.set_ylabel("Full (frontier) overall")
     axR.set_xlim(lim); axR.set_ylim(lim); axR.set_aspect("equal")
     axR.legend(fontsize=6.5, loc="lower right")
     _save(fig, "fig5_bridge", d.is_synthetic)
@@ -553,7 +618,7 @@ def render_all(d, R):
     fig_naive_baseline(d, R)
     fig_bridge(d, R)
     # Supplementary figures.
-    fig_roc(d, R)
+    fig_score_dist(d, R)
     fig_subscore_auroc(d, R)
     fig_nested_auroc(d, R)
     fig_runvar(d, R)
