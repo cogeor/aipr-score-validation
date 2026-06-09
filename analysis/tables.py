@@ -316,11 +316,13 @@ def table_area_subgroup(d, R):
         rows.append(
             rf"{area} & {r['n']} & {100 * r['accept_rate']:.0f}\% & {ms} & {rho} & {au} \\"
         )
+    # p{} first column so the long ICLR area names wrap instead of overrunning the
+    # margin (an "l" column ran 250pt past the text block); \small keeps it compact.
     body = (
-        "\\begin{tabular}{lccccc}\n\\toprule\n"
+        "{\\small\n\\begin{tabular}{p{2.4in}ccccc}\n\\toprule\n"
         "Primary area & $n$ & Accept rate & Mean score & $\\rho$ (score--rating) & AUROC \\\\\n\\midrule\n"
         + "\n".join(rows)
-        + "\n\\bottomrule\n\\end{tabular}\n"
+        + "\n\\bottomrule\n\\end{tabular}}\n"
     )
     _w("tab_area_subgroup.tex", body)
 

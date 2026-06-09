@@ -56,17 +56,15 @@ precision is \natBottomPrecision\%.
   \centering
   \includegraphics[width=\textwidth]{fig_validation}
   \caption{\textbf{The AIPR score agrees with the human outcome three ways} (full-mini
-  cohort). \textbf{(a)} Overall-score distribution across the ordered decision
-  tiers---violin (density), box (quartiles), jittered points---rising
-  monotonically (H3). \textbf{(b)} Empirical reject rate by score decile with
-  Wilson 95\% intervals; the shaded band is the bottom score quintile and the
-  dashed line the base reject rate---low scores reliably mark rejected work (H1).
-  \textbf{(c)} Overall score vs.\ mean reviewer rating, colored by tier, with a
-  least-squares trend and Spearman $\rho$ (H4). The discrimination scalar (AUROC,
-  H2) is in Table~\ref{tab:headline}; the ROC curves (all three graders overlaid)
-  are Fig.~\ref{fig:naive}a.
-  An interactive version of this figure---each point reveals its per-dimension
-  subscores on hover---is available at \url{https://aipr.pub/publications\#fig-validation}.}
+  cohort). \textbf{(a)} Overall score across the ordered decision tiers (violin,
+  box, jittered points), rising monotonically (H3). \textbf{(b)} Reject rate by
+  score decile with Wilson 95\% intervals; shaded band = bottom score quintile,
+  dashed line = base reject rate---low scores reliably mark rejected work (H1).
+  \textbf{(c)} Score vs.\ mean reviewer rating, coloured by tier, with a
+  least-squares trend and Spearman $\rho$ (H4). The AUROC scalar (H2) is in
+  Table~\ref{tab:headline}; the overlaid ROC curves are Fig.~\ref{fig:naive}a.
+  Interactive version (per-point subscores on hover):
+  \url{https://aipr.pub/publications\#fig-validation}.}
   \label{fig:validation}
 \end{figure}
 
@@ -196,19 +194,16 @@ building it does not rest on out-scoring that model.
   frontier model and submitted PDF (cohort $H$; pre-registered comparison V1).
   \textbf{(a)} Reject-vs-accept ROC for all three graders overlaid---frontier,
   full-mini, and the naive one-paragraph judge---each clearing the diagonal; the
-  legend gives AUROC with 95\% CIs and the frontier$-$naive paired AUROC difference
-  (stratified bootstrap, $n=\naiveN$) is annotated, its CI straddling zero. AIPR's
-  AUROC is higher, but the paired gap is not statistically resolved---neither
-  superiority nor equivalence is established here.
-  \textbf{(b)} Within-paper score SD over repeated runs---one dot per
-  variance-sub-study paper, coloured by its human decision tier, with a median
-  bar---AIPR grades far more consistently. A capable model already scores
-  competently (a), while the observed AUROC gap is not statistically resolved
-  (\aurocDiffPrel); the engineered pipeline's contribution is reliability (b) and a
-  grounded, rubric-anchored review produced in the same pass. The per-tier score
-  distributions behind (a) are Appendix~\ref{app:robust}, Fig.~\ref{fig:score-dist};
-  each method's matched-accept-rate operating point is Appendix~\ref{app:naive}.
-  An interactive version of this figure is available at
+  legend gives AUROC with 95\% CIs and the annotated frontier$-$naive paired
+  difference (stratified bootstrap, $n=\naiveN$). AIPR's AUROC is higher, but the
+  paired gap is not statistically resolved (\aurocDiffPrel)---neither superiority
+  nor equivalence is established. \textbf{(b)} Within-paper score SD over repeated
+  runs, one dot per variance-sub-study paper coloured by human decision tier, with
+  a median bar---AIPR grades far more consistently. The pipeline's contribution is
+  reliability (b) and a grounded, rubric-anchored review in the same pass, not raw
+  discrimination (a). Per-tier distributions: Appendix~\ref{app:robust},
+  Fig.~\ref{fig:score-dist}; matched-accept-rate operating points:
+  Appendix~\ref{app:naive}. Interactive version:
   \url{https://aipr.pub/publications\#fig-naive}.}
   \label{fig:naive}
 \end{figure}

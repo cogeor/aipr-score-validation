@@ -29,6 +29,7 @@ import re
 import shutil
 import subprocess
 import sys
+import textwrap
 from pathlib import Path
 
 from common import ANALYSIS_DIR, FIG_DIR, MACRO_DIR, PAPER_DIR, RESULTS_DIR, TAB_DIR
@@ -106,18 +107,34 @@ _PREREG_ASCII = {
 }
 
 
+_PREREG_WRAP = 100  # columns; long markdown lines soft-wrap to fit the page at \footnotesize
+
+
 def _render_prereg_verbatim() -> None:
     """Generate ``paper/prereg_verbatim.tex``: the frozen ``DECISIONS.md``
-    reproduced verbatim (ASCII-normalized) in a ``verbatim`` block, for the
-    appendix ``\\input``. Generated + gitignored, so the appendix always shows the
-    committed pre-registration. Written at ``paper/`` root (NOT ``sections/``) so
-    the macro-lint — which scans ``sections/*.tex`` — never reads the verbatim
-    prose as LaTeX."""
+    reproduced (ASCII-normalized) in a ``\\footnotesize`` ``verbatim`` block, for
+    the appendix ``\\input``. Generated + gitignored, so the appendix always shows
+    the committed pre-registration. Written at ``paper/`` root (NOT ``sections/``)
+    so the macro-lint — which scans ``sections/*.tex`` — never reads the verbatim
+    prose as LaTeX. Markdown paragraphs that exceed ``_PREREG_WRAP`` columns are
+    soft-wrapped at word boundaries (a 294-char line otherwise overran the margin
+    by 250pt); content and word order are unchanged, only the display line breaks,
+    so the block stays faithful to the frozen plan."""
     text = (ANALYSIS_DIR.parent / "DECISIONS.md").read_text(encoding="utf-8")
     for uni, asc in _PREREG_ASCII.items():
         text = text.replace(uni, asc)
     text = text.encode("ascii", "ignore").decode("ascii")  # drop any stray non-ASCII
-    body = "\\begin{verbatim}\n" + text.rstrip() + "\n\\end{verbatim}\n"
+    lines: list[str] = []
+    for line in text.rstrip().splitlines():
+        if len(line) <= _PREREG_WRAP:
+            lines.append(line)
+            continue
+        indent = line[: len(line) - len(line.lstrip())]  # keep list/quote hangs
+        lines.extend(textwrap.wrap(
+            line, width=_PREREG_WRAP, break_long_words=False,
+            break_on_hyphens=False, subsequent_indent=indent) or [""])
+    body = ("\\begingroup\\footnotesize\n\\begin{verbatim}\n"
+            + "\n".join(lines) + "\n\\end{verbatim}\n\\endgroup\n")
     (PAPER_DIR / "prereg_verbatim.tex").write_text(body, encoding="utf-8")
 
 
