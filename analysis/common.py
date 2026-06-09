@@ -143,7 +143,10 @@ GLOBAL_SEED = 20260601
 
 
 def apply_style() -> None:
-    """Apply a clean, publication-grade matplotlib style (serif, vector-friendly)."""
+    """Apply a clean, vector-friendly matplotlib style that mirrors the interactive
+    ``/publications`` figures (the visual baseline): sans-serif text, a barely-there
+    dashed grid (black at ~10\% alpha, matching the web's ``#00000010``), dark-ink
+    labels with soft-grey ticks/spines, and the same Okabe--Ito tier palette."""
     import matplotlib as mpl
 
     mpl.rcParams.update(
@@ -151,21 +154,31 @@ def apply_style() -> None:
             "figure.dpi": 130,
             "savefig.dpi": 300,
             "savefig.bbox": "tight",
-            "font.family": "serif",
-            "font.serif": ["DejaVu Serif", "Times New Roman", "Computer Modern Roman"],
+            # Sans-serif + dejavusans mathtext to match the web's clean chart text.
+            "font.family": "sans-serif",
+            "font.sans-serif": ["DejaVu Sans", "Arial", "Helvetica"],
+            "mathtext.fontset": "dejavusans",
             "font.size": 9,
             "axes.titlesize": 9,
-            "axes.labelsize": 9,
+            "axes.labelsize": 10,
             "legend.fontsize": 8,
-            "xtick.labelsize": 8,
-            "ytick.labelsize": 8,
+            "xtick.labelsize": 8.5,
+            "ytick.labelsize": 8.5,
+            "text.color": "#1a1a1a",
+            "axes.labelcolor": "#1a1a1a",
+            "axes.edgecolor": "#6b7280",
+            "xtick.color": "#6b7280",
+            "ytick.color": "#6b7280",
             "axes.spines.top": False,
             "axes.spines.right": False,
+            # Web baseline grid: light, dashed "3 3", sitting under the data.
             "axes.grid": True,
-            "grid.alpha": 0.25,
-            "grid.linewidth": 0.5,
+            "grid.color": "#000000",
+            "grid.alpha": 0.10,
+            "grid.linewidth": 0.6,
+            "grid.linestyle": (0, (3, 3)),
             "axes.axisbelow": True,
-            "lines.linewidth": 1.4,
+            "lines.linewidth": 1.6,
             "legend.frameon": False,
             "pdf.fonttype": 42,  # editable text in vector output
             "ps.fonttype": 42,
