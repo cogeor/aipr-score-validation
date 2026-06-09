@@ -67,6 +67,52 @@ Combined with the grading model's documented knowledge cutoff
 January~2026; \S\ref{sec:discussion}), the outcome we validate against could
 neither be read at grading time nor memorized in training.
 
+\section{Deployment boundary, independence, and audit posture}
+\label{app:posture}
+This section collects the conflict-of-interest, deployment-ethics, and
+audit-access commitments that the rest of the paper relies on but does not state
+in one place.
+
+\paragraph{Independence and conflict of interest.} This is an author-led
+validation of a system the authors build, so the design is structured to be
+checkable rather than taken on trust: the hypotheses, metrics, and exclusion
+rules are pre-registered (Appendix~\ref{app:prereg}), the cohort is frozen before
+unblinding, every figure and statistic is regenerated from released labels and
+scores by the committed analysis code, and both error directions are reported in
+full (\S\ref{sec:failure}). These mitigations narrow but do not remove the
+incentive; an independent replication on a different venue---which the
+author-built scorer cannot influence---is the strongest next step and is the
+deferred second-venue study (\S\ref{sec:limits}, Appendix~\ref{app:robust}).
+
+\paragraph{Deployment boundary: the validated action is prioritization, not
+rejection.} The use we validate is routing a submission to human attention, not
+deciding it. A low score is a flag that triggers a human look; a high score is
+\emph{not} used for positive selection or to skip review (the failure-mode
+asymmetry of \S\ref{sec:failure} is what licenses this). Any venue deployment
+should keep a human accountable for every decision, log the model's outputs so a
+flagged decision can be audited after the fact, and disclose to authors that
+automated assistance was used. These are deployment conditions, not properties we
+measured.
+
+\paragraph{Proprietary-scorer audit posture.} The reproducibility paragraph
+(\S\ref{sec:limits}) explains that the score-to-outcome analysis is fully open
+while the manuscript-to-score function is closed. To keep the closed half
+auditable rather than opaque, the scoring dimensions, the weighting rule
+(Eq.~\ref{eq:overall}), the output schema (Appendix~\ref{app:schema}), the
+pipeline version, and the model identifiers are reported in this paper, and the
+exact prompt and configuration artifacts are retained under the frozen study tag
+so they can be provided confidentially to editors or auditors on request. We do
+not publish the prompts themselves, and we make no claim that a configuration
+hash is published.
+
+\paragraph{Naive-baseline fairness.} The naive one-paragraph prompt
+(Appendix~\ref{app:naive}) is intentionally \emph{not} optimized: it runs the
+same frontier model on the same submitted PDF with no rubric and no audit, and
+its wording was frozen before unblinding. Its purpose is to isolate the
+pipeline's contribution over the bare model, not to maximize baseline
+performance, so we did not tune it post hoc to weaken or strengthen the
+comparison.
+
 \section{Design justification: statistical power and estimator validity}
 \label{app:power}
 Both checks below were run \emph{before} data collection and do not use the real
