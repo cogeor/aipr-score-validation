@@ -34,14 +34,17 @@ from common import (
 )
 from schema import Dataset, base_reject_rate, load_dataset
 from stats import (
+    area_subgroup_audit,
     auroc,
     auroc_ci,
     auroc_pvalue,
     benjamini_hochberg,
+    bottom_band_sensitivity,
     classify_at_threshold,
     cliffs_delta,
     cohens_d,
     covariate_control_auc,
+    disagreement_moderation,
     jonckheere_trend,
     low_band_spearman,
     low_score_harm,
@@ -213,6 +216,22 @@ def compute(d: Dataset) -> dict:
     # ranking of strong papers or a low-end triage signal? Both exploratory.
     R["covariate_control"] = {"mini": covariate_control_auc(mini), "full": covariate_control_auc(full)}
     R["within_tier_rho"] = within_tier_spearman(mini)
+
+    # ---- loop 07: three more reviewer-requested DESCRIPTIVE checks (full-mini) -
+    # (3) bottom-band tie/threshold sensitivity: the low-score flag must hold
+    # regardless of the exact bottom-band rule (quintile vs deterministic
+    # bottom-K vs fixed cutoffs). (4) reviewer-disagreement moderation: does the
+    # score track the outcome worse where reviewers disagree (rating_std)?
+    # (5) area subgroup audit: is the headline concentrated in one ICLR area?
+    R["bottom_band_sensitivity"] = bottom_band_sensitivity(
+        mini["overall"].values, mini["accept_bool"].values, mini["tier_rank"].values,
+        sub_order=mini["submission_id"].values,
+    )
+    R["disagreement_moderation"] = {
+        "mini": disagreement_moderation(mini),
+        "full": disagreement_moderation(full),
+    }
+    R["area_subgroup"] = area_subgroup_audit(mini)
 
     # ---- grading cost: tokens used per config (the cost-design numbers) ----
     R["cost"] = _cost_by_config(d)
@@ -733,6 +752,43 @@ def write_macros(R: dict) -> None:
         if tier in wt:
             rho = wt[tier]["rho"]
             cmd(name, ("--" if rho != rho else f"{rho:.2f}"))
+
+    # Loop 07 descriptive checks (full-mini): bottom-band tie/threshold
+    # sensitivity, reviewer-disagreement moderation, area subgroup audit.
+    # (3) headline takeaway: the WORST-case (minimum) reject rate and lift across
+    # all bottom-band definitions — the flag holds even under the least-favourable
+    # membership rule.
+    bbs = R.get("bottom_band_sensitivity", [])
+    if bbs:
+        valid_lifts = [r["lift"] for r in bbs if r["lift"] == r["lift"]]
+        min_reject = min(r["reject_rate"] for r in bbs)
+        cmd("bandSensMinReject", _pct(min_reject))
+        if valid_lifts:
+            cmd("bandSensMinLift", f"{min(valid_lifts):.2f}")
+        cmd("bandSensNdefs", str(len(bbs)))
+
+    # (4) reviewer-disagreement moderation: residual-vs-rating_std rho (both
+    # cohorts) and the low/high-disagreement AUROC split. A weak rho is the
+    # expected descriptive result (disagreement does not strongly moderate).
+    dm = R.get("disagreement_moderation", {})
+    if dm:
+        dmm, dmf = dm["mini"], dm["full"]
+        cmd("disagreeRhoMini", f"{dmm['rho_resid_std']:.2f}")
+        cmd("disagreeRhoFrontier", f"{dmf['rho_resid_std']:.2f}")
+        cmd("disagreeAucLowMini", f"{dmm['auroc_low_std']:.2f}")
+        cmd("disagreeAucHighMini", f"{dmm['auroc_high_std']:.2f}")
+        cmd("disagreeAucLowFrontier", f"{dmf['auroc_low_std']:.2f}")
+        cmd("disagreeAucHighFrontier", f"{dmf['auroc_high_std']:.2f}")
+
+    # (5) area subgroup audit: number of areas reported (incl. pooled "other")
+    # and the spread of per-area AUROC over cells where both classes are present.
+    asg = R.get("area_subgroup", [])
+    if asg:
+        cmd("nAreaRows", str(len(asg)))
+        area_aucs = [r["auroc"] for r in asg if r["auroc"] == r["auroc"]]
+        if area_aucs:
+            cmd("areaAurocMin", f"{min(area_aucs):.2f}")
+            cmd("areaAurocMax", f"{max(area_aucs):.2f}")
 
     # Grading cost (tokens used per config; k = thousands).
     cost = R.get("cost", {})

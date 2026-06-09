@@ -320,6 +320,75 @@ rank papers that have already cleared the bar.
   \input{tables/tab_within_tier}
 \end{table}
 
+\paragraph{Bottom-band tie/threshold sensitivity (descriptive).} The AIPR overall
+is an integer score, so the exact membership of the bottom score quintile is
+mildly tie-dependent (the reference quintile is uneven, $n=59$, because of ties at
+the cut). A reviewer asked whether the low-score flag survives the choice of
+bottom-band rule. We compute the bottom-band reject rate, the lift over the base
+reject rate, and the oral rate under several definitions: the strict bottom
+quintile (\mbox{$\text{score}<\text{quantile}(0.2)$}, the pre-registered band-0
+membership), a deterministic bottom-$K$ ($K=60$ after sorting by score then
+submission order, so ties never resolve by chance), and three fixed cutoffs
+(\mbox{$\text{score}\le63$}, $64$, $65$) (Table~\ref{tab:bandsens}). Across all
+\bandSensNdefs{} definitions the reject rate stays at least \bandSensMinReject\%
+and the lift over base at least \bandSensMinLift{}, so the flag is robust to the
+tie/threshold rule rather than an artifact of the quintile cut.
+
+\begin{table}[h]
+  \centering
+  \caption{Bottom-band tie/threshold sensitivity of the low-score flag
+  (full-mini, descriptive). Per band definition: reject rate, lift over the base
+  reject rate, and oral rate. The flag holds across the quintile, deterministic
+  bottom-$K$, and fixed-cutoff rules.}
+  \label{tab:bandsens}
+  \input{tables/tab_bottom_band_sensitivity}
+\end{table}
+
+\paragraph{Reviewer-disagreement moderation (descriptive).} Does the score track
+the outcome worse where the human reviewers disagree? We read this two ways on
+both cohorts (Table~\ref{tab:disagree}). First, the Spearman correlation between
+the magnitude of the score-vs-rating rank residual and the reviewer rating SD is
+weak ($\rho=\disagreeRhoMini$ full-mini, $\rho=\disagreeRhoFrontier$ frontier):
+the score's disagreement with the human ranking does not grow strongly with
+reviewer disagreement. Second, splitting each cohort at the median rating SD, the
+AUROC on the high-disagreement half (\disagreeAucHighMini{} full-mini,
+\disagreeAucHighFrontier{} frontier) is close to the low-disagreement half
+(\disagreeAucLowMini{} and \disagreeAucLowFrontier{}). We treat this
+descriptively: the ground truth is itself noisier where reviewers disagree, so a
+modest AUROC difference is expected and is not read as a model failure. The signal
+is not concentrated in the easy, high-agreement cases.
+
+\begin{table}[h]
+  \centering
+  \caption{Reviewer-disagreement moderation (descriptive, both cohorts). The
+  residual--rating-SD Spearman and the AUROC of the AIPR overall split at the
+  median reviewer rating SD. Disagreement does not strongly moderate the
+  score--outcome relationship.}
+  \label{tab:disagree}
+  \input{tables/tab_disagreement}
+\end{table}
+
+\paragraph{Area/subfield subgroup audit (descriptive).} Is the result
+concentrated in a single ICLR primary area? We audit the full-mini cohort per
+\texttt{primary\_area}, pooling areas with fewer than eight submissions into a
+single \emph{other} row so tiny cells are not over-interpreted; for each area we
+report the accept rate, mean AIPR score, the score--rating Spearman, and the
+AUROC where both decision classes are present (Table~\ref{tab:areasub}). Across
+the \nAreaRows{} reported rows the per-area AUROC ranges from \areaAurocMin{} to
+\areaAurocMax{}. These per-area estimates are noisy and are treated as
+descriptive; no single area accounts for the headline relationship, which is
+present broadly rather than driven by one subfield.
+
+\begin{table}[h]
+  \centering
+  \caption{Per-area subgroup audit (full-mini, descriptive). Accept rate, mean
+  AIPR score, score--rating Spearman, and AUROC per primary area; areas with
+  $n<8$ are pooled into \emph{other}. Cells are small and noisy---read for breadth,
+  not point estimates.}
+  \label{tab:areasub}
+  \input{tables/tab_area_subgroup}
+\end{table}
+
 \paragraph{Grading cost.} The cost design (\S\ref{sec:methods}) rests on the
 cheap-model full-mini configuration being far cheaper than the frontier full
 configuration. Mean tokens used per grading (Table~\ref{tab:cost},

@@ -336,6 +336,173 @@ def within_tier_spearman(frame) -> dict:
 
 
 # ----------------------------------------------------------------------------
+# Loop 07 — three further DESCRIPTIVE (NOT confirmatory) reviewer checks:
+#   3. bottom-band tie/threshold sensitivity — is the low-score flag robust to
+#      the exact bottom-band membership rule (quintile vs bottom-K vs fixed
+#      cutoffs), given integer scores make quintile ties mildly arbitrary?
+#   4. reviewer-disagreement moderation — does the score track the outcome
+#      worse where the human reviewers disagree (high rating_std)?
+#   5. area / subfield subgroup audit — is the headline concentrated in one
+#      ICLR primary area, or broadly present across areas?
+# ----------------------------------------------------------------------------
+def bottom_band_sensitivity(
+    score: np.ndarray, accept_bool: np.ndarray, tier_rank: np.ndarray,
+    sub_order: np.ndarray | None = None, bottom_k: int = 60,
+) -> list[dict]:
+    """Robustness of the low-score flag to the bottom-band membership rule.
+
+    The integer score + quintile binning makes exact bottom-band membership
+    mildly tie-dependent. For each of several band definitions we report the
+    reject rate, the lift over the base reject rate, and the oral rate, so the
+    headline low-end signal can be shown to hold regardless of the rule. The
+    definitions are:
+
+    * ``strict quintile`` — ``score < quantile(score, 0.2)`` (the pre-registered
+      band-0 membership of :func:`score_band_table`);
+    * ``bottom-K`` (K=``bottom_k``, default 60) — the lowest K submissions after a
+      DETERMINISTIC tie-break: sort by score ascending then by ``sub_order``
+      (submission order) ascending, take the first K. Ties never resolve by row
+      order or RNG, so the set is reproducible. When ``sub_order`` is absent the
+      original row index is the tie-break;
+    * fixed thresholds ``score<=63``, ``score<=64``, ``score<=65``.
+
+    ``lift`` = band reject rate / overall base reject rate (the SAME base used by
+    :func:`score_band_table`). Bands with ``n==0`` report ``reject_rate``/
+    ``oral_rate`` 0 and ``lift`` nan. Descriptive: this is a tie/threshold
+    sensitivity sweep, not a confirmatory test.
+    """
+    score = np.asarray(score, float)
+    accept_bool = np.asarray(accept_bool, int)
+    tier_rank = np.asarray(tier_rank, int)
+    n_all = len(score)
+    order = np.arange(n_all) if sub_order is None else np.asarray(sub_order)
+    base = float((accept_bool == 0).mean())
+
+    def _row(label: str, mask: np.ndarray) -> dict:
+        n = int(mask.sum())
+        rr = float((accept_bool[mask] == 0).mean()) if n else 0.0
+        orr = float((tier_rank[mask] == TIER_RANK["oral"]).mean()) if n else 0.0
+        lift = (rr / base) if (base > 0 and n) else float("nan")
+        return {"label": label, "n": n, "reject_rate": rr, "lift": lift, "oral_rate": orr}
+
+    rows: list[dict] = []
+    rows.append(_row("strict quintile", score < float(np.quantile(score, 0.2))))
+    # deterministic bottom-K: lexsort puts the primary key LAST.
+    k = min(bottom_k, n_all)
+    chosen = np.lexsort((order, score))[:k]
+    bk_mask = np.zeros(n_all, dtype=bool)
+    bk_mask[chosen] = True
+    rows.append(_row(f"bottom-{bottom_k}", bk_mask))
+    for thr in (63, 64, 65):
+        rows.append(_row(f"score<={thr}", score <= thr))
+    return rows
+
+
+def disagreement_moderation(frame) -> dict:
+    """Does the AIPR score track the outcome WORSE where the human reviewers
+    disagree (high ``rating_std``)? Two descriptive readings on one cohort:
+
+    (a) ``rho_resid_std`` — Spearman of the absolute score-vs-rating rank
+        residual against ``rating_std``. The rank residual is
+        ``rank(overall) - rank(mean_reviewer_rating)`` (the score's local
+        disagreement with the human ranking); we correlate its magnitude with the
+        within-paper reviewer disagreement. A positive rho means the score and the
+        human ranking diverge more where reviewers themselves disagree.
+    (b) ``auroc_low_std`` / ``auroc_high_std`` — AUROC of ``overall`` vs
+        ``accept_bool``, computed separately on the low- and high-disagreement
+        halves (median split of ``rating_std``; ties go to the LOW half via a
+        ``<=`` cut so the split is deterministic). A subgroup missing a class
+        reports AUROC nan.
+
+    Returns the two AUROCs, their gap (low minus high), the residual rho, the
+    median split point and per-half n. Descriptive: the ground truth is itself
+    noisier where reviewers disagree, so a modest AUROC drop on the high-std half
+    is expected and is NOT read as a model failure.
+    """
+    overall = np.asarray(frame["overall"].values, float)
+    rating = np.asarray(frame["mean_reviewer_rating"].values, float)
+    rstd = np.asarray(frame["rating_std"].values, float)
+    y = np.asarray(frame["accept_bool"].values).astype(int)
+    n = int(len(overall))
+    # rank residual (average ranks; sign irrelevant since we take |.|)
+    rank_overall = stats.rankdata(overall)
+    rank_rating = stats.rankdata(rating)
+    resid = np.abs(rank_overall - rank_rating)
+    rho = spearman(resid, rstd) if n >= 3 else float("nan")
+    med = float(np.median(rstd))
+    low = rstd <= med
+    high = ~low
+
+    def _auc(mask: np.ndarray) -> float:
+        yy, ss = y[mask], overall[mask]
+        if len(np.unique(yy)) < 2:
+            return float("nan")
+        return auroc(yy, ss)
+
+    auc_low, auc_high = _auc(low), _auc(high)
+    gap = (auc_low - auc_high) if (auc_low == auc_low and auc_high == auc_high) else float("nan")
+    return {
+        "rho_resid_std": float(rho),
+        "auroc_low_std": float(auc_low),
+        "auroc_high_std": float(auc_high),
+        "auroc_gap": float(gap),
+        "median_std": med,
+        "n_low": int(low.sum()),
+        "n_high": int(high.sum()),
+        "n": n,
+    }
+
+
+def area_subgroup_audit(frame, min_n: int = 8) -> list[dict]:
+    """Per-``primary_area`` descriptive audit: is the score-outcome relationship
+    concentrated in one ICLR area, or broadly present?
+
+    For every area with at least ``min_n`` submissions, report the accept rate,
+    mean AIPR ``overall``, Spearman of ``overall`` vs ``mean_reviewer_rating``,
+    and AUROC of ``overall`` vs ``accept_bool`` (AUROC only where BOTH classes are
+    present in the cell, else nan -> rendered ``"--"`` downstream; Spearman needs
+    ``n >= 3`` else nan). Areas below ``min_n`` are POOLED into a single ``other``
+    row so no submission is dropped and tiny cells are not over-interpreted. Rows
+    are sorted by descending ``n`` with the pooled ``other`` row last.
+
+    Descriptive only: per-area cells are small and noisy; the row to read is that
+    no single area carries the headline, not any individual cell estimate.
+    """
+    if "primary_area" not in frame.columns:
+        return []
+    area = frame["primary_area"].astype(str).values
+    overall = np.asarray(frame["overall"].values, float)
+    rating = np.asarray(frame["mean_reviewer_rating"].values, float)
+    y = np.asarray(frame["accept_bool"].values).astype(int)
+
+    def _cell(label: str, mask: np.ndarray) -> dict:
+        n = int(mask.sum())
+        ov, rt, yy = overall[mask], rating[mask], y[mask]
+        rho = spearman(ov, rt) if n >= 3 else float("nan")
+        au = auroc(yy, ov) if len(np.unique(yy)) == 2 else float("nan")
+        return {
+            "area": label,
+            "n": n,
+            "accept_rate": float((yy == 1).mean()) if n else 0.0,
+            "mean_score": float(ov.mean()) if n else float("nan"),
+            "rho_score_rating": float(rho),
+            "auroc": float(au),
+        }
+
+    counts: dict[str, int] = {}
+    for a in area:
+        counts[a] = counts.get(a, 0) + 1
+    big = sorted([a for a, c in counts.items() if c >= min_n], key=lambda a: (-counts[a], a))
+    small = [a for a, c in counts.items() if c < min_n]
+    rows = [_cell(a, area == a) for a in big]
+    if small:
+        pooled = np.isin(area, small)
+        if pooled.any():
+            rows.append(_cell("other", pooled))
+    return rows
+
+
+# ----------------------------------------------------------------------------
 # Effect sizes for the two-group (reject vs accept) contrast
 # ----------------------------------------------------------------------------
 def cohens_d(a: np.ndarray, b: np.ndarray) -> float:

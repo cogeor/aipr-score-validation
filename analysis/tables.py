@@ -226,6 +226,84 @@ def table_within_tier(d, R):
     _w("tab_within_tier.tex", body)
 
 
+def table_bottom_band_sensitivity(d, R):
+    """Descriptive (loop 07) tie/threshold sensitivity of the low-score flag: per
+    bottom-band definition (strict quintile, deterministic bottom-K, fixed
+    cutoffs) the n, reject rate, lift over base, and oral rate (full-mini). The
+    flag holds across rules."""
+    bbs = R.get("bottom_band_sensitivity", [])
+    if not bbs:
+        return
+    rows = []
+    for r in bbs:
+        lift = "---" if r["lift"] != r["lift"] else f"{r['lift']:.2f}"
+        rows.append(
+            rf"{r['label']} & {r['n']} & {100 * r['reject_rate']:.0f}\% & {lift} & {100 * r['oral_rate']:.0f}\% \\"
+        )
+    body = (
+        "\\begin{tabular}{lcccc}\n\\toprule\n"
+        "Bottom-band definition & $n$ & Reject rate & Lift & Oral rate \\\\\n\\midrule\n"
+        + "\n".join(rows)
+        + "\n\\bottomrule\n\\end{tabular}\n"
+    )
+    _w("tab_bottom_band_sensitivity.tex", body)
+
+
+def table_disagreement(d, R):
+    """Descriptive (loop 07) reviewer-disagreement moderation, both cohorts: the
+    residual-vs-rating_std Spearman and the low/high-disagreement AUROC split
+    (median split of rating SD). Weak moderation throughout."""
+    dm = R.get("disagreement_moderation", {})
+    if not dm:
+        return
+    rows = []
+    for key, label in (("mini", "Full-mini"), ("full", "Frontier")):
+        if key in dm:
+            c = dm[key]
+
+            def cell(x):
+                return "---" if x != x else f"{x:.2f}"
+
+            rows.append(
+                rf"{label} & {cell(c['rho_resid_std'])} & {cell(c['auroc_low_std'])} & "
+                rf"{cell(c['auroc_high_std'])} & {c['n_low']}/{c['n_high']} \\"
+            )
+    body = (
+        "\\begin{tabular}{lcccc}\n\\toprule\n"
+        "Cohort & Residual--SD $\\rho$ & AUROC (low disagr.) & AUROC (high disagr.) & "
+        "$n$ low/high \\\\\n\\midrule\n"
+        + "\n".join(rows)
+        + "\n\\bottomrule\n\\end{tabular}\n"
+    )
+    _w("tab_disagreement.tex", body)
+
+
+def table_area_subgroup(d, R):
+    """Descriptive (loop 07) per-area subgroup audit (full-mini): accept rate,
+    mean AIPR score, score--rating Spearman, and AUROC per primary area, with
+    small areas pooled into ``other``. Cells are noisy; no single area carries the
+    headline."""
+    asg = R.get("area_subgroup", [])
+    if not asg:
+        return
+    rows = []
+    for r in asg:
+        rho = "---" if r["rho_score_rating"] != r["rho_score_rating"] else f"{r['rho_score_rating']:.2f}"
+        au = "---" if r["auroc"] != r["auroc"] else f"{r['auroc']:.2f}"
+        ms = "---" if r["mean_score"] != r["mean_score"] else f"{r['mean_score']:.1f}"
+        area = r["area"].replace("_", "\\_").replace("&", "\\&")
+        rows.append(
+            rf"{area} & {r['n']} & {100 * r['accept_rate']:.0f}\% & {ms} & {rho} & {au} \\"
+        )
+    body = (
+        "\\begin{tabular}{lccccc}\n\\toprule\n"
+        "Primary area & $n$ & Accept rate & Mean score & $\\rho$ (score--rating) & AUROC \\\\\n\\midrule\n"
+        + "\n".join(rows)
+        + "\n\\bottomrule\n\\end{tabular}\n"
+    )
+    _w("tab_area_subgroup.tex", body)
+
+
 def table_cost(d, R):
     """Mean tokens used per grading config (the cost-design numbers)."""
     cost = R.get("cost", {})
@@ -289,6 +367,9 @@ def write_all(d, R):
     table_length_confound(d, R)
     table_covariate_control(d, R)
     table_within_tier(d, R)
+    table_bottom_band_sensitivity(d, R)
+    table_disagreement(d, R)
+    table_area_subgroup(d, R)
     table_cost(d, R)
     table_naive_baseline(d, R)
     print(f"wrote tables -> {TAB_DIR}")

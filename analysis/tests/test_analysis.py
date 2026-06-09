@@ -380,6 +380,77 @@ def test_within_tier_spearman_guards_tiny_subgroup():
     assert out["oral"]["n"] == 1 and np.isnan(out["oral"]["rho"])
 
 
+# --------------------------------------------------------------------------- loop 07
+def test_bottom_band_sensitivity_definitions_and_lift():
+    frame = _synthetic_covariate_frame(n=300)
+    out = stats.bottom_band_sensitivity(
+        frame["overall"].values, frame["accept_bool"].values, frame["tier_rank"].values,
+        sub_order=np.arange(len(frame)), bottom_k=60,
+    )
+    labels = [r["label"] for r in out]
+    assert labels == ["strict quintile", "bottom-60", "score<=63", "score<=64", "score<=65"]
+    bk = next(r for r in out if r["label"] == "bottom-60")
+    assert bk["n"] == 60  # deterministic bottom-K picks exactly K
+    for r in out:
+        assert 0.0 <= r["reject_rate"] <= 1.0
+        assert 0.0 <= r["oral_rate"] <= 1.0
+        assert (r["lift"] != r["lift"]) or r["lift"] >= 0.0
+    # the low band's reject rate exceeds the cohort base reject rate (lift > 1)
+    base = float((frame["accept_bool"].values == 0).mean())
+    assert out[0]["reject_rate"] > base
+
+
+def test_bottom_band_sensitivity_tiebreak_deterministic():
+    # all-tied scores: bottom-K must resolve purely by sub_order, reproducibly
+    n = 20
+    score = np.full(n, 64.0)
+    accept = np.zeros(n, int)
+    tier = np.zeros(n, int)
+    order = np.arange(n)[::-1]  # reverse submission order
+    out = stats.bottom_band_sensitivity(score, accept, tier, sub_order=order, bottom_k=5)
+    bk = next(r for r in out if r["label"] == "bottom-5")
+    assert bk["n"] == 5
+    out2 = stats.bottom_band_sensitivity(score, accept, tier, sub_order=order, bottom_k=5)
+    assert [r["n"] for r in out] == [r["n"] for r in out2]
+
+
+def test_disagreement_moderation_shape_and_bounds():
+    frame = _synthetic_covariate_frame(n=300)
+    out = stats.disagreement_moderation(frame)
+    assert -1.0 <= out["rho_resid_std"] <= 1.0
+    for k in ("auroc_low_std", "auroc_high_std"):
+        assert (out[k] != out[k]) or (0.0 <= out[k] <= 1.0)
+    assert out["n_low"] + out["n_high"] == out["n"] == len(frame)
+
+
+def test_area_subgroup_audit_pools_small_and_covers_all():
+    import pandas as pd
+
+    rng = np.random.default_rng(7)
+    n = 120
+    # two big areas + a scatter of tiny ones
+    area = np.array(["A"] * 50 + ["B"] * 50 + ["x1", "x2", "x3", "x4", "x5"] * 4)
+    q = rng.normal(0, 1, n)
+    frame = pd.DataFrame(
+        {
+            "primary_area": area,
+            "overall": 60 + 10 * q + rng.normal(0, 4, n),
+            "mean_reviewer_rating": 5 + q,
+            "accept_bool": (q > 0).astype(int),
+        }
+    )
+    out = stats.area_subgroup_audit(frame, min_n=8)
+    areas = [r["area"] for r in out]
+    assert "A" in areas and "B" in areas and "other" in areas
+    # every submission is accounted for across the rows (pooling drops none)
+    assert sum(r["n"] for r in out) == n
+    # big areas sorted before the pooled row
+    assert areas[-1] == "other"
+    for r in out:
+        assert 0.0 <= r["accept_rate"] <= 1.0
+        assert (r["auroc"] != r["auroc"]) or (0.0 <= r["auroc"] <= 1.0)
+
+
 def test_benjamini_hochberg_known_case():
     out = stats.benjamini_hochberg({"a": 0.001, "b": 0.04, "c": 0.5, "d": 0.9}, alpha=0.05)
     assert out["a"]["significant"]
@@ -460,3 +531,18 @@ def test_new_analyses_present_and_sane():
     assert nb["reliability"]["full_median_sd"] < nb["reliability"]["naive_median_sd"]
     # both graders scored at a fair matched accept-rate operating point too
     assert "op_matched" in nb and "full" in nb["op_matched"] and "naive" in nb["op_matched"]
+    # loop 07 descriptive checks present and sane
+    bbs = R["bottom_band_sensitivity"]
+    assert [r["label"] for r in bbs][:2] == ["strict quintile", "bottom-60"]
+    dm = R["disagreement_moderation"]
+    assert {"mini", "full"} <= set(dm)
+    for key in ("mini", "full"):
+        assert -1.0 <= dm[key]["rho_resid_std"] <= 1.0
+    asg = R["area_subgroup"]
+    assert asg and sum(r["n"] for r in asg) == len(_primary_frame(d))
+
+
+def _primary_frame(d):
+    import run_all
+
+    return run_all._primary(d.config_frame(run_all.PRIMARY_CONFIG))
