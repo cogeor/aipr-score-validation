@@ -46,8 +46,10 @@ The second question is what the \emph{system} adds over the model it runs on, an
 its answer is the paper's central result. A frontier model is available to anyone,
 so we test AIPR against a generic one-paragraph prompt on the identical model and
 PDF. The bare prompt, with no rubric and no audit, already separates rejected from
-accepted submissions on its own, and the full pipeline discriminates no better: the
-two are at parity. The lesson is about the model, not the pipeline---\emph{with or
+accepted submissions on its own. The full pipeline's AUROC is higher, but the
+planned paired comparison is not statistically resolved (\aurocDiffPrel): this
+study was not powered to prove or exclude a small gap over an already strong naive
+baseline. The lesson is about the model, not the pipeline---\emph{with or
 without our prompt, a frontier model already produces a first-pass reviewing signal
 that substantially tracks the human outcome in this setting, so raw model
 intelligence is not the observed bottleneck}, and the reviewer keeps the decision. What the engineered pipeline---a scored rubric, a
@@ -82,10 +84,13 @@ trusted.
   conflated with.
   \item A pre-registered comparison showing that the validity comes from the model,
   not the pipeline: a bare one-paragraph prompt on the same model and PDF already
-  separates rejected from accepted submissions (AUROC \aurocNaiveFull) and the full
-  pipeline does no better (paired $\Delta$AUROC \aurocDiffFullNaive, \aurocDiffPrel),
-  so a frontier model already carries much of the outcome-aligned judgment signal
-  with or without our prompt---raw intelligence is not the observed bottleneck. What the pipeline adds is
+  separates rejected from accepted submissions (AUROC \aurocNaiveFull). The full
+  pipeline's observed AUROC is higher, but the paired difference is not
+  statistically resolved ($\Delta$AUROC \aurocDiffFullNaive, 95\% CI
+  \aurocDiffCI, \aurocDiffPrel), so the study cannot prove that AIPR
+  out-discriminates the naive prompt, nor that the two are equivalent. A frontier
+  model already carries much of the outcome-aligned judgment signal with or
+  without our prompt---raw intelligence is not the observed bottleneck. What the pipeline adds is
   consistency (within-paper SD \fullRunSD{} vs.\ \naiveRunSD{} points) and a
   grounded, anchored review in the same pass.
   \item A cost design in which the full pipeline on a cheap model establishes the
@@ -107,7 +112,8 @@ trusted.
   under two strictly nested configurations ($H\subseteq M$: full-mini / full,
   differing only in the reviewer model) plus the naive one-paragraph baseline (V1);
   the resulting scores are validated against the ground truth (H1--H5). No model is
-  tuned on the venue, decisions, or ratings. An interactive version of this figure
-  is available at \url{https://aipr.app/publications\#fig-design}.}
+  tuned on the venue, decisions, or ratings. The study's interactive companion, with
+  a live datapoint behind every results figure, is at
+  \url{https://aipr.pub/publications}.}
   \label{fig:design}
 \end{figure}

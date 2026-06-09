@@ -66,7 +66,7 @@ precision is \natBottomPrecision\%.
   H2) is in Table~\ref{tab:headline}; the ROC curves (all three graders overlaid)
   are Fig.~\ref{fig:naive}a.
   An interactive version of this figure---each point reveals its per-dimension
-  subscores on hover---is available at \url{https://aipr.app/publications\#fig-validation}.}
+  subscores on hover---is available at \url{https://aipr.pub/publications\#fig-validation}.}
   \label{fig:validation}
 \end{figure}
 
@@ -130,12 +130,15 @@ prompt, with no rubric and no audit, already separates rejected from accepted
 submissions on its own at AUROC \aurocNaiveFull{}---real discrimination against the
 human outcome from raw model judgment alone. The full pipeline reaches AUROC
 \aurocFullFull{} on the same papers, and the paired difference between them is small
-and not statistically significant (\aurocDiffFullNaive, 95\% CI \aurocDiffCI,
-\aurocDiffPrel; $n=\naiveN$): both graders' reject-vs-accept ROC curves clear the
+and not statistically significant at conventional levels (\aurocDiffFullNaive,
+95\% CI \aurocDiffCI, \aurocDiffPrel; $n=\naiveN$). We therefore do not claim
+equivalence or equal performance: the study was powered to detect a larger
+pipeline advantage, not to rule in or rule out a small difference over an already
+strong naive baseline. Both graders' reject-vs-accept ROC curves clear the
 diagonal and overlap closely (Fig.~\ref{fig:naive}a), and the per-tier score
 distributions tell the same story (Appendix~\ref{app:robust},
 Fig.~\ref{fig:score-dist}).
-The score-outcome agreement is therefore not manufactured by the engineering:
+The score-outcome agreement is therefore not manufactured solely by the engineering:
 \emph{with or without our prompt, a frontier model already produces a first-pass
 score that substantially tracks the human outcome in this cohort---raw model
 intelligence is not the observed bottleneck}, and the reviewer, not the model, keeps
@@ -143,8 +146,10 @@ the decision. This also settles the pre-registered V1
 prediction, which was directional: we pre-declared that the pipeline would
 \emph{out}-discriminate the naive judge, with the AUROC-difference CI excluding zero
 (\S\ref{sec:methods}). That criterion is not met---the CI includes zero---so we
-report the null plainly, as the pre-registration committed us to, and read it as
-evidence about the model's capability rather than a deficiency of the pipeline.
+report the comparison plainly, as the pre-registration committed us to. The
+non-significant \aurocDiffPrel{} result is evidence that the naive baseline is
+already strong and that our paired cohort is not powered for small differences; it
+is not proof that AIPR and the naive prompt have identical discrimination.
 
 What the engineered pipeline adds is not a higher score but a deployable one.
 First, reliability: AIPR grades far more consistently across repeated runs (median
@@ -187,12 +192,13 @@ building it does not rest on out-scoring that model.
   \textbf{(b)} Within-paper score SD over repeated runs---one dot per
   variance-sub-study paper, coloured by its human decision tier, with a median
   bar---AIPR grades far more consistently. A capable model already scores
-  competently (a); the engineered pipeline's contribution is reliability (b) and a
+  competently (a), while the observed AUROC gap is not statistically resolved
+  (\aurocDiffPrel); the engineered pipeline's contribution is reliability (b) and a
   grounded, rubric-anchored review produced in the same pass. The per-tier score
   distributions behind (a) are Appendix~\ref{app:robust}, Fig.~\ref{fig:score-dist};
   each method's matched-accept-rate operating point is Appendix~\ref{app:naive}.
   An interactive version of this figure is available at
-  \url{https://aipr.app/publications\#fig-naive}.}
+  \url{https://aipr.pub/publications\#fig-naive}.}
   \label{fig:naive}
 \end{figure}
 
