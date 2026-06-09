@@ -184,19 +184,26 @@ decision labels permuted, the overall-score AUROC is $\approx 0.5$.
 
 \begin{figure}[h]
   \centering
-  \begin{subfigure}{0.49\columnwidth}
-    \includegraphics[width=\linewidth]{figS_nested_auroc}
-    \caption{Cheap vs.\ frontier model on cohort $H$.}
-  \end{subfigure}\hfill
-  \begin{subfigure}{0.49\columnwidth}
-    \includegraphics[width=\linewidth]{figS_run_variance}
-    \caption{Run-to-run scoring variance.}
-  \end{subfigure}
-  \caption{Left: AUROC for full-mini and full on the shared cohort $H$, isolating
+  \includegraphics[width=0.6\columnwidth]{figS_nested_auroc}
+  \caption{AUROC for full-mini and full on the shared cohort $H$, isolating
   whether the frontier model adds discriminative signal over the cheap model (both
-  run the full two-pass pipeline). Right: distribution of within-paper score SD
-  across repeated frontier runs.}
-  \label{fig:supp-pair}
+  run the full two-pass pipeline).}
+  \label{fig:nested-auroc}
+\end{figure}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\textwidth]{figS_run_variance}
+  \caption{Run-to-run scoring spread, one point per re-grading. Each column is a
+  variance-sub-study paper; its repeated re-gradings stack vertically and are
+  coloured by the paper's human decision tier. Both panels share one $x$-order
+  (ascending mean AIPR score), so AIPR's tight columns (a) read directly against
+  the naive judge's wider ones (b)---the median within-paper SD annotated on each
+  panel (\fullRunSD{} vs.\ \naiveRunSD{} points) resolved to the individual
+  grading. Runs $0$ are excluded for both graders (\S\ref{sec:res-value}): run $0$
+  of the frontier config is the original cohort's citation-pinned config-state, not
+  stochastic noise.}
+  \label{fig:run-variance}
 \end{figure}
 
 \paragraph{Multiple comparisons.} The five per-dimension discrimination tests are

@@ -29,6 +29,7 @@ from common import (
     TIER_COLORS,
     TIER_LABELS,
     TIER_ORDER,
+    VARIANCE_SUBSTUDY_PAPERS,
     apply_style,
     watermark,
 )
@@ -333,16 +334,77 @@ def fig_nested_auroc(d, R):
 
 
 def fig_runvar(d, R):
-    rv = d.run_variance(PRODUCTION_CONFIG)
-    rv = rv[rv["n_runs"] > 1]
-    if rv.empty:
+    """Supp: run-to-run scoring spread resolved to the individual grading. Each
+    column is one variance-sub-study paper; its repeated re-gradings stack
+    vertically (one point per grading), coloured by the paper's human decision
+    tier. Both panels share a single x-order — ascending mean AIPR (full) score —
+    so AIPR's tight columns (a) read directly against the naive judge's wide ones
+    (b). This is the median-SD contrast of Fig.~\\ref{fig:naive}b, un-aggregated.
+
+    Runs are restricted to ``run_index>=1``: run 0 of ``full`` is the original
+    cohort's citation-pinned config-state (audit returned empty -> citation 100),
+    not stochastic noise, and is excluded everywhere the reliability SDs are
+    computed (``run_variance_full``/``\\fullRunSD``/``\\naiveRunSD``). Keeping the
+    same rows here makes the picture and the numbers agree."""
+    min_run = 1
+    subs = d.submissions[["submission_id", "venue", "year", "decision_tier"]]
+
+    def _runs(cfg):
+        g = d.gradings[(d.gradings["config"] == cfg) & (d.gradings["run_index"] >= min_run)]
+        m = g.merge(subs, on="submission_id", how="inner")
+        return m[(m["venue"] == PRIMARY_VENUE[0]) & (m["year"] == PRIMARY_VENUE[1])]
+
+    full_r, naive_r = _runs(PRODUCTION_CONFIG), _runs("naive")
+    counts = full_r.groupby("submission_id")["run_index"].nunique()
+    order = (
+        full_r[full_r["submission_id"].isin(counts[counts > 1].index)]
+        .groupby("submission_id")["overall"].mean().sort_values()
+    )
+    if order.empty:
         return
-    fig, ax = plt.subplots(figsize=(COL_WIDTH, 2.2))
-    ax.hist(rv["run_sd"].dropna(), bins=20, color=CONFIG_COLORS[PRODUCTION_CONFIG], alpha=0.8)
-    ax.axvline(R["run_variance_full"]["median_sd"], color="black", ls="--", lw=0.9)
-    ax.set_xlabel("Within-paper SD of overall score (full, repeated runs)")
-    ax.set_ylabel("Submissions")
-    ax.set_title("Run-to-run scoring noise")
+    # The released study re-grades VARIANCE_SUBSTUDY_PAPERS papers spanning the
+    # score range; the synthetic generator re-runs every paper, so deterministically
+    # thin to an evenly-spaced spread over the same ascending order (keeps the
+    # synthetic preview legible and matches the real export's decile pick).
+    if len(order) > VARIANCE_SUBSTUDY_PAPERS:
+        idx = np.unique(np.linspace(0, len(order) - 1, VARIANCE_SUBSTUDY_PAPERS).round().astype(int))
+        order = order.iloc[idx]
+    pos = {sid: i for i, sid in enumerate(order.index)}
+    tier_of = subs.set_index("submission_id")["decision_tier"].to_dict()
+
+    full_r = full_r[full_r["submission_id"].isin(pos)]
+    naive_r = naive_r[naive_r["submission_id"].isin(pos)]
+    rel = R.get("naive_baseline", {}).get("reliability", {})
+    allv = np.concatenate([full_r["overall"].values, naive_r["overall"].values])
+    ylo, yhi = float(allv.min()) - 4, float(allv.max()) + 4
+
+    fig, (axL, axR) = plt.subplots(1, 2, figsize=(TEXT_WIDTH, 2.7), sharey=True)
+    tiers_present: list[str] = []
+    for ax, frame, cfg, sd_key, tag in (
+        (axL, full_r, PRODUCTION_CONFIG, "full_median_sd", "(a)"),
+        (axR, naive_r, "naive", "naive_median_sd", "(b)"),
+    ):
+        for sid, grp in frame.groupby("submission_id"):
+            x0, ys = pos[sid], grp["overall"].values
+            offs = np.linspace(-0.22, 0.22, len(ys)) if len(ys) > 1 else np.array([0.0])
+            ax.hlines(ys.mean(), x0 - 0.32, x0 + 0.32, color="0.5", lw=0.8, zorder=1)
+            ax.scatter(x0 + offs, ys, s=22, color=TIER_COLORS[tier_of[sid]], alpha=0.9,
+                       edgecolors="white", linewidths=0.4, zorder=2)
+            if tier_of[sid] not in tiers_present:
+                tiers_present.append(tier_of[sid])
+        ax.set_xticks([])
+        ax.set_xlabel("Submissions (ordered by mean AIPR score)")
+        ax.set_title(f"{tag} {CONFIG_LABELS[cfg]}", loc="left", fontsize=9, fontweight="bold")
+        sd = rel.get(sd_key)
+        if sd is not None and not np.isnan(sd):
+            ax.annotate(f"median within-paper SD {sd:.1f}", xy=(0.5, 0.015),
+                        xycoords="axes fraction", ha="center", va="bottom", fontsize=7.5)
+    axL.set_ylabel("Overall score")
+    axL.set_ylim(ylo, yhi)
+    handles = [Patch(facecolor=TIER_COLORS[t], label=TIER_LABELS[t])
+               for t in TIER_ORDER if t in tiers_present]
+    axL.legend(handles=handles, fontsize=7, loc="lower right")
+    fig.tight_layout(w_pad=1.2)
     _save(fig, "figS_run_variance", d.is_synthetic)
 
 
