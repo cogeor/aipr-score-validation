@@ -49,8 +49,10 @@ from stats import (
     jonckheere_trend,
     low_band_spearman,
     low_score_harm,
+    mwu_pvalue,
     paired_auroc_diff,
     population_boundary,
+    roc_points,
     prevalence_reweighted_bottom_precision,
     quantile_membership_overlap,
     score_band_table,
@@ -593,6 +595,32 @@ def _points(d: Dataset, R: dict) -> dict:
             **_subscores(r, suffix=f"_{PRODUCTION_CONFIG}"),
         })
 
+    # Discrimination bundle — ROC curves (cohort H, reject-vs-accept) for AIPR full
+    # vs the naive judge (the title-matching "the model already carries the signal"
+    # view), plus pairwise tier significance (two-sided Mann-Whitney on overall) for
+    # the score-distribution figure's stars.
+    TIER_PAIRS = [("reject", "poster"), ("poster", "oral"), ("reject", "oral")]
+
+    def _roc(df) -> dict:
+        fpr, tpr = roc_points(df["accept_bool"].values, df["overall"].values)
+        return {
+            "auc": round(float(auroc(df["accept_bool"].values, df["overall"].values)), 3),
+            "points": [{"fpr": round(float(f), 4), "tpr": round(float(t), 4)} for f, t in zip(fpr, tpr)],
+        }
+
+    def _tier_sig(df) -> dict:
+        out = {}
+        for a, b in TIER_PAIRS:
+            sa = df[df["decision_tier"] == a]["overall"].values
+            sb = df[df["decision_tier"] == b]["overall"].values
+            out[f"{a}_{b}"] = _safe(mwu_pvalue(sa, sb))
+        return out
+
+    discrimination = {
+        "roc": {"full": _roc(full), "mini": _roc(mini), "naive": _roc(naive)},
+        "tier_sig": {"full": _tier_sig(full), "naive": _tier_sig(naive)},
+    }
+
     # Reliability bundle — the interactive twin of figS_run_variance. One entry per
     # variance-sub-study paper, carrying its individual re-gradings (runs 1..N-1;
     # min_run=1 drops the run-0 citation artifact, matching run_variance_full) under
@@ -636,6 +664,7 @@ def _points(d: Dataset, R: dict) -> dict:
         "full": rows(full),        # frontier cohort
         "naive": rows(naive),      # naive judge — overall only, no subscores (null)
         "bridge": bridge,          # fig_bridge (paired mini<->full; frontier subscores)
+        "discrimination": discrimination,  # ROC curves (full vs naive) + tier significance
         "variance": {
             "papers": variance_papers,
             "median_sd_full": _safe(rel.get("full_median_sd")),

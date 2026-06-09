@@ -182,6 +182,16 @@ def auroc_pvalue(y_true: np.ndarray, score: np.ndarray) -> float:
     return float(stats.mannwhitneyu(pos, neg, alternative="greater").pvalue)
 
 
+def mwu_pvalue(a, b) -> float:
+    """Two-sided Mann-Whitney U p for a difference in two score groups (e.g. the
+    overall-score distributions of two decision tiers). NaN if either is empty."""
+    a = np.asarray(a, float)
+    b = np.asarray(b, float)
+    if len(a) == 0 or len(b) == 0:
+        return float("nan")
+    return float(stats.mannwhitneyu(a, b, alternative="two-sided").pvalue)
+
+
 def paired_auroc_diff(
     y_true, score_a, score_b, n_boot: int = 4000, alpha: float = 0.05, seed: int | None = None
 ) -> dict:
