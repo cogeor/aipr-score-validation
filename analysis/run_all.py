@@ -43,6 +43,7 @@ from stats import (
     cohens_d,
     jonckheere_trend,
     low_band_spearman,
+    low_score_harm,
     paired_auroc_diff,
     prevalence_reweighted_bottom_precision,
     quantile_membership_overlap,
@@ -144,6 +145,20 @@ def compute(d: Dataset) -> dict:
         n_bins=_N_BANDS, seed=GLOBAL_SEED,
     )
     R["bottom_band_full"] = bands_full[0].__dict__
+
+    # ---- low-score harm: the OPPOSITE conditional to reject precision. How much
+    # accepted/oral work lands in the bottom band -- the triage error the flag must
+    # keep small, and the deployment-relevant quantity the fixed AIPR@60 cutoff is
+    # NOT (the production score is compressed high, so a 60 threshold is not
+    # venue-calibrated). Same bottom-band membership as score_band_table band 0.
+    R["low_score_harm_mini"] = low_score_harm(
+        mini["overall"].values, mini["accept_bool"].values,
+        mini["tier_rank"].values, BAND_QUANTILE,
+    ).__dict__
+    R["low_score_harm_full"] = low_score_harm(
+        full["overall"].values, full["accept_bool"].values,
+        full["tier_rank"].values, BAND_QUANTILE,
+    ).__dict__
 
     # ---- H1 under natural prevalence: reject precision at real ICLR accept rate
     R["prevalence_point"] = prevalence_reweighted_bottom_precision(
@@ -608,6 +623,21 @@ def write_macros(R: dict) -> None:
     cmd("bottomRejectCIFrontier", f"[{_pct(bbf['reject_ci'][0])}, {_pct(bbf['reject_ci'][1])}]")
     cmd("bottomLiftFrontier", f"{bbf['lift']:.2f}")
     cmd("bottomOralRateFrontier", _pct(bbf["oral_rate"]))
+
+    # Low-score harm (counts + conditional rates) for the AIPR@60 reframe: the
+    # deployment-relevant error is accepted/oral work in the bottom band, NOT a
+    # fixed-cutoff balanced accuracy. Frontier (production) and full-mini cohorts.
+    hf, hm = R["low_score_harm_full"], R["low_score_harm_mini"]
+    cmd("lowAcceptCountFrontier", str(hf["accepted_in_bottom"]))
+    cmd("nAcceptFrontier", str(hf["n_accepted"]))
+    cmd("lowOralCountFrontier", str(hf["oral_in_bottom"]))
+    cmd("nOralFrontier", str(hf["n_oral"]))
+    cmd("pLowGivenAcceptFrontier", _pct(hf["p_low_given_accepted"]))
+    cmd("lowAcceptCountMini", str(hm["accepted_in_bottom"]))
+    cmd("nAcceptMini", str(hm["n_accepted"]))
+    cmd("lowOralCountMini", str(hm["oral_in_bottom"]))
+    cmd("nOralMini", str(hm["n_oral"]))
+    cmd("pLowGivenAcceptMini", _pct(hm["p_low_given_accepted"]))
 
     ci_macro("bridgeRho", R["bridge"]["spearman"])
     cmd("bridgeN", str(R["bridge"]["n"]))

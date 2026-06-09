@@ -328,10 +328,13 @@ artifact of forcing the baseline onto AIPR's cutoff, we also score each method a
 its own threshold matched to the human accept rate. On discrimination the two are
 at parity---AUROC \aurocFullFull{} against \aurocNaiveFull{}, a paired difference
 that is not statistically significant (\aurocDiffFullNaive, 95\% CI \aurocDiffCI,
-\aurocDiffPrel)---and decision agreement at AIPR@60 is likewise comparable
-(\opSixtyFullAcc\% against \opSixtyNaiveAcc\% balanced accuracy), confirming the
-pipeline is no worse at the score itself. Where the pipeline separates from the
-bare prompt is reliability: median within-paper SD \fullRunSD{} against
+\aurocDiffPrel). The fixed AIPR@60 cutoff is a pre-registered diagnostic rather than
+evidence of decision parity: the production score is compressed high and anchored
+near the venue bar, so a 60 threshold predicts almost every paper accept and is not
+venue-calibrated (\opSixtyFullAcc\% against \opSixtyNaiveAcc\% balanced accuracy for
+AIPR and the naive judge); we therefore rest the decision comparison on threshold-free
+AUROC and report the fixed cutoff only for completeness. Where the pipeline separates
+from the bare prompt is reliability: median within-paper SD \fullRunSD{} against
 \naiveRunSD{} points. That reliability, with the grounded, anchored review produced
 in the same pass, is what the engineered pipeline adds over the same model used
 directly---not a higher score.

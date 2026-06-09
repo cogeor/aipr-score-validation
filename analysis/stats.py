@@ -439,6 +439,49 @@ def score_band_table(
     return rows
 
 
+@dataclass
+class HarmRow:
+    n_bottom: int
+    n_accepted: int
+    n_oral: int
+    accepted_in_bottom: int
+    oral_in_bottom: int
+    p_low_given_accepted: float
+    p_low_given_oral: float
+
+
+def low_score_harm(
+    score: np.ndarray, accept_bool: np.ndarray, tier_rank: np.ndarray, q: float
+) -> HarmRow:
+    """Deployment-relevant error: strong work landing in the low-score band.
+
+    The bottom band is ``score < quantile(score, q)`` -- the SAME membership as
+    band 0 of :func:`score_band_table` -- so these counts describe exactly the
+    region the flag fires on. Reports how many accepted / oral papers fall in it,
+    as counts and as P(low | accepted) / P(low | oral). This is the opposite
+    conditional to bottom-band reject precision: the triage harm a low-score flag
+    must keep small (a strong paper wrongly flagged), not the reject rate.
+    """
+    score = np.asarray(score, float)
+    accept_bool = np.asarray(accept_bool, int)
+    tier_rank = np.asarray(tier_rank, int)
+    low = score < float(np.quantile(score, q))
+    is_oral = tier_rank == TIER_RANK["oral"]
+    n_acc = int((accept_bool == 1).sum())
+    n_oral = int(is_oral.sum())
+    acc_low = int(((accept_bool == 1) & low).sum())
+    oral_low = int((is_oral & low).sum())
+    return HarmRow(
+        n_bottom=int(low.sum()),
+        n_accepted=n_acc,
+        n_oral=n_oral,
+        accepted_in_bottom=acc_low,
+        oral_in_bottom=oral_low,
+        p_low_given_accepted=(acc_low / n_acc) if n_acc else 0.0,
+        p_low_given_oral=(oral_low / n_oral) if n_oral else 0.0,
+    )
+
+
 # ----------------------------------------------------------------------------
 # Low-end bridge: does the cheap score agree with the frontier score WHERE THE
 # CLAIM LIVES (the bottom band), not just globally? A high global Spearman can

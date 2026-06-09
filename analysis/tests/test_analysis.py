@@ -249,6 +249,20 @@ def test_score_band_oral_rate_uses_oral_rank():
     assert bands[-1].oral_rate == 4 / 5
 
 
+def test_low_score_harm_counts_opposite_conditional():
+    # Low-score harm = accepted/oral work in the bottom band (the opposite
+    # conditional to reject precision). Deterministic 10-paper frame.
+    score = np.arange(10, dtype=float)  # quantile(.,0.2) = 1.8 -> bottom = {score 0, 1}
+    rank = np.array([0, 2, 0, 1, 0, 1, 2, 2, 1, 2], int)
+    accept = (rank >= 1).astype(int)
+    h = stats.low_score_harm(score, accept, rank, q=0.2)
+    assert h.n_bottom == 2
+    assert h.oral_in_bottom == 1 and h.accepted_in_bottom == 1  # score 1 is an oral
+    assert h.n_oral == 4 and h.n_accepted == 7
+    assert h.p_low_given_oral == 1 / 4
+    assert h.p_low_given_accepted == 1 / 7
+
+
 def test_band_lift_ci_brackets_and_orders():
     rng = np.random.default_rng(11)
     q = rng.normal(0, 1, 600)

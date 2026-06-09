@@ -142,12 +142,24 @@ small against the between-tier separation. Second, the same pass that
 produces the score produces a structured review---five rubric dimensions, a
 grounded citation audit, and verbatim-anchored comments---rather than the bare
 number the prompt returns; that review, not the scalar, is what a reviewer acts
-on. The scoring rule does several things at once and pays no accuracy penalty for
-it: the validated overall is a by-product of the pass that yields the review
-(\opSixtyFullAcc\% vs.\ \opSixtyNaiveAcc\% balanced accuracy at the pre-registered
-AIPR@60 operating point confirms the pipeline is no worse at the decision itself).
-The value of AIPR is therefore the processing it wraps around an already-capable
-model, and the case for building it does not rest on out-scoring that model.
+on. The scoring rule does several things at once without trading away
+discrimination: the validated overall is a by-product of the pass that yields the
+review, and the threshold-free AUROC and run-to-run reliability above are where the
+parity and the value live. The pre-registered AIPR@60 operating point is a
+fixed-cutoff diagnostic, not the deployment claim: because the production score is
+compressed high and anchored near the venue bar (\S\ref{sec:discussion}), a fixed 60
+threshold predicts almost every paper accept and is not venue-calibrated
+(\opSixtyFullAcc\% vs.\ \opSixtyNaiveAcc\% balanced accuracy for AIPR and the naive
+judge), so we do not read it as an accept/reject classifier. For triage the relevant
+error is the opposite conditional---accepted or oral work landing in the low-score
+band. On the production frontier score, no accepted
+(\lowAcceptCountFrontier/\nAcceptFrontier) or oral
+(\lowOralCountFrontier/\nOralFrontier) paper falls in the bottom band; on the larger
+full-mini cohort \lowAcceptCountMini/\nAcceptMini accepted and
+\lowOralCountMini/\nOralMini oral papers do, the rare cases we read qualitatively in
+\S\ref{sec:failure} rather than as a fixed-cutoff accuracy. The value of AIPR is
+therefore the processing it wraps around an already-capable model, and the case for
+building it does not rest on out-scoring that model.
 
 \begin{figure}[t]
   \centering
