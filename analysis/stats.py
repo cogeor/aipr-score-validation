@@ -25,7 +25,7 @@ import numpy as np
 from scipy import stats
 from sklearn.metrics import roc_auc_score, roc_curve
 
-from common import GLOBAL_SEED
+from common import GLOBAL_SEED, TIER_RANK
 
 
 # ----------------------------------------------------------------------------
@@ -420,7 +420,7 @@ def score_band_table(
         n = int(mask.sum())
         rej = int((accept_bool[mask] == 0).sum())
         rr = rej / n if n else 0.0
-        orr = float((tier_rank[mask] == 3).mean()) if n else 0.0
+        orr = float((tier_rank[mask] == TIER_RANK["oral"]).mean()) if n else 0.0
         _, lci, hci = band_lift_ci(score, accept_bool, n_bins, b, seed=seed)
         rows.append(
             BandRow(

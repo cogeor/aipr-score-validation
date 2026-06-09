@@ -235,6 +235,20 @@ def test_score_band_lift_monotone_data():
     assert lo > 1.0
 
 
+def test_score_band_oral_rate_uses_oral_rank():
+    # Regression for the ==3 vs ==2 bug: the band oral-rate must count
+    # tier_rank == TIER_RANK["oral"] (==2), never a literal 3 (which made every
+    # band's oral rate structurally 0 and zeroed Table 3 + \bottomOralRate).
+    score = np.arange(10, dtype=float)  # 0..9, strictly increasing => deterministic bands
+    rank = np.array([0, 0, 1, 0, 1, 2, 1, 2, 2, 2], int)  # orals all in the top half
+    accept = (rank >= 1).astype(int)
+    bands = stats.score_band_table(score, accept, rank, n_bins=2, seed=0)
+    # bottom band = scores 0..4 (ranks 0,0,1,0,1) -> no oral
+    assert bands[0].oral_rate == 0.0
+    # top band = scores 5..9 (ranks 2,1,2,2,2) -> 4 oral / 5; posters must NOT count
+    assert bands[-1].oral_rate == 4 / 5
+
+
 def test_band_lift_ci_brackets_and_orders():
     rng = np.random.default_rng(11)
     q = rng.normal(0, 1, 600)
