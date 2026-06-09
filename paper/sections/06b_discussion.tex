@@ -46,6 +46,28 @@ result. That grounded, search-backed audit is what the deployed product runs; th
 fix to the study artifact is to score an empty or failed audit as \emph{unknown}
 rather than perfect, and to re-grade under the search-backed configuration.
 
+\paragraph{Do the subscores reflect independent assessment?}
+A multi-dimensional score invites the question of whether the model evaluates each
+dimension on its own merits or forms a global verdict and fits the parts to it---the
+halo effect familiar from human rating. The four informative dimensions are
+moderately correlated (mean pairwise $r=\haloMeanR$ on cohort M, $n=\haloN$, range
+\haloMinR--\haloMaxR; Table~\ref{tab:subscore-corr}): they share a general-quality
+component, as expected, but each keeps distinct variance, so the breakdown is not
+one number wearing four hats. The correlation is high enough, though, to be
+consistent with partial anchoring---a verdict-first read that the subscores are then
+dressed to support. Two clarifications keep this honest. First, this concerns the
+\emph{initial} grade; it is separate from a model's tendency to revise under
+conversational pressure, which is a property of the interactive review rather than
+of the score, and which a good instrument should resist rather than indulge. Second,
+our design cannot separate genuine cross-dimensional evidence---a rigor red flag that
+legitimately lowers the novelty read---from anchoring; the correlation bounds the
+concern without diagnosing its mechanism. Eliciting each dimension
+independently---separate, isolated judgments aggregated after the fact rather than
+one holistic pass---is the natural way to decorrelate the verdict from the parts and
+to test whether such independence improves or degrades validity; we leave that
+architectural comparison, together with an order-perturbation probe that measures the
+anchoring directly, to future work.
+
 \paragraph{Relation to concurrent comment-quality benchmarks.}
 A concurrent line of work benchmarks the \emph{review comments} humans and AI
 systems produce. ReviewBench \citep{reviewbench2026} scores comments by structural

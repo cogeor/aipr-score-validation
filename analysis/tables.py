@@ -104,6 +104,27 @@ def table_subscores(d, R):
     _w("tab_subscores.tex", body)
 
 
+def table_subscore_corr(d, R):
+    """Pairwise Pearson r among the four informative subscores (citation excluded:
+    pinned, zero variance). The halo / anchoring lens — whether the dimensions are
+    judged distinctly or move as one latent-quality factor."""
+    sc = R["subscore_corr"]
+    dims = sc["dims"]
+    m = sc["matrix"]
+    header = " & ".join(DIM_LABELS[x] for x in dims)
+    rows = []
+    for a in dims:
+        cells = ["1" if a == b else f"{m[a][b]:.2f}" for b in dims]
+        rows.append(rf"{DIM_LABELS[a]} & " + " & ".join(cells) + r" \\")
+    body = (
+        "\\begin{tabular}{l" + "c" * len(dims) + "}\n\\toprule\n"
+        + rf" & {header} \\" + "\n\\midrule\n"
+        + "\n".join(rows)
+        + "\n\\bottomrule\n\\end{tabular}\n"
+    )
+    _w("tab_subscore_corr.tex", body)
+
+
 def table_contamination(d, R):
     """Temporal leakage: clean primary cohort vs the pre-cutoff replication venue
     (contaminated contrast) vs the primary cohort with pre-cutoff arXiv papers
@@ -392,6 +413,7 @@ def write_all(d, R):
     table_headline(d, R)
     table_bands(d, R)
     table_subscores(d, R)
+    table_subscore_corr(d, R)
     table_contamination(d, R)
     table_weight_robustness(d, R)
     table_length_confound(d, R)

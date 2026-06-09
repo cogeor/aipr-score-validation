@@ -122,6 +122,24 @@ def compute(d: Dataset) -> dict:
     sub_p = {dim: auroc_pvalue(mini["accept_bool"].values, mini[dim].values) for dim in DIMENSIONS}
     R["subscore_bh"] = benjamini_hochberg(sub_p, alpha=0.05)
 
+    # ---- inter-subscore correlation (the halo / anchoring lens) ------------
+    # Pairwise Pearson r among the four informative dimensions (citation is
+    # excluded: pinned at 100 in this frozen config, zero variance -> undefined
+    # correlation). Quantifies whether the dimensions are assessed distinctly or
+    # move together as one latent-quality factor. Computed on cohort M (the
+    # power cohort the subscore tests use); replicates on cohort H.
+    info_dims = [dim for dim in DIMENSIONS if dim != "citation"]
+    corr = mini[info_dims].corr()
+    off = corr.values[np.triu_indices(len(info_dims), 1)]
+    R["subscore_corr"] = {
+        "dims": info_dims,
+        "matrix": {a: {b: float(corr.loc[a, b]) for b in info_dims} for a in info_dims},
+        "mean_r": float(off.mean()),
+        "min_r": float(off.min()),
+        "max_r": float(off.max()),
+        "n": int(len(mini)),
+    }
+
     # ---- citation subscore: the "always-100%" bug -------------------------
     # In this frozen offline grading config the citation dimension is pinned high
     # (no live retrieval wired), so it carries no reject/accept signal. Surface
@@ -856,6 +874,15 @@ def write_macros(R: dict) -> None:
     if cs:
         cmd("aurocDropCitationMini", f"{cs['mini']['auroc_drop_citation']['point']:.2f}")
         cmd("aurocDropCitationFull", f"{cs['full']['auroc_drop_citation']['point']:.2f}")
+
+    # Inter-subscore correlation — the halo / anchoring summary (4 informative
+    # dimensions, citation excluded).
+    sc = R.get("subscore_corr", {})
+    if sc:
+        cmd("haloMeanR", f"{sc['mean_r']:.2f}")
+        cmd("haloMinR", f"{sc['min_r']:.2f}")
+        cmd("haloMaxR", f"{sc['max_r']:.2f}")
+        cmd("haloN", str(sc["n"]))
 
     # Population boundary: every eligible submission accounted for (graded vs.
     # eligible-but-excluded ledger). Total excluded, the eligible total, and the

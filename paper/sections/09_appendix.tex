@@ -182,6 +182,20 @@ decision labels permuted, the overall-score AUROC is $\approx 0.5$.
   \input{tables/tab_subscores}
 \end{table}
 
+\begin{table}[h]
+  \centering
+  \caption{Pairwise Pearson correlation among the four informative subscores
+  (cohort M, $n=\haloN$; citation excluded---pinned at 100, zero variance). The
+  dimensions share a general-quality component (mean off-diagonal
+  $r=\haloMeanR$) but retain distinct variance: the weakest pair
+  (novelty--clarity, $r=\haloMinR$) is the most distinct, the strongest
+  (rigor--clarity, $r=\haloMaxR$) is the expected writing-quality confound. Not a
+  single collapsed factor, but not orthogonal either---see
+  \S\ref{sec:discussion}.}
+  \label{tab:subscore-corr}
+  \input{tables/tab_subscore_corr}
+\end{table}
+
 \begin{figure}[h]
   \centering
   \includegraphics[width=0.6\columnwidth]{figS_nested_auroc}
