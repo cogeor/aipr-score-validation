@@ -5,18 +5,18 @@
 The load-bearing result is that a bare one-paragraph prompt on the frontier model
 already separates rejected from accepted submissions on its own (AUROC
 \aurocNaiveFull; \S\ref{sec:res-value}), and the full pipeline does no better. The
-scoring parity, read on its face as a negative result for the pipeline, is the
-opposite: with or without our prompt the model is already intelligent enough to
-produce a trustworthy first-pass reviewing signal---the raw judgment is not what a
-deployment is short of, and the reviewer still owns the decision. The open problem is
+scoring parity, read on its face as a negative result for the pipeline, points to
+a different bottleneck: with or without our prompt, the model already produces an
+outcome-aligned first-pass score in this setting---raw judgment is not what this
+deployment is shortest of; stability, grounding, and accountable presentation are. The open problem is
 not building a model that \emph{can} judge, but turning that capability into an
 instrument a reviewer can rely on: one
 that returns the same verdict on the same paper across runs, grounds its claims in
 evidence rather than generating them, and surfaces an anchored, rubric-structured
 review instead of a bare number. That is an engineering problem, and it is the one
-AIPR addresses. Framed this way the contribution shifts from ``can an LLM judge
-quality?''---which our parity result, with a growing literature, answers yes---to
-``can a system judge quality \emph{reliably and accountably} at deployment?'',
+AIPR addresses. Framed this way the contribution shifts from ``can an LLM produce an outcome-aligned
+quality signal in this setting?''---which our parity result answers yes---to
+``can a system deliver that signal \emph{reliably and accountably} at deployment?'',
 which is what the reliability gap (Fig.~\ref{fig:naive}b) and the grounded review
 speak to. The implication for the field is that effort is better spent on the
 processing layer---reliability, grounding, interaction---than on waiting for a more

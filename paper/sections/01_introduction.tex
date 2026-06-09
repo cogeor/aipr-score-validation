@@ -48,9 +48,9 @@ so we test AIPR against a generic one-paragraph prompt on the identical model an
 PDF. The bare prompt, with no rubric and no audit, already separates rejected from
 accepted submissions on its own, and the full pipeline discriminates no better: the
 two are at parity. The lesson is about the model, not the pipeline---\emph{with or
-without our prompt, a frontier model is already intelligent enough to produce a
-trustworthy first-pass reviewing signal, so intelligence is not the bottleneck}, and
-the reviewer keeps the decision. What the engineered pipeline---a scored rubric, a
+without our prompt, a frontier model already produces a first-pass reviewing signal
+that substantially tracks the human outcome in this setting, so raw model
+intelligence is not the observed bottleneck}, and the reviewer keeps the decision. What the engineered pipeline---a scored rubric, a
 grounded citation audit, and a two-pass read---adds is therefore not validity but
 \emph{deployability}: a score that is reliable across repeated runs and arrives with
 a grounded, anchored review, produced in a single pass. This pre-registered
@@ -84,8 +84,8 @@ trusted.
   not the pipeline: a bare one-paragraph prompt on the same model and PDF already
   separates rejected from accepted submissions (AUROC \aurocNaiveFull) and the full
   pipeline does no better (paired $\Delta$AUROC \aurocDiffFullNaive, \aurocDiffPrel),
-  so a frontier model is already intelligent enough to review competently with or
-  without our prompt---intelligence is not the bottleneck. What the pipeline adds is
+  so a frontier model already carries much of the outcome-aligned judgment signal
+  with or without our prompt---raw intelligence is not the observed bottleneck. What the pipeline adds is
   consistency (within-paper SD \fullRunSD{} vs.\ \naiveRunSD{} points) and a
   grounded, anchored review in the same pass.
   \item A cost design in which the full pipeline on a cheap model establishes the

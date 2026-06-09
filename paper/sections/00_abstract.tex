@@ -23,9 +23,10 @@ generic one-paragraph prompt on the same frontier model and PDF---no rubric, no
 audit---already separates rejected from accepted submissions on its own
 (AUROC~\aurocNaiveFull), and the full pipeline discriminates no better (paired
 $\Delta$AUROC \aurocDiffFullNaive, 95\% CI \aurocDiffCI, \aurocDiffPrel).
-\emph{With or without our prompt, a frontier model is already intelligent enough to
-produce a trustworthy first-pass reviewing signal}: \emph{intelligence is not the
-bottleneck}, and the human keeps the decision. What the engineered pipeline adds is
+\emph{Within this ICLR cohort, with or without our prompt, a frontier model already
+produces a first-pass reviewing signal that agrees substantially with human
+outcomes}: \emph{intelligence is not the observed bottleneck}, and the human keeps
+the decision. What the engineered pipeline adds is
 therefore not validity but deployability---it matches that score while grading far
 more consistently across repeated runs (within-paper SD \fullRunSD{} vs.\
 \naiveRunSD{} points) and returns a grounded, rubric-anchored review in a single

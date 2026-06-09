@@ -15,9 +15,10 @@ scale. The study's central result is about the model rather than the pipeline. A
 one-paragraph prompt on the same model and PDF already separates rejected from
 accepted submissions (AUROC~\aurocNaive), and the structured rubric-and-audit
 pipeline discriminates no better (the paired difference is not statistically
-significant): with or without our prompt, a frontier model is already intelligent
-enough to produce a trustworthy first-pass reviewing signal, so intelligence is not
-the bottleneck, and the reviewer keeps the decision. What the engineered pipeline
+significant): with or without our prompt, a frontier model already produces a
+first-pass reviewing signal that substantially tracks human outcomes in this cohort,
+so raw model intelligence is not the observed bottleneck, and the reviewer keeps the
+decision. What the engineered pipeline
 adds is not a higher score but a deployable one---grading far more consistently
 across repeated runs and returning a grounded, anchored review in the same pass.
 
@@ -32,6 +33,8 @@ process itself exhibits.
 The de-identified scored table, the decision and rating labels, the analysis
 code, and the pre-registration are released; \texttt{run\_all.py} regenerates
 every figure, table, and number in this paper from the data with a single
-command. The grading rubric, prompts, and model configuration remain proprietary;
-the manuscript-to-score function is audited through its outputs rather than
-re-implemented.
+command. The full generated review text for identifiable submissions is not
+published by default; it is retained as a controlled audit artifact for editors
+or reviewers if needed. The grading rubric, prompts, and model configuration
+remain proprietary; the manuscript-to-score function is audited through its
+outputs rather than re-implemented.

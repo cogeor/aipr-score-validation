@@ -123,10 +123,11 @@ human outcome from raw model judgment alone. The full pipeline reaches AUROC
 and not statistically significant (\aurocDiffFullNaive, 95\% CI \aurocDiffCI,
 \aurocDiffPrel; $n=\naiveN$); the score distributions split by the human outcome are
 at least as well separated for AIPR as for the naive judge (Fig.~\ref{fig:naive}a).
-The validity is therefore not manufactured by the engineering: \emph{with or without
-our prompt, a frontier model is already intelligent enough to produce a trustworthy
-first-pass reviewing signal---intelligence is not the bottleneck}, and the reviewer,
-not the model, keeps the decision. This also settles the pre-registered V1
+The score-outcome agreement is therefore not manufactured by the engineering:
+\emph{with or without our prompt, a frontier model already produces a first-pass
+score that substantially tracks the human outcome in this cohort---raw model
+intelligence is not the observed bottleneck}, and the reviewer, not the model, keeps
+the decision. This also settles the pre-registered V1
 prediction, which was directional: we pre-declared that the pipeline would
 \emph{out}-discriminate the naive judge, with the AUROC-difference CI excluding zero
 (\S\ref{sec:methods}). That criterion is not met---the CI includes zero---so we
