@@ -65,4 +65,18 @@ bridge analysis of \S\ref{sec:results}.
 All analysis reads a two-table contract (one row per submission for labels, one
 row per grading run for scores; full schema in Appendix~\ref{app:schema}). We
 release the de-identified scored table and the analysis code so every figure and
-number reproduces with a single command.
+number reproduces with a single command. We do not publicly release the full
+AIPR review text for every identifiable submission by default; that corpus is a
+controlled audit artifact that can be provided to editors or reviewers if needed.
+
+\paragraph{PDF provenance and the cohort manifest.}
+For every retained submission we record the SHA-256 of the graded PDF
+(\texttt{pdf\_sha}) and grade the OpenReview \emph{submitted} manuscript---the
+double-blind version reviewers saw at decision time, with no author block
+(\texttt{is\_anonymized} is uniformly~1 at this venue)---not the camera-ready or
+post-rebuttal revision, pinning the artifact to the version available at the
+decision. The realized cohort manifest---submission ids, sampling stratum, and
+assigned configuration---is the released \texttt{submissions} and \texttt{gradings}
+tables themselves, anchored to the public pre-registration tag; the analysis plan
+was frozen before any score was joined to an outcome, so the release \emph{is} the
+manifest a reader audits against rather than a separately asserted artifact.

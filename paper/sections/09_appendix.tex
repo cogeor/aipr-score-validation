@@ -48,6 +48,25 @@ the tokens used, and provenance ids. Contract invariants (tier/rank consistency,
 uniform pipeline version, score ranges, referential integrity, cohort nesting
 $H\subseteq M$) are asserted at load.
 
+\section{Provenance and the grading boundary}
+\label{app:provenance}
+\paragraph{Decision-label derivation.} Each submission's raw OpenReview venue tag
+is released verbatim in \texttt{decision\_raw} (e.g.\ \texttt{ICLR.cc/2026/Conference/Oral}).
+The ordinal \texttt{decision\_tier} (reject/poster/oral) and \texttt{tier\_rank}
+($0/1/2$) are derived from that tag by a deterministic map, so any reader can
+re-derive every tier assignment from the released label; the load-time contract
+asserts the tag is non-empty and that the tier, rank, and accept fields agree.
+
+\paragraph{Inference-time access boundary.} During grading the reviewer model
+received the submitted PDF bytes and nothing from the submission's OpenReview
+forum: not the decision, the review text, the venue tag, or the reviewer ratings.
+The grounded citation audit could query bibliographic records to check the
+bibliography, but was not given access to OpenReview decision or review pages.
+Combined with the grading model's documented knowledge cutoff
+(31~August~2025, before the ICLR~2026 decisions and reviews were released in
+January~2026; \S\ref{sec:discussion}), the outcome we validate against could
+neither be read at grading time nor memorized in training.
+
 \section{Design justification: statistical power and estimator validity}
 \label{app:power}
 Both checks below were run \emph{before} data collection and do not use the real

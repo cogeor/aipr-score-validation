@@ -179,6 +179,9 @@ Pre-declared before unblinding (full plan + public prompt in the paper's appendi
   JT Type-I error).
 - Deterministic under the fixed seed; environment pinned (`requirements.txt`).
 - De-identified scored table + code + this file released for reproduction.
+- Full generated AIPR review text is not publicly released by default. It is a
+  controlled audit artifact and can be provided to editors/reviewers if they
+  judge it necessary.
 
 ## 8. What is explicitly NOT claimed
 Acceptance-probability prediction; ranking of strong papers; positive selection;
@@ -197,5 +200,5 @@ studied venue/field.
 - [x] Contamination check done — gpt-5.4 cutoff Aug 31 2025 < ICLR 2026 decisions Jan 2026 (confirm cutoff vs model card)
 - [x] Prospective ICLR 2027 arm — NOT required (cutoff closes the model-contamination channel for 2026); optional future-work only
 - [x] Re-frozen after the 2026-06-02 config revision (commit hash + date recorded above; public anchor = `prereg-iclr2026-v1` tag)
-- [ ] Manifest generated and committed
-- [ ] Eng export triggered
+- [x] Manifest committed — the realized cohort manifest (submission ids + stratum + assigned config) is the released `submissions.csv` / `gradings.csv`; public freeze anchor `prereg-iclr2026-v1` (see **Manifest** above). The analysis plan was frozen before any score was joined to an outcome.
+- [x] Eng export triggered — released two-CSV export (`submissions.csv` + `gradings.csv`) under `analysis/data/iclr2026/`.
