@@ -31,6 +31,7 @@ from common import (
     REPLICATION_VENUE,
     RESULTS_DIR,
     SCORE_WEIGHTS,
+    VARIANCE_SUBSTUDY_PAPERS,
 )
 from schema import Dataset, base_reject_rate, load_dataset, load_out_of_population
 from stats import (
@@ -566,13 +567,41 @@ def _points(d: Dataset, R: dict) -> dict:
             **_subscores(r, suffix=f"_{PRODUCTION_CONFIG}"),
         })
 
-    # Per-paper within-paper score SD over repeated runs (runs 1..N-1; min_run=1
-    # excludes the run-0 citation artifact, matching run_variance_full). Drives the
-    # reliability plot: AIPR clustered near zero, the naive judge spread wide.
-    def _run_sds(cfg: str) -> list:
-        rv = d.run_variance(cfg, min_run=1)
-        rv = rv[rv["n_runs"] > 1]
-        return [round(float(x), 2) for x in rv["run_sd"].dropna()]
+    # Reliability bundle — the interactive twin of figS_run_variance. One entry per
+    # variance-sub-study paper, carrying its individual re-gradings (runs 1..N-1;
+    # min_run=1 drops the run-0 citation artifact, matching run_variance_full) under
+    # both graders, the human tier (for colour), and the mean AIPR score the columns
+    # are ordered by. The web figure plots one point per grading exactly as the paper
+    # does. `median_sd_*` are the annotated medians (\fullRunSD / \naiveRunSD).
+    prim_ids = set(full["submission_id"])
+    tier_of = d.submissions.set_index("submission_id")["decision_tier"].to_dict()
+
+    def _runs_by_paper(cfg: str) -> dict:
+        g = d.gradings[(d.gradings["config"] == cfg) & (d.gradings["run_index"] >= 1)]
+        g = g[g["submission_id"].isin(prim_ids)]
+        return {sid: [round(float(x), 1) for x in grp["overall"]] for sid, grp in g.groupby("submission_id")}
+
+    full_runs, naive_runs = _runs_by_paper(PRODUCTION_CONFIG), _runs_by_paper("naive")
+    # Variance papers = those with >1 retained full run, ordered by ascending mean
+    # AIPR score (the shared x-order). Thin to VARIANCE_SUBSTUDY_PAPERS evenly across
+    # that order so a synthetic refresh (which re-runs every paper) stays legible and
+    # matches the real export's decile pick.
+    means = {sid: sum(r) / len(r) for sid, r in full_runs.items() if len(r) > 1}
+    order = sorted(means, key=means.get)
+    if len(order) > VARIANCE_SUBSTUDY_PAPERS:
+        idx = sorted({round(i) for i in np.linspace(0, len(order) - 1, VARIANCE_SUBSTUDY_PAPERS)})
+        order = [order[i] for i in idx]
+    variance_papers = [
+        {
+            "submission_id": sid,
+            "decision_tier": tier_of[sid],
+            "mean_full": round(means[sid], 2),
+            "full": full_runs.get(sid, []),
+            "naive": naive_runs.get(sid, []),
+        }
+        for sid in order
+    ]
+    rel = R.get("naive_baseline", {}).get("reliability", {})
 
     return {
         "venue": f"{PRIMARY_VENUE[0]} {PRIMARY_VENUE[1]}",
@@ -581,7 +610,11 @@ def _points(d: Dataset, R: dict) -> dict:
         "full": rows(full),        # frontier cohort
         "naive": rows(naive),      # naive judge — overall only, no subscores (null)
         "bridge": bridge,          # fig_bridge (paired mini<->full; frontier subscores)
-        "variance": {"full": _run_sds(PRODUCTION_CONFIG), "naive": _run_sds("naive")},
+        "variance": {
+            "papers": variance_papers,
+            "median_sd_full": _safe(rel.get("full_median_sd")),
+            "median_sd_naive": _safe(rel.get("naive_median_sd")),
+        },
     }
 
 
