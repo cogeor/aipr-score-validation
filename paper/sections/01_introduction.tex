@@ -22,7 +22,10 @@ truth demands.
 
 We study \textsc{AIPR}, a system that reads a submitted PDF and produces five
 0--100 quality dimensions (novelty, rigor, applicability, clarity, and citation)
-and a weighted overall score (\S\ref{sec:methods}). In deployment AIPR is
+and a weighted overall score (\S\ref{sec:methods}). We validate the overall score;
+the citation subscore is \emph{not} validated in this cohort, where its audit
+fallback pinned most papers to a single value, and dropping it leaves the headline
+unchanged (\S\ref{sec:discussion}). In deployment AIPR is
 interactive: a reviewer questions its findings, requests evidence, and refines the
 review in dialogue. This paper isolates the \emph{baseline} score the system emits
 on first read, before any interaction, which is the hardest case for an automated
