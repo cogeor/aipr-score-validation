@@ -39,4 +39,9 @@ paper/pass*.log
 paper/bibtex.log
 paper/main.pdf
 paper/main-anon.pdf
+paper/main_nmi.pdf
 paper/ANONYMOUS.flag
+
+# Scratch / tooling
+paper/main.extracted.txt
+.delegate/
