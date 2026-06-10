@@ -1,0 +1,49 @@
+\section{Discussion}
+\label{sec:nmi-discussion}
+% Alias label so the reused appendix (SI) cross-references resolve in this variant.
+\label{sec:discussion}
+
+The load-bearing result is that a bare one-paragraph prompt on the frontier model
+already separates rejected from accepted submissions on its own (AUROC
+\aurocNaiveFull), and the engineered pipeline's higher AUROC is not statistically
+resolved against it. Read that way, the result points to a different bottleneck:
+\emph{intelligence is not the observed bottleneck}. The model can already produce an
+outcome-aligned first-pass score; what a deployment is short of is not raw judgment
+but stability, grounding, and accountable presentation. The open problem is turning
+that capability into an instrument a reviewer can rely on---one that returns the same
+verdict on the same paper across runs, grounds its claims in retrieved evidence
+rather than generating them, and surfaces an anchored, rubric-structured review
+instead of a bare number. That is an engineering problem, and it is the one AIPR
+addresses; the reliability gap and the grounded review, not a higher score, are its
+demonstrated contribution. The implication for the field is that effort is better
+spent on the processing layer---reliability, grounding, interaction---than on waiting
+for a more intelligent base model the task does not appear to need.
+
+This reframes the policy question. Recent randomized evidence shows AI feedback can
+improve review \emph{text} \citep{thakkar2026feedback}; our complementary result is
+that a first-pass \emph{score} can be criterion-valid against human outcomes. Neither
+licenses uncontrolled use: the prevalence of undisclosed AI-assisted review
+\citep{russolatona2024lottery} and adversarial hidden prompts in manuscripts
+\citep{lin2025hidden} are exactly why assistance must be a controlled, disclosed,
+auditable system rather than reviewers pasting confidential manuscripts into general
+tools. The evidence argues against categorical rejection of AI assistance and for
+governing and evaluating it, while keeping consequential decisions with humans. The
+validated action here is prioritizing manuscripts for human attention, not automated
+rejection.
+
+\label{sec:limits}%
+Several limits bound the claim, and we state them plainly rather than repeatedly.
+The evidence is within a single venue family in one field; we do not claim cross-field
+generalization, and a two-year within-venue temporal contrast is a planned follow-up
+(\S\ref{sec:nmi-methods}). The scorer is proprietary: the analysis, labels, and
+de-identified scores are released and fully reproducible, but the manuscript-to-score
+function is audited through its outputs rather than re-implemented, with prompts and
+configuration available confidentially to editors. Contamination from outcome
+memorization is controlled by construction---the grading model's (\texttt{gpt-5.4})
+August~2025 knowledge cutoff precedes the January~2026 release of the cohort's
+decisions and reviews---and bounded further by an arXiv-before-cutoff sensitivity
+split; topic priors and preprint familiarity remain residual risks. The citation
+subscore is isolated, not validated here, and does not enter the headline. Finally,
+the human ground truth is itself noisy and increasingly AI-assisted, which is why we
+validate against the mean reviewer rating and lead with the robust low-end claim
+rather than ranking the top.

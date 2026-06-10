@@ -145,36 +145,50 @@ def cmd_paper(args):
     ``paper/ANONYMOUS.flag`` (which main.tex picks up to swap the three named
     cohort exemplars for outcome-only descriptions), compiles, and copies the
     result to ``main-anon.pdf``. The flag is always removed afterwards so the
-    default ``main.pdf`` build is never silently left in anonymized mode."""
+    default ``main.pdf`` build is never silently left in anonymized mode.
+
+    ``--nmi`` builds the condensed Nature Machine Intelligence variant
+    (``main_nmi.tex`` -> ``main_nmi.pdf``) and returns; it shares the generated
+    macros/figures/tables and the appendix-as-SI with the canonical build."""
     if shutil.which("pdflatex") is None:
         raise SystemExit("pdflatex not found on PATH (install MiKTeX/TeX Live).")
     _render_prereg_verbatim()  # frozen DECISIONS.md -> appendix \input (verbatim)
-    log = PAPER_DIR / "main.log"
     pdf = PAPER_DIR / "main.pdf"
     flag = PAPER_DIR / "ANONYMOUS.flag"
 
     def run(tool, *a):
         subprocess.run([tool, *a], cwd=PAPER_DIR, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-    def _compile(label: str) -> str:
-        """One full latexmk-style pass (pdflatex, bibtex, pdflatex x2). Returns the
-        page count; raises on a hard LaTeX error or a missing main.pdf."""
-        run("pdflatex", "-interaction=nonstopmode", "main.tex")
+    def _compile(stem: str, label: str) -> str:
+        """One full latexmk-style pass (pdflatex, bibtex, pdflatex x2) on
+        ``{stem}.tex``. Returns the page count; raises on a hard LaTeX error or a
+        missing PDF."""
+        tex = f"{stem}.tex"
+        stem_log = PAPER_DIR / f"{stem}.log"
+        stem_pdf = PAPER_DIR / f"{stem}.pdf"
+        run("pdflatex", "-interaction=nonstopmode", tex)
         if shutil.which("bibtex"):
-            run("bibtex", "main")
-        run("pdflatex", "-interaction=nonstopmode", "main.tex")
-        run("pdflatex", "-interaction=nonstopmode", "main.tex")
-        text = log.read_text(errors="ignore") if log.exists() else ""
+            run("bibtex", stem)
+        run("pdflatex", "-interaction=nonstopmode", tex)
+        run("pdflatex", "-interaction=nonstopmode", tex)
+        text = stem_log.read_text(errors="ignore") if stem_log.exists() else ""
         errors = [ln for ln in text.splitlines() if ln.startswith("! ")]
         if errors:
             print(f"LaTeX errors ({label}):")
             for e in errors[:10]:
                 print("  ", e)
             raise SystemExit("paper failed to compile cleanly")
-        if not pdf.exists():
-            raise SystemExit("no main.pdf produced")
-        m = re.search(r"Output written on main\.pdf \((\d+) page", text)
+        if not stem_pdf.exists():
+            raise SystemExit(f"no {stem}.pdf produced")
+        m = re.search(rf"Output written on {re.escape(stem)}\.pdf \((\d+) page", text)
         return m.group(1) if m else "?"
+
+    # The NMI variant is a separate manuscript; build it and return.
+    if getattr(args, "nmi", False):
+        nmi_pdf = PAPER_DIR / "main_nmi.pdf"
+        pages = _compile("main_nmi", "NMI variant")
+        print(f"OK (NMI): {nmi_pdf} ({nmi_pdf.stat().st_size} bytes, {pages} pages)")
+        return
 
     # The flag drives a \IfFileExists branch at TeX time. For --anon we build the
     # blind variant FIRST and copy it aside, THEN fall through to the canonical
@@ -183,7 +197,7 @@ def cmd_paper(args):
     if getattr(args, "anon", False):
         flag.write_text("anonymous\n", encoding="utf-8")
         try:
-            pages = _compile("anonymized")
+            pages = _compile("main", "anonymized")
         finally:
             if flag.exists():
                 flag.unlink()
@@ -193,7 +207,7 @@ def cmd_paper(args):
 
     if flag.exists():
         flag.unlink()  # canonical named build: flag must be absent
-    pages = _compile("named")
+    pages = _compile("main", "named")
     print(f"OK: {pdf} ({pdf.stat().st_size} bytes, {pages} pages)")
 
 
@@ -273,7 +287,7 @@ def cmd_clean(args):
         (PAPER_DIR, "*.aux"), (PAPER_DIR, "*.bbl"), (PAPER_DIR, "*.blg"), (PAPER_DIR, "*.log"),
         (PAPER_DIR, "*.out"), (PAPER_DIR, "*.toc"), (PAPER_DIR, "pass*.log"),
         (PAPER_DIR, "bibtex.log"), (PAPER_DIR, "finalpass.log"), (PAPER_DIR, "main.pdf"),
-        (PAPER_DIR, "main-anon.pdf"), (PAPER_DIR, "ANONYMOUS.flag"),
+        (PAPER_DIR, "main-anon.pdf"), (PAPER_DIR, "main_nmi.pdf"), (PAPER_DIR, "ANONYMOUS.flag"),
     ]
     n = 0
     for d, pat in patterns:
@@ -336,6 +350,8 @@ def build_parser() -> argparse.ArgumentParser:
     sp = add("paper", cmd_paper, "compile the LaTeX paper")
     sp.add_argument("--anon", action="store_true",
                     help="build the anonymized (blind) variant -> main-anon.pdf")
+    sp.add_argument("--nmi", action="store_true",
+                    help="build the condensed NMI variant -> main_nmi.pdf")
     sp = add("check", cmd_check, "validate data + lint macros + verify refs")
     sp.add_argument("--dataset", default="synthetic")
     add("clean", cmd_clean, "remove generated artifacts")

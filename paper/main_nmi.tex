@@ -1,0 +1,77 @@
+% ===========================================================================
+% Score-validation study — Nature Machine Intelligence (Analysis) variant.
+% Condensed main text (Introduction -> Results -> Discussion -> Methods) with the
+% current appendix reused as Supplementary Information. Shares ALL generated
+% numbers/figures/tables with main.tex via the same macros + figures/ + tables/.
+% Build:  python cli.py paper --nmi   (run analysis first to populate macros)
+% Title is intentionally identical to main.tex (kept per author decision).
+% ===========================================================================
+\documentclass[11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xspace}
+\usepackage{xcolor}
+\usepackage{subcaption}
+\usepackage[round]{natbib}
+\usepackage[colorlinks=true,allcolors=blue]{hyperref}
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf}
+
+\graphicspath{{figures/}}
+
+% --- numbers from the analysis (override the placeholders below) -----------
+\IfFileExists{macros/results_macros.tex}{\input{macros/results_macros.tex}}{}
+\IfFileExists{macros/sim_macros.tex}{\input{macros/sim_macros.tex}}{}
+\IfFileExists{macros/secondary_macros.tex}{\input{macros/secondary_macros.tex}}{}
+\input{macros.tex} % \providecommand defaults; fills any gap so the doc always builds
+
+% The NMI main text is de-identified by construction (no named exemplars); the
+% appendix-as-SI keeps the named case studies. \anonymousfalse => named SI, matching
+% the canonical build. The toggle is defined so shared inputs that branch on it work.
+\newif\ifanonymous\anonymousfalse
+\IfFileExists{ANONYMOUS.flag}{\anonymoustrue}{}
+
+\title{\textbf{Intelligence Is Not the Bottleneck:\\
+A Validation Study of AIPR's First-Pass Manuscript Score}}
+
+\author{%
+  AIPR Team\\
+  \texttt{\small score-validation --- NMI Analysis variant --- \today}%
+}
+\date{}
+
+\begin{document}
+\maketitle
+
+% A loud, removable banner whenever the build is on synthetic data.
+\IfFileExists{macros/SYNTHETIC.flag}{%
+  \begin{center}\fcolorbox{red}{red!8}{\parbox{0.9\linewidth}{\centering
+  \textcolor{red}{\textbf{DRAFT ON SYNTHETIC DATA.} All numbers and figures below
+  are generated from \texttt{synth.py} for formatting verification only and are
+  not results. Re-run \texttt{run\_all.py} against the real export to populate.}}}\end{center}
+}{}
+
+\input{sections/nmi_00_abstract}
+
+% NMI main-text order: Introduction (no heading) -> Results -> Discussion -> Methods.
+\input{sections/nmi_01_intro}
+\input{sections/nmi_02_results}
+\input{sections/nmi_03_discussion}
+\input{sections/nmi_04_methods}
+
+\bibliographystyle{plainnat}
+\bibliography{refs}
+
+% Supplementary Information: the full technical record reused from the canonical
+% appendix (pre-registration, schema, robustness suite, failure-mode case studies).
+\appendix
+\renewcommand{\appendixname}{Supplementary Information}
+\input{sections/09_appendix}
+
+\end{document}

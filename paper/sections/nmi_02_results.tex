@@ -1,0 +1,135 @@
+\section{Results}
+\label{sec:nmi-results}
+% Alias label so the reused appendix (SI) cross-references resolve in this variant.
+\label{sec:results}
+
+We grade submitted PDFs only; the model never sees OpenReview reviews, decisions,
+venue tags, ratings, or author identities (Fig.~\ref{fig:design}). We lead with the
+large cheap-model cohort ($n=\NminiPrimary$) and confirm on the production frontier
+cohort ($n=\NfullPrimary$); headline metrics for both appear in
+Table~\ref{tab:headline}.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{fig0_design}
+  \caption{\textbf{Study design and model-access boundary.} Each OpenReview
+  submission supplies both the artifact reviewers saw (the submitted PDF) and the
+  ground truth (decision tier and mean reviewer rating). AIPR grades the PDF with the
+  frozen v6 two-pass pipeline under two nested configurations
+  (full-mini, reviewer \texttt{gpt-5.4-mini}; full, reviewer \texttt{gpt-5.4}) plus a
+  naive one-paragraph baseline on \texttt{gpt-5.4}; outcomes enter only after scoring.
+  No model is tuned on the venue, decisions, or ratings.}
+  \label{fig:design}
+\end{figure}
+
+\begin{table}[t]
+  \centering
+  \caption{Headline metrics on ICLR~2026, for the cheap-model (\textbf{full-mini},
+  reviewer \texttt{gpt-5.4-mini}) and frontier (\textbf{full}, reviewer
+  \texttt{gpt-5.4}) configurations. Brackets are 95\% bootstrap confidence intervals.}
+  \label{tab:headline}
+  \input{tables/tab_headline}
+\end{table}
+
+\subsection{A first-pass score tracks human outcomes}
+The overall score separates rejected from accepted submissions with
+AUROC~\aurocMiniFull{} (full-mini), confirmed at \aurocFullFull{} on the frontier
+cohort; the standardized accept/reject gap is large (Cohen's $d=\cohensDMini$,
+Cliff's $\delta=\cliffsDeltaMini$). Mean score rises monotonically across the three
+ordered tiers (Jonckheere--Terpstra \trendPrel; Spearman $\rho=\trendRho$, 95\% CI
+\trendRhoCI), and the score correlates with the continuous mean reviewer rating at
+$\rho=\spearmanRatingMiniFull{}$ (full-mini) and \spearmanRatingFullFull{}
+(frontier). Because the reviewer rating averages over individual reviewer noise, it
+is the cleaner test of agreement with human-perceived quality, and the effect is
+strong rather than merely significant (Fig.~\ref{fig:validation}).
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{fig_validation}
+  \caption{\textbf{The AIPR score agrees with the human outcome three ways}
+  (full-mini cohort). \textbf{(a)} Overall score across the ordered decision tiers,
+  rising monotonically. \textbf{(b)} Reject rate by score decile with Wilson 95\%
+  intervals; shaded band = bottom score quintile, dashed line = base reject rate.
+  \textbf{(c)} Score vs.\ mean reviewer rating, coloured by tier, with a
+  least-squares trend and Spearman $\rho$.}
+  \label{fig:validation}
+\end{figure}
+
+\subsection{The signal is strongest for low-score triage}
+The validated action is allocation of human attention, and the score is sharpest at
+the low end where human review is itself most reliable. On the production frontier
+model the lowest-score quintile is rejected at \bottomRejectRateFrontier\% (95\% CI
+\bottomRejectCIFrontier), a \bottomLiftFrontier$\times$ lift over the
+\baseRejectRate\% base rate, with no oral papers in the band; the same pattern holds
+at scale on the cheap-model cohort (\bottomRejectRate\%, lift \bottomLift$\times$,
+95\% CI \bottomLiftCI{} clearing the pre-registered success rule). The reliability
+curve (Fig.~\ref{fig:validation}b) falls monotonically as the score rises, crossing
+the base rate near mid-scale. The bottom-quintile threshold is sample-relative, not
+an absolute cutoff: it is a venue-level capacity allocation---the venue chooses the
+share of submissions to inspect---rather than a universal rejection rule. At the
+venue's natural prevalence (\natAcceptRate\% accept), the bottom-quintile reject
+precision is \natBottomPrecision\%.
+
+\subsection{A frontier model already carries much of the signal}
+\label{sec:res-value}
+A frontier model is available to anyone, so we grade the frontier cohort a second
+way with a single one-paragraph prompt that asks the same model, on the same PDF,
+for an overall quality score---the realistic baseline a researcher would paste into
+a chat assistant (verbatim in the SI). The bare prompt already separates rejected
+from accepted submissions at AUROC~\aurocNaiveFull. The full pipeline reaches
+\aurocFullFull, and the paired difference is small and not statistically resolved
+($\Delta$AUROC~\aurocDiffFullNaive, 95\% CI \aurocDiffCI, \aurocDiffPrel;
+$n=\naiveN$): we claim neither superiority nor equivalence---the study was not
+powered to rule a small gap in or out over an already strong baseline
+(Fig.~\ref{fig:naive}a). What the engineering adds is a deployable score, not a
+higher one. It grades far more consistently across repeated runs (median within-paper
+SD \fullRunSD{} vs.\ \naiveRunSD{} points; Fig.~\ref{fig:naive}b), and the same pass
+returns a structured, grounded, rubric-anchored review rather than a bare number.
+A fixed-cutoff operating point (AIPR@60) is a diagnostic, not the deployment claim:
+because the production score is compressed high near the venue bar, a 60 threshold
+predicts almost every paper accept (\opSixtyFullAcc\% vs.\ \opSixtyNaiveAcc\%
+balanced accuracy) and is not read as a classifier.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{fig_naive}
+  \caption{\textbf{A strong naive baseline, and what the engineering adds}, on the
+  same frontier model and PDF. \textbf{(a)} Reject-vs-accept ROC for all three
+  graders overlaid; the legend gives AUROC with 95\% CIs and the frontier$-$naive
+  paired difference. AIPR's AUROC is higher, but the paired gap is not statistically
+  resolved (\aurocDiffPrel)---neither superiority nor equivalence is established.
+  \textbf{(b)} Within-paper score SD over repeated runs, one dot per paper coloured
+  by decision tier, with a median bar---AIPR grades far more consistently. The
+  pipeline's contribution is reliability and a grounded review in the same pass, not
+  raw discrimination.}
+  \label{fig:naive}
+\end{figure}
+
+% ============================================================================
+% SEAM (closed): two-year within-venue temporal validation. Build nothing here
+% until an ICLR 2025 export exists under analysis/data/iclr2025/ (the analysis
+% pipeline self-activates its replication section when 2025 rows are present).
+% Restore this subsection + a display item when the cohort is reinstated.
+%
+% \subsection{The finding is stable across the venue family}
+% On a fully pre-cutoff ICLR 2025 cohort the score--outcome relationship recurs at
+% AUROC~\aurocRepFull, supporting within-venue temporal robustness (not cross-field
+% generalization) and bounding cohort-artifact concerns. (Fig.~\ref{fig:replication}.)
+% ============================================================================
+
+\subsection{Failure modes define the deployment boundary}
+\label{sec:failure}
+For triage the costly error is an accepted or oral paper landing in the low-score
+band. On the frontier score no accepted (\lowAcceptCountFrontier/\nAcceptFrontier)
+or oral (\lowOralCountFrontier/\nOralFrontier) paper does; on the larger cohort
+\lowAcceptCountMini/\nAcceptMini accepted and \lowOralCountMini/\nOralMini oral
+papers do. Read qualitatively (SI), the false negatives are contribution-level
+novelty judgments and defects not visible from the PDF; the false positives are
+strong papers with real but forgivable concerns, which cost only a second human look.
+This asymmetry---cheap false positives, expensive false negatives at the top---is why
+the validated use is surfacing weak work for attention, never automated rejection,
+and where human review remains non-negotiable. The lightly weighted citation
+subscore is reported separately and is \emph{not} validated in this cohort, where an
+audit fallback pinned it (AUROC \citationAUROC); dropping it leaves the headline
+unchanged (AUROC \aurocDropCitationFull{} vs.\ \aurocFull), and the search-backed fix
+is a deferred engineering follow-up (SI).
