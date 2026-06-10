@@ -21,10 +21,11 @@ Such clustering is a known behaviour of scalar LLM judges, which compress toward
 of the scale and are unstable under resampling \citep{girrbach2025referencefree}, and for
 a deployed grader reliability rather than spread is the property that governs whether the
 score can be trusted \citep{gu2024surveyllmjudge,schroeder2024trustllm}. We trade spread
-for stability deliberately. This is the bias--variance logic of shrinkage: pulling a noisy
-estimate toward a reference centre reduces total error
-\citep{james1961estimation,mcelreath2020rethinking}, so a reproducible value near the mean
-is closer to an optimal estimator than a wider-ranging but noisier one. The alternative, a
+for stability deliberately: a stable estimate near a reference value is easier to act on
+than a wider-ranging but noisier one. The reference is concrete in this cohort: the
+production score's bottom quintile tops out at \bottomBandHiFrontier{} points and is
+rejected at \bottomRejectRateFrontier\%, so scores clustering just above
+\bottomBandHiFrontier{} sit near the venue's effective accept bar. The alternative, a
 low point estimate carried with a wide interval, fails as a deployment object because a
 reader anchors on the point estimate and under-weights the uncertainty around it
 \citep{hofman2020inferential}; a stable scalar is the safer thing to hand a reviewer.
@@ -75,8 +76,8 @@ does, rather than assume it.
 The central threat is that the grading model memorized the outcome in training, which
 would inflate the relationship; LLM-generated review content is already widespread
 \citep{liang2024monitoring}. We control for it by cohort choice: GPT-5.4's August~2025
-cutoff precedes the January~2026 release of ICLR~2026 decisions, so the outcome could not
-have been in training. We add an arXiv-before-cutoff sensitivity split bounding residual
+cutoff \citep{openai2026gpt54} precedes the January~2026 release of ICLR~2026 decisions,
+so the outcome could not have been in training. We add an arXiv-before-cutoff sensitivity split bounding residual
 paper-text leakage (Appendix~\ref{app:robust}). A fully pre-cutoff contaminated contrast
 and a prospective cohort, which would close leakage entirely, are deferred
 (Appendix~\ref{sec:limits}); whether the model's \emph{priors} on authors and

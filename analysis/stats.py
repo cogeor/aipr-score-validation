@@ -204,7 +204,9 @@ def paired_auroc_diff(
     Resampling is stratified on the label (per-class counts preserved, as in
     ``auroc_ci``). ``p`` is the two-sided bootstrap tail
     ``2*min(P(delta*<=0), P(delta*>=0))`` with the +1 correction so p>0; a
-    non-significant result is the parity finding the analysis expects.
+    non-significant result means the pre-declared superiority criterion (CI
+    excluding zero) is not met, and is reported as such — neither superiority
+    nor equivalence.
     """
     y = np.asarray(y_true).astype(int)
     a = np.asarray(score_a, float)
@@ -224,6 +226,26 @@ def paired_auroc_diff(
     p_right = (np.sum(r >= 0) + 1) / (len(r) + 1)
     p = float(min(1.0, 2 * min(p_left, p_right)))
     return {"delta": float(delta), "lo": float(lo), "hi": float(hi), "p": p, "n": int(len(y))}
+
+
+def paired_run_sd_test(sd_a, sd_b) -> dict:
+    """Exact Wilcoxon signed-rank test for paired within-paper run SDs.
+
+    ``sd_a`` and ``sd_b`` are per-paper run-to-run SDs of the SAME papers under
+    two graders (e.g. the full pipeline vs the direct judge), aligned by paper.
+    Pairs with a missing SD on either side are dropped. The p-value is the
+    two-sided exact signed-rank p (``scipy.stats.wilcoxon``, ``method="exact"``
+    — feasible because the variance sub-study has few pairs), testing whether
+    the within-paper SDs differ systematically across the two graders rather
+    than only in their medians. Returns ``{statistic, p, n}`` with ``n`` the
+    number of complete pairs used.
+    """
+    a = np.asarray(sd_a, float)
+    b = np.asarray(sd_b, float)
+    mask = np.isfinite(a) & np.isfinite(b)
+    a, b = a[mask], b[mask]
+    res = stats.wilcoxon(a, b, alternative="two-sided", method="exact")
+    return {"statistic": float(res.statistic), "p": float(res.pvalue), "n": int(len(a))}
 
 
 def benjamini_hochberg(pvals: dict[str, float], alpha: float = 0.05) -> dict[str, dict]:

@@ -81,9 +81,9 @@ forum: not the decision, the review text, the venue tag, or the reviewer ratings
 The grounded citation audit could query bibliographic records to check the
 bibliography, but was not given access to OpenReview decision or review pages.
 Combined with the grading model's documented knowledge cutoff
-(31~August~2025, before the ICLR~2026 decisions and reviews were released in
-January~2026; \S\ref{sec:discussion}), the outcome we validate against could
-neither be read at grading time nor memorized in training.
+(31~August~2025 \citep{openai2026gpt54}, before the ICLR~2026 decisions and
+reviews were released in January~2026; \S\ref{sec:discussion}), the outcome we
+validate against could neither be read at grading time nor memorized in training.
 
 \section{Deployment boundary, independence, and audit posture}
 \label{app:posture}
@@ -133,9 +133,12 @@ comparison.
 
 \section{Design justification: statistical power and estimator validity}
 \label{app:power}
-Both checks below were run \emph{before} data collection and do not use the real
-outcomes; they establish that the planned sample is adequate and that the
-analysis code is correct. They are reproduced by \texttt{analysis/simulation.py}.
+The power and estimator checks below were run \emph{before} data collection and
+do not use the real outcomes; they establish that the planned sample is adequate
+and that the analysis code is correct. The one exception, marked as such, is the
+post-hoc V1 minimum-detectable-effect analysis at the end of the power
+paragraph, added after unblinding. All are reproduced by
+\texttt{analysis/simulation.py}.
 
 \paragraph{Power.}
 Under a generative model in which a latent paper quality drives the decision
@@ -147,8 +150,17 @@ the design is well powered: for a moderate true effect the frontier cohort
 $\powerHoneN\%$ on the primary low-end test (H1), and the cohort $M$
 ($n\approx\NminiPrimary$) is at ceiling. The minimum detectable effect for H2 at
 $n=100$ and 80\% power is a true AUROC of about $\mdeAUROC$, well below any
-plausible value, so a null result would be informative rather than
-underpowered.
+plausible value, so a null result would be informative rather than a power
+artifact. The value comparison (V1) is the post-hoc exception: under a paired
+generative model whose two scores share a latent paper quality and whose
+within-paper correlation is calibrated to the observed full-vs-direct score
+correlation, the realized $n=\NfullPrimary$ design reaches 80\% power only for
+a true paired AUROC gap of at least \mdeAUROCdiff. The observed gap
+(\aurocDiffFullNaive) sits below that threshold, which is why
+\S\ref{sec:res-value} reads V1 as criterion-not-met rather than as evidence of
+equivalence. This analysis was added after unblinding and uses two observed
+summary constants (the score-score correlation and the direct arm's AUROC),
+never the outcome data.
 
 \paragraph{Estimator validity.}
 On data with a known population value, our 95\% BCa bootstrap confidence intervals
@@ -307,7 +319,11 @@ proxy for the production score (\S\ref{sec:results}). Because a global
 correlation can mask low-end disagreement, we also report agreement restricted to
 the cohort-$M$ bottom quintile, $\rho =$~\bridgeLowRhoFull, with \bridgeOverlap\% of the
 cohort-$M$ bottom quintile also in the frontier bottom quintile
-(Fig.~\ref{fig:bridge}, right): the proxy holds where the deployable claim lives.
+(Fig.~\ref{fig:bridge}, right). The bridge is strong globally but weaker in the
+bottom quintile, where the deployable claim lives (\S\ref{sec:limits}); this is
+why the low-end flag (H1) is also computed on the production score directly
+(\S\ref{sec:res-validity}), so the deployable claim does not route through the
+weak low-end bridge.
 
 \begin{figure}[h]
   \centering
@@ -317,7 +333,9 @@ cohort-$M$ bottom quintile also in the frontier bottom quintile
   agreement). Right: bottom-quintile
   membership (papers in both scores' bottom quintile vs.\ mini-only); dotted
   lines are the per-score quintile thresholds. The low-end recall and within-band
-  $\rho$ show the proxy holds where the claim lives, not only globally (H5).
+  $\rho$ quantify the bottom-quintile agreement, which is weaker than the global
+  correlation (H5); the deployable low-end flag is therefore also computed on the
+  production score directly (\S\ref{sec:res-validity}).
   Interactive counterpart (per-dimension subscores on hover):
   \url{https://aipr.pub/publications\#fig-bridge}.}
   \label{fig:bridge}
@@ -722,11 +740,16 @@ most, which remains a human call.
 \paragraph{Run-to-run variance.}
 The score is stochastic across runs but only mildly so: median within-paper SD
 $\approx\runSDmedian$ points on the frontier configuration, estimated from
-\runSDnPapers{} papers re-graded multiple times (\S\ref{sec:res-value}). Cross-paper
+\runSDnPapers{} papers graded three times each (\S\ref{sec:res-value}). Cross-paper
 point estimates use each paper's original single run (the pre-registered
 single-run design); the variance sub-study's re-runs are an augmentation and do not
-enter the headline metrics. The re-grade estimate is computed over the
-consistent-configuration re-runs, excluding the original frontier run whose citation
-audit returned empty (the pinned-100 artifact of \S\ref{sec:discussion}), so the SD
-reflects stochastic grading noise rather than that one-off scoring difference. The
-variance is small relative to the between-tier separation but is not zero.
+enter the headline metrics. The re-grade estimate is computed over the two
+consistent-configuration re-runs per paper, excluding run~0, the original frontier
+run whose citation audit returned empty (the pinned-100 artifact of
+\S\ref{sec:discussion}), so the SD reflects stochastic grading noise rather than
+that one-off scoring difference. The same two-re-run estimate, computed identically
+for the Direct grader on the same papers, supports the paired comparison: an exact
+Wilcoxon signed-rank test on the \relPairedN{} paired within-paper SDs gives
+\relPairedP, so the reliability gap is systematic across papers rather than a
+median artifact. The variance is small relative to the between-tier separation but
+is not zero.

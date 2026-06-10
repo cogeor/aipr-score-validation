@@ -22,8 +22,9 @@ confirm on cohort $H$ ($n=\NfullPrimary$); Table~\ref{tab:headline} gives both.
 
 \paragraph{Weak submissions are flagged (H1).}
 We report the deployable flag on the production model, AIPR (GPT-5.4), directly. Its
-lowest score quintile (the bottom fifth of the \NfullPrimary{}-paper cohort $H$,
-$n\approx20$) is rejected at \bottomRejectRateFrontier\% (95\% CI \bottomRejectCIFrontier),
+lowest score quintile (the bottom fifth of the \NfullPrimary{}-paper cohort $H$;
+integer-score ties shrink the strict quantile band to $n=\bottomNFrontier$) is rejected
+at \bottomRejectRateFrontier\% (95\% CI \bottomRejectCIFrontier),
 a \bottomLiftFrontier$\times$ lift over the \baseRejectRate\% base rate, with no oral
 papers in that band (\bottomOralRateFrontier\%); the small band makes cohort $M$ the
 anchor for scale. We use the
@@ -88,10 +89,13 @@ strawman.
 \paragraph{The model already carries the signal.}
 Direct (GPT-5.4) separates reject from accept on its own at AUROC \aurocNaiveFull{}. AIPR
 (GPT-5.4) reaches \aurocFullFull{} on the same papers; the paired difference is small and
-favours the pipeline but is underpowered (\aurocDiffFullNaive, 95\% CI \aurocDiffCI,
-\aurocDiffPrel; $n=\naiveN$). The direction is consistent with a pipeline advantage and
-the result is suggestive rather than null, but the cohort was powered for a larger gap, so
-we claim neither superiority nor equivalence (ROC, Fig.~\ref{fig:naive}a). The validated agreement of \S\ref{sec:res-validity} is therefore
+favours the pipeline but does not meet the pre-declared superiority criterion
+(\aurocDiffFullNaive, 95\% CI \aurocDiffCI, \aurocDiffPrel; $n=\naiveN$). The direction is
+consistent with a pipeline advantage and the result is suggestive rather than null. A
+post-hoc power analysis (Appendix~\ref{app:power}) puts the smallest paired AUROC gap
+detectable with 80\% power at this $n$ near \mdeAUROCdiff, above the observed
+\aurocDiffFullNaive, so we claim neither superiority nor equivalence (ROC,
+Fig.~\ref{fig:naive}a). The validated agreement of \S\ref{sec:res-validity} is therefore
 not manufactured by the engineering; with or without the rubric, a frontier model produces
 a first-pass score that tracks the human outcome, and raw intelligence is not the
 bottleneck. The open question is \emph{where} the signal comes from, not \emph{whether} it
@@ -100,8 +104,11 @@ is there.
 \paragraph{What the pipeline adds is reliability.}
 The engineering buys not a higher score but a stable one. Across repeated gradings of the
 same paper, AIPR's overall barely moves: median within-paper SD \fullRunSD{} points,
-against \naiveRunSD{} for Direct on the same model and papers (\runSDnPapers{} papers;
-Fig.~\ref{fig:naive}b). Where the discrimination gap is unresolved, this reliability gap
+against \naiveRunSD{} for Direct on the same model and papers (\runSDnPapers{} papers,
+each SD estimated from two consistent-configuration re-runs; Appendix~\ref{app:robust};
+Fig.~\ref{fig:naive}b). The gap is systematic across papers, not only a median
+difference: pairing the within-paper SDs of the two graders gives an exact Wilcoxon
+signed-rank \relPairedP{} ($n=\relPairedN$ pairs). Where the discrimination gap is unresolved, this reliability gap
 is large and unambiguous: the same submission earns nearly the same verdict every time,
 and that run-to-run noise is small against the between-tier separation the score must
 express. A reproducible score is worth more to a reviewer than one marginally sharper on

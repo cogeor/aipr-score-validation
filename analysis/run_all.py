@@ -51,6 +51,7 @@ from stats import (
     low_score_harm,
     mwu_pvalue,
     paired_auroc_diff,
+    paired_run_sd_test,
     population_boundary,
     roc_points,
     prevalence_reweighted_bottom_precision,
@@ -376,11 +377,12 @@ def _naive_baseline(d: Dataset, full) -> dict:
     out["n"] = int(len(naive))
 
     # (a) discrimination. Marginal AUROCs side by side, PLUS the paired
-    # difference (same labels, same papers) — the parity test the overlapping
-    # marginal CIs cannot resolve. Expected non-significant: a frontier model
-    # already scores competently, so the structured pipeline's value is not raw
-    # discrimination but the reliability + grounded output it adds (intelligence
-    # is not the bottleneck; processing is).
+    # difference (same labels, same papers) — the correlated comparison the
+    # overlapping marginal CIs cannot resolve. The pre-declared V1 success rule
+    # is a CI excluding zero; a non-significant result is read as
+    # criterion-not-met (neither superiority nor equivalence). The pipeline's
+    # distinctive value is the reliability + grounded output it adds
+    # (intelligence is not the bottleneck; processing is).
     out["auroc_full"] = auroc_ci(full["accept_bool"].values, full["overall"].values).as_dict()
     out["auroc_naive"] = auroc_ci(naive["accept_bool"].values, naive["overall"].values).as_dict()
     paired = full.merge(naive[["submission_id", "overall"]], on="submission_id", suffixes=("_full", "_naive"))
@@ -410,21 +412,35 @@ def _naive_baseline(d: Dataset, full) -> dict:
     }
 
     # (c) reliability: within-paper run-SD distribution, naive vs full
-    def _median_sd(cfg: str) -> tuple[float, int]:
+    def _run_sds(cfg: str):
         # min_run=1: same consistent-config re-runs as run_variance_full, so the
         # full-vs-naive reliability comparison is apples-to-apples on runs 1..N-1.
         rv = d.run_variance(cfg, min_run=1)
-        rv = rv[rv["submission_id"].isin(h_ids)]
+        return rv[rv["submission_id"].isin(h_ids)]
+
+    rv_full, rv_naive = _run_sds(PRODUCTION_CONFIG), _run_sds("naive")
+
+    def _summ(rv) -> tuple[float, int]:
         sd = float(np.nanmedian(rv["run_sd"])) if len(rv) else float("nan")
         nr = int(np.nanmax(rv["n_runs"])) if len(rv) else 0
         return sd, nr
 
-    full_sd, full_nr = _median_sd("full")
-    naive_sd, naive_nr = _median_sd("naive")
+    full_sd, full_nr = _summ(rv_full)
+    naive_sd, naive_nr = _summ(rv_naive)
     out["reliability"] = {
         "full_median_sd": full_sd, "naive_median_sd": naive_sd,
         "full_n_runs": full_nr, "naive_n_runs": naive_nr,
     }
+    # Paired full-vs-naive test on the SAME papers' within-paper SDs (exact
+    # Wilcoxon signed-rank): is the reliability gap systematic across papers,
+    # not only a median difference? Pairs need >1 retained run under BOTH
+    # configs (the variance sub-study papers); self-skips when none exist.
+    paired_sd = rv_full.merge(rv_naive, on="submission_id", suffixes=("_full", "_naive"))
+    paired_sd = paired_sd[(paired_sd["n_runs_full"] > 1) & (paired_sd["n_runs_naive"] > 1)]
+    if len(paired_sd):
+        out["reliability"]["paired_sd_test"] = paired_run_sd_test(
+            paired_sd["run_sd_full"].values, paired_sd["run_sd_naive"].values
+        )
     return out
 
 
@@ -782,6 +798,10 @@ def write_macros(R: dict) -> None:
     cmd("bottomRejectCIFrontier", f"[{_pct(bbf['reject_ci'][0])}, {_pct(bbf['reject_ci'][1])}]")
     cmd("bottomLiftFrontier", f"{bbf['lift']:.2f}")
     cmd("bottomOralRateFrontier", _pct(bbf["oral_rate"]))
+    # Realized band size + upper score edge: integer-score ties shrink the strict
+    # quantile band below n/5, and the edge anchors the venue-bar reading.
+    cmd("bottomNFrontier", str(bbf["n"]))
+    cmd("bottomBandHiFrontier", f"{bbf['hi_score']:.0f}")
 
     # Low-score harm (counts + conditional rates) for the AIPR@60 reframe: the
     # deployment-relevant error is accepted/oral work in the bottom band, NOT a
@@ -842,8 +862,8 @@ def write_macros(R: dict) -> None:
         ci_macro("aurocNaive", nb["auroc_naive"])
         cmd("aurocFullVsNaive", f"{nb['auroc_full']['point'] - nb['auroc_naive']['point']:.2f}")
         # Paired AUROC difference (full - naive) with CI + two-sided bootstrap p.
-        # The parity test: CI straddles 0 / p not significant => scoring parity,
-        # which is the "intelligence is not the bottleneck" result.
+        # The pre-declared V1 rule reads this CI: excluding 0 => superiority;
+        # straddling 0 => criterion not met (neither superiority nor equivalence).
         ad = nb["auroc_diff"]
         cmd("aurocDiffFullNaive", f"{ad['delta']:.2f}")
         cmd("aurocDiffCI", f"[{ad['lo']:.2f}, {ad['hi']:.2f}]")
@@ -857,6 +877,13 @@ def write_macros(R: dict) -> None:
         # both SDs from the SAME cohort-H reliability computation (apples to apples)
         cmd("fullRunSD", f"{rel['full_median_sd']:.1f}")
         cmd("naiveRunSD", f"{rel['naive_median_sd']:.1f}")
+        # Paired exact Wilcoxon on the same papers' within-paper SDs (full vs
+        # naive): relation-aware form for prose, plus the pair count.
+        pw = rel.get("paired_sd_test")
+        if pw:
+            pp_w = pw["p"]
+            cmd("relPairedP", ("p<0.001" if pp_w < 1e-3 else f"p={pp_w:.3f}"))
+            cmd("relPairedN", str(pw["n"]))
 
     # Manuscript-length confounding (rank corr of overall with length metrics).
     lc = R.get("length_confound", {})

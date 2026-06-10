@@ -92,3 +92,19 @@ and the analysis is deterministic under a fixed seed. Secondary analyses (per-di
 discrimination, audit-pass contribution, run-to-run variance, prevalence re-weighting,
 weighting robustness, leakage controls) are reported in \S\ref{sec:results} and
 Appendix~\ref{app:robust}.
+
+\paragraph{Deviations from pre-registration.}
+Two estimator choices differ from the registered analysis plan. Both are
+analysis-stage substitutions of a better-behaved interval for the registered
+one, and neither alters a pre-declared success threshold. First, confidence
+intervals are BCa bootstraps rather than the registered percentile bootstrap:
+the estimator-validation simulation (Appendix~\ref{app:power}) shows the
+percentile interval under-covers at this sample size while BCa attains nominal
+coverage. The V1 paired AUROC-difference CI is the exception and remains a
+percentile interval on the paired bootstrap distribution. Second, the H1
+success rule (lift CI lower bound above 1) reads a whole-cohort bootstrap CI
+for the bottom-band lift rather than the registered Wilson-based interval:
+resampling the whole cohort propagates uncertainty in the base rate and in the
+sample-relative band edges, which a Wilson interval on the band's reject rate
+alone cannot capture. Wilson intervals are still reported descriptively
+alongside the bands (Table~\ref{tab:bands}).

@@ -1,7 +1,6 @@
 """Design-justification simulation — runs WITHOUT real data.
 
-Two questions a careful reviewer asks before believing any result, both
-answerable now:
+Three questions a careful reviewer asks before believing any result:
 
 1. POWER. Given plausible effect sizes, is the planned sample (n=100 frontier,
    n=300 full-mini) large enough to detect the effects each hypothesis claims, and
@@ -12,6 +11,14 @@ answerable now:
    - Bootstrap CIs should cover the population value ~95% of the time.
    - The Jonckheere-Terpstra permutation test should reject a true null ~5% of
      the time (correct Type-I error) and yield uniform p-values under H0.
+
+3. V1 POST-HOC MDE. Added after unblinding: the minimum paired AUROC gap the
+   pipeline-vs-direct comparison (V1) can detect with 80% power at the realized
+   n=100. The generative model shares a latent paper quality between the two
+   scores, with their within-paper correlation calibrated to the observed
+   full-vs-direct score correlation (recorded below as a constant, so this
+   module still runs without real data). Unlike (1) and (2), this analysis is
+   post hoc and uses two observed summary constants, never the outcome data.
 
 The generative model mirrors the study's assumed structure (a latent paper
 quality drives tier, reviewer rating, and -- more noisily -- the AIPR score); the
@@ -144,6 +151,156 @@ def mde(grid, n: int, hyp: str, target: float = 0.8) -> float | None:
 
 
 # ---------------------------------------------------------------------------
+# V1 post-hoc MDE: power of the paired AUROC-difference comparison at n=100
+# ---------------------------------------------------------------------------
+# Calibration constants, computed ONCE from the committed
+# analysis/data/iclr2026/gradings.csv (2026-06-10) and recorded here so the
+# module keeps running without real data:
+#   * V1_OBS_SCORE_CORR: Pearson r between the full-pipeline (full_full) and
+#     direct (naive) overall scores on cohort H run 0 (n=100 pairs): r=0.739.
+#   * V1_OBS_DIRECT_AUROC: the direct judge's observed reject-vs-accept AUROC
+#     on cohort H (0.80), anchoring the baseline arm of the sweep.
+# Only these two summary constants enter; the outcome data never does.
+V1_OBS_SCORE_CORR = 0.74
+V1_OBS_DIRECT_AUROC = 0.80
+V1_SD_PAPER = 0.3  # shared paper-level quality deviation around the tier mean
+V1_N = 100         # the realized cohort-H size
+
+
+def _v1_sample(n: int, s_a: float, s_b: float, c: float, rng: np.random.Generator):
+    """One paired V1 cohort. A shared latent quality (tier mean + paper-level
+    deviation, SD ``V1_SD_PAPER``) is read by two scores: the pipeline arm with
+    score-noise SD ``s_a`` and the direct arm with SD ``s_b``. A fraction ``c``
+    of each arm's noise variance is a shared per-paper component, which is what
+    calibrates the within-paper score-score correlation. Returns
+    ``(score_a, score_b, accept_bool)`` on a balanced 3-tier sample."""
+    per = n // 3
+    tier = np.repeat(TIERS, per)
+    latent = TIER_REL[tier] + rng.normal(0, V1_SD_PAPER, len(tier))
+    u = rng.normal(0, 1, len(tier))  # shared noise component
+    e_a = np.sqrt(c) * u + np.sqrt(1 - c) * rng.normal(0, 1, len(tier))
+    e_b = np.sqrt(c) * u + np.sqrt(1 - c) * rng.normal(0, 1, len(tier))
+    score_a = 60 + 13 * latent + s_a * e_a
+    score_b = 60 + 13 * latent + s_b * e_b
+    accept = (tier >= 1).astype(int)
+    return score_a, score_b, accept
+
+
+def _v1_calibrate(seed: int, n_cal: int = 300_000) -> tuple[float, float]:
+    """Solve the direct arm's score-noise SD so its true AUROC matches the
+    observed ``V1_OBS_DIRECT_AUROC`` (bisection on a large sample), then the
+    shared-noise fraction so the two scores' correlation matches
+    ``V1_OBS_SCORE_CORR`` at the null (equal-noise) configuration. The
+    calibration is exact only at the null: as the pipeline arm's noise shrinks
+    during the sweep, the shared latent dominates and the correlation drifts
+    upward, raising power at large gaps, so the reported MDE is, if anything,
+    slightly smaller than under a fixed-correlation model."""
+    lo, hi = 5.0, 30.0
+    for _ in range(20):
+        mid = 0.5 * (lo + hi)
+        _, b, y = _v1_sample(n_cal, mid, mid, 0.0, np.random.default_rng(seed))
+        if roc_auc_score(y, b) > V1_OBS_DIRECT_AUROC:
+            lo = mid
+        else:
+            hi = mid
+    s_b = 0.5 * (lo + hi)
+    var_m = float(np.mean(TIER_REL**2) - np.mean(TIER_REL) ** 2)
+    shared_var = 169.0 * (var_m + V1_SD_PAPER**2)
+    c = float(np.clip(
+        (V1_OBS_SCORE_CORR * (shared_var + s_b**2) - shared_var) / s_b**2, 0.0, 1.0
+    ))
+    return s_b, c
+
+
+def _midrank(x: np.ndarray) -> np.ndarray:
+    """Midranks (1-based, ties averaged) — the DeLong placement primitive."""
+    order = np.argsort(x)
+    z = x[order]
+    n = len(x)
+    t = np.zeros(n)
+    i = 0
+    while i < n:
+        j = i
+        while j < n and z[j] == z[i]:
+            j += 1
+        t[i:j] = 0.5 * (i + j - 1) + 1
+        i = j
+    out = np.empty(n)
+    out[order] = t
+    return out
+
+
+def _delong_paired_p(y: np.ndarray, a: np.ndarray, b: np.ndarray) -> float:
+    """Two-sided DeLong test p for a paired AUROC difference (same labels, two
+    scores). This is the fast normal-approximation analog of the pre-registered
+    V1 rule (95% bootstrap CI excluding 0): analytic, so the power loop needs
+    no nested bootstrap. Degenerate variance (e.g. identical scores) returns 1."""
+    y = np.asarray(y).astype(int)
+    scores = np.vstack([np.asarray(a, float), np.asarray(b, float)])
+    pos = scores[:, y == 1]
+    neg = scores[:, y == 0]
+    m, n = pos.shape[1], neg.shape[1]
+    if m == 0 or n == 0:
+        return 1.0
+    tz = np.vstack([_midrank(np.r_[pos[r], neg[r]]) for r in range(2)])
+    tx = np.vstack([_midrank(pos[r]) for r in range(2)])
+    ty = np.vstack([_midrank(neg[r]) for r in range(2)])
+    auc = tz[:, :m].sum(axis=1) / (m * n) - (m + 1.0) / (2 * n)
+    v01 = (tz[:, :m] - tx) / n
+    v10 = 1.0 - (tz[:, m:] - ty) / m
+    cov = np.cov(v01) / m + np.cov(v10) / n
+    var = float(cov[0, 0] + cov[1, 1] - 2 * cov[0, 1])
+    if var <= 0:
+        return 1.0
+    z = (auc[0] - auc[1]) / np.sqrt(var)
+    return float(2 * stats.norm.sf(abs(z)))
+
+
+def v1_power_grid(
+    n_sim: int, seed: int, n: int = V1_N,
+    fracs=None, n_pop: int = 400_000,
+) -> dict:
+    """Power of the V1 paired AUROC comparison vs the TRUE gap at the realized
+    n. The sweep shrinks the pipeline arm's score noise from the calibrated
+    direct-arm value toward zero (``fracs`` of the direct SD), raising its true
+    AUROC while the direct arm stays anchored at the observed value; each grid
+    point reports the population gap (large-sample) and the fraction of
+    ``n_sim`` simulated cohorts where the paired test rejects at 0.05."""
+    rng = np.random.default_rng(seed)
+    s_b, c = _v1_calibrate(seed)
+    if fracs is None:
+        fracs = np.linspace(1.0, 0.25, 16)
+    grid = []
+    for f in fracs:
+        s_a = float(f) * s_b
+        big_a, big_b, big_y = _v1_sample(n_pop, s_a, s_b, c, rng)
+        true_gap = float(roc_auc_score(big_y, big_a) - roc_auc_score(big_y, big_b))
+        hits = 0
+        for _ in range(n_sim):
+            a, b, y = _v1_sample(n, s_a, s_b, c, rng)
+            hits += _delong_paired_p(y, a, b) < 0.05
+        grid.append({"noise_frac": float(f), "true_gap": true_gap, "power": hits / n_sim})
+    return {
+        "grid": grid,
+        "direct_noise_sd": float(s_b),
+        "shared_noise_coef": float(c),
+        "obs_score_corr": V1_OBS_SCORE_CORR,
+        "obs_direct_auroc": V1_OBS_DIRECT_AUROC,
+        "n": int(n),
+    }
+
+
+def v1_mde(grid: list[dict], target: float = 0.8) -> float | None:
+    """Smallest true paired AUROC gap on the grid reaching ``target`` power
+    (None if the grid never reaches it). Mirrors :func:`mde`."""
+    xs = sorted((g["true_gap"], g["power"]) for g in grid)
+    for gap, p in xs:
+        if p >= target:
+            return gap
+    return None
+
+
+# ---------------------------------------------------------------------------
 # Estimator self-validation
 # ---------------------------------------------------------------------------
 def bootstrap_coverage(n_rep: int, n: int, n_boot: int, sep: float, noise_sd: float, seed: int):
@@ -247,6 +404,8 @@ def write_sim_macros(summary: dict):
     cmd("powerHtwoMini", f"{100 * summary['power_at_plan']['300']['H2']:.0f}")
     mde2 = summary["mde"]["H2_n100"]
     cmd("mdeAUROC", f"{mde2:.2f}" if mde2 else "n/a")
+    mv1 = summary["v1"]["mde_gap"]
+    cmd("mdeAUROCdiff", f"{mv1:.2f}" if mv1 else "n/a")
     cmd("bootCoverage", f"{100 * summary['coverage']['coverage']:.0f}")
     cmd("jtTypeOne", f"{100 * summary['jt']['type_one_error']:.1f}")
     cmd("jtUniformP", f"{summary['jt']['uniform_ks_p']:.2f}")
@@ -272,6 +431,9 @@ def main():
     cov = bootstrap_coverage(cov_rep, 100, n_boot, sep=0.9, noise_sd=noise_sd, seed=GLOBAL_SEED + 1)
     print("== JT type-I error ==")
     jt = jt_type_one(jt_rep, 100, n_perm, noise_sd, seed=GLOBAL_SEED + 2)
+    print("== V1 paired-AUROC power (post-hoc MDE) ==")
+    v1 = v1_power_grid(n_sim, seed=GLOBAL_SEED + 3)
+    v1["mde_gap"] = v1_mde(v1["grid"])
 
     summary = {
         "noise_sd": noise_sd,
@@ -286,6 +448,7 @@ def main():
         },
         "coverage": cov,
         "jt": jt,
+        "v1": v1,
         "grid": grid,
     }
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -300,6 +463,7 @@ def main():
           f"H3={fid['power']['100']['H3']:.2f} H4={fid['power']['100']['H4']:.2f}")
     print(f"power@n=300 H2={fid['power']['300']['H2']:.2f}")
     print(f"MDE AUROC (H2,80%,n=100) = {summary['mde']['H2_n100']}")
+    print(f"V1 MDE paired-AUROC gap (80%,n={v1['n']}) = {v1['mde_gap']}")
     print(f"bootstrap coverage = {cov['coverage']:.3f} (target 0.95)")
     print(f"JT type-I error = {jt['type_one_error']:.3f} (target 0.05); uniform KS p = {jt['uniform_ks_p']:.2f}")
 

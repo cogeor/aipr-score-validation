@@ -484,6 +484,72 @@ def test_population_boundary_counts_sum_and_nonneg():
     assert stats.population_boundary(in_pop, None) == {}
 
 
+def test_paired_run_sd_test_detects_known_direction():
+    # one grader consistently noisier on the same papers -> small exact p
+    rng = np.random.default_rng(8)
+    sd_full = rng.uniform(0.3, 1.5, 12)
+    sd_naive = sd_full + rng.uniform(1.0, 3.0, 12)
+    out = stats.paired_run_sd_test(sd_full, sd_naive)
+    assert out["n"] == 12
+    assert out["p"] < 0.01
+
+
+def test_paired_run_sd_test_symmetric_is_not_significant():
+    # differences symmetric around zero (distinct magnitudes) -> large p
+    a = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+    d = np.array([0.9, -1.1, 1.3, -1.5, 1.7, -1.9, 2.1, -2.3])
+    out = stats.paired_run_sd_test(a, a + d)
+    assert out["n"] == 8
+    assert out["p"] > 0.5
+
+
+def test_paired_run_sd_test_drops_incomplete_pairs():
+    a = np.array([1.0, 2.0, np.nan, 4.0, 5.0, 6.0, 7.0])
+    b = a + 1.0
+    out = stats.paired_run_sd_test(a, b)
+    assert out["n"] == 6  # the nan pair is dropped, not imputed
+
+
+# --------------------------------------------------------------------------- V1 post-hoc power
+def test_v1_delong_paired_p_null_and_separated():
+    import simulation
+
+    # identical scores: degenerate variance -> p = 1 (never spuriously significant)
+    y = np.r_[np.zeros(50), np.ones(50)].astype(int)
+    s = np.random.default_rng(9).normal(0, 1, 100)
+    assert simulation._delong_paired_p(y, s, s.copy()) == 1.0
+    # one score separates perfectly, the other is pure noise -> small p
+    strong = y + np.random.default_rng(10).normal(0, 0.1, 100)
+    assert simulation._delong_paired_p(y, strong, s) < 0.01
+
+
+def test_v1_power_monotone_in_true_gap():
+    import simulation
+
+    out = simulation.v1_power_grid(
+        n_sim=80, seed=0, fracs=(1.0, 0.6, 0.3), n_pop=80_000
+    )
+    g = out["grid"]
+    gaps = [r["true_gap"] for r in g]
+    assert gaps == sorted(gaps)  # shrinking pipeline noise raises the true gap
+    assert g[0]["true_gap"] < 0.01  # equal-noise configuration is the null
+    assert g[0]["power"] < 0.3  # ~alpha at the null
+    assert g[-1]["power"] > g[0]["power"]  # power rises with the gap
+    assert g[-1]["power"] > 0.7  # a large gap is detected
+
+
+def test_v1_mde_picks_smallest_grid_gap_reaching_target():
+    import simulation
+
+    grid = [
+        {"true_gap": 0.02, "power": 0.10},
+        {"true_gap": 0.12, "power": 0.92},
+        {"true_gap": 0.08, "power": 0.85},
+    ]
+    assert simulation.v1_mde(grid) == 0.08
+    assert simulation.v1_mde([{"true_gap": 0.05, "power": 0.4}]) is None
+
+
 def test_benjamini_hochberg_known_case():
     out = stats.benjamini_hochberg({"a": 0.001, "b": 0.04, "c": 0.5, "d": 0.9}, alpha=0.05)
     assert out["a"]["significant"]
@@ -562,6 +628,10 @@ def test_new_analyses_present_and_sane():
     assert nb["auroc_full"]["point"] > nb["auroc_naive"]["point"]
     assert nb["op_at60"]["full"]["balanced_accuracy"] > nb["op_at60"]["naive"]["balanced_accuracy"]
     assert nb["reliability"]["full_median_sd"] < nb["reliability"]["naive_median_sd"]
+    # paired within-paper SD test wired (exact Wilcoxon over the variance papers)
+    pw = nb["reliability"].get("paired_sd_test")
+    if pw is not None:  # present whenever both configs carry re-runs on shared papers
+        assert 0.0 <= pw["p"] <= 1.0 and pw["n"] >= 1
     # both graders scored at a fair matched accept-rate operating point too
     assert "op_matched" in nb and "full" in nb["op_matched"] and "naive" in nb["op_matched"]
     # loop 07 descriptive checks present and sane
