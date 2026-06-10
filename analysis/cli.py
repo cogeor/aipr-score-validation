@@ -38,7 +38,7 @@ from common import ANALYSIS_DIR, FIG_DIR, MACRO_DIR, PAPER_DIR, RESULTS_DIR, TAB
 _LATEX_BUILTINS = {
     "documentclass", "usepackage", "begin", "end", "section", "subsection", "subsubsection",
     "paragraph", "label", "ref", "input", "includegraphics", "graphicspath", "cite", "citep",
-    "citet", "textbf", "textit", "emph", "texttt", "item", "centering", "footnote", "noindent",
+    "citet", "citealp", "itshape", "textbf", "textit", "emph", "texttt", "item", "centering", "footnote", "noindent",
     "textcolor", "fcolorbox", "parbox", "today", "maketitle", "appendix", "bibliography",
     "bibliographystyle", "linewidth", "columnwidth", "textwidth", "toprule", "midrule",
     "bottomrule", "caption", "captionsetup", "TBD", "xspace", "IfFileExists", "providecommand",
@@ -109,18 +109,34 @@ _PREREG_ASCII = {
 
 _PREREG_WRAP = 100  # columns; long markdown lines soft-wrap to fit the page at \footnotesize
 
+_PREREG_TAG = "prereg-iclr2026-v2"  # authoritative public freeze anchor (DECISIONS.md §1)
+
 
 def _render_prereg_verbatim() -> None:
-    """Generate ``paper/prereg_verbatim.tex``: the frozen ``DECISIONS.md``
+    """Generate ``paper/prereg_verbatim.tex``: ``DECISIONS.md`` as committed at
+    the public freeze tag ``prereg-iclr2026-v2`` — NOT the working tree —
     reproduced (ASCII-normalized) in a ``\\footnotesize`` ``verbatim`` block, for
-    the appendix ``\\input``. Generated + gitignored, so the appendix always shows
-    the committed pre-registration. Written at ``paper/`` root (NOT ``sections/``)
-    so the macro-lint — which scans ``sections/*.tex`` — never reads the verbatim
-    prose as LaTeX. Markdown paragraphs that exceed ``_PREREG_WRAP`` columns are
-    soft-wrapped at word boundaries (a 294-char line otherwise overran the margin
-    by 250pt); content and word order are unchanged, only the display line breaks,
-    so the block stays faithful to the frozen plan."""
-    text = (ANALYSIS_DIR.parent / "DECISIONS.md").read_text(encoding="utf-8")
+    the appendix ``\\input``. Sourcing the text from the tag makes the appendix's
+    "verbatim from the frozen pre-registration" claim true by construction:
+    post-freeze bookkeeping edits to the working-tree file can never leak into
+    the printed block. The approver's personal e-mail address is redacted; the
+    redaction is disclosed in the appendix intro. Written at ``paper/`` root
+    (NOT ``sections/``) so the macro-lint — which scans ``sections/*.tex`` —
+    never reads the verbatim prose as LaTeX. Markdown paragraphs that exceed
+    ``_PREREG_WRAP`` columns are soft-wrapped at word boundaries (a 294-char
+    line otherwise overran the margin by 250pt); content and word order are
+    otherwise unchanged, only the display line breaks, so the block stays
+    faithful to the frozen plan."""
+    proc = subprocess.run(
+        ["git", "show", f"{_PREREG_TAG}:DECISIONS.md"],
+        cwd=ANALYSIS_DIR.parent, capture_output=True, text=True, encoding="utf-8",
+    )
+    if proc.returncode != 0:
+        raise SystemExit(
+            f"git show {_PREREG_TAG}:DECISIONS.md failed — the freeze tag must be"
+            f" present locally to build the paper: {proc.stderr.strip()}"
+        )
+    text = proc.stdout.replace("(costa.georgantas@gmail.com)", "(e-mail redacted)")
     for uni, asc in _PREREG_ASCII.items():
         text = text.replace(uni, asc)
     text = text.encode("ascii", "ignore").decode("ascii")  # drop any stray non-ASCII

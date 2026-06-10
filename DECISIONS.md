@@ -199,6 +199,48 @@ studied venue/field.
 - [x] Replication venue — **DEFERRED** (2026-only first analysis; ICLR 2025 reinstated as future work)
 - [x] Contamination check done — gpt-5.4 cutoff Aug 31 2025 < ICLR 2026 decisions Jan 2026 (confirm cutoff vs model card)
 - [x] Prospective ICLR 2027 arm — NOT required (cutoff closes the model-contamination channel for 2026); optional future-work only
-- [x] Re-frozen after the 2026-06-02 config revision (commit hash + date recorded above; public anchor = `prereg-iclr2026-v1` tag)
-- [x] Manifest committed — the realized cohort manifest (submission ids + stratum + assigned config) is the released `submissions.csv` / `gradings.csv`; public freeze anchor `prereg-iclr2026-v1` (see **Manifest** above). The analysis plan was frozen before any score was joined to an outcome.
+- [x] Re-frozen after the 2026-06-02 config revision (commit hash + date recorded above; public anchor = `prereg-iclr2026-v2` tag)
+- [x] Manifest committed — the realized cohort manifest (submission ids + stratum + assigned config) is the released `submissions.csv` / `gradings.csv`; public freeze anchor `prereg-iclr2026-v2` (see **Manifest** above). The analysis plan was frozen before any score was joined to an outcome.
 - [x] Eng export triggered — released two-CSV export (`submissions.csv` + `gradings.csv`) under `analysis/data/iclr2026/`.
+
+## 2026-06-10 — OpenReview data-use compliance check (pre-arXiv)
+
+**Checked:** OpenReview Terms of Use (openreview.net/legal/terms, last updated
+2024-09-24); per-note license fields on the ICLR 2026 venue via the public API
+(spot-checked forum M7TNf5J26u: submission, decision, meta-review, and comment
+notes all carry `"license": "CC BY 4.0"`); CC BY 4.0 legalcode SS3(a)(1) and
+SS2(a)(6); arXiv moderation policy; precedent datasets (PeerRead, NLPeer,
+arXiv 2511.15462, AAAI-26 pilot arXiv 2604.13940).
+
+**What the terms say:** OpenReview ToS: "By submitting a Comment or
+Configuration Record ... the Submitter agrees that it shall be released to the
+public under the Creative Commons Attribution 4.0 International (CC BY 4.0)
+license." Official reviews, meta-reviews, and decisions are Comments. The ToS
+contains no anti-scraping, bulk-download, or non-commercial restriction; only
+access-control circumvention is prohibited (none occurred — all data is
+public-access via the documented API). We do not redistribute PDFs or full
+review texts regardless.
+
+**Conclusion:** the release unit (submissions.csv / gradings.csv: forum ids,
+public decisions, public mean ratings, AIPR scores) is compliant — decision and
+rating values are uncopyrightable facts and the source notes are CC BY 4.0.
+Verbatim review excerpts in the case-study table are CC BY 4.0 reuse with
+attribution (anonymous ICLR 2026 reviewers, forum URIs, ellipsis trims
+indicated). Naming exemplar submissions with citation to their public
+OpenReview forums is lawful factual citation; arXiv policy permits papers
+commenting on identified papers. Commercial use is permitted by CC BY 4.0 and
+the ToS, subject to CC BY SS2(a)(6): no statement may imply ICLR or OpenReview
+endorses or is affiliated with AIPR.
+
+**Mitigations applied (this date):** Data-licensing paragraph added to
+SSData (03_data.tex); CC BY 4.0 attribution added to the tab:casestudy caption;
+licensing section added to analysis/data/README.md; "de-identified" wording
+replaced by "keyed by public OpenReview submission identifiers" in the
+conclusion and data README; no-endorsement sentence added to the competing-
+interests paragraph. Naming policy tightened: only submissions the score
+places favorably are named (top-scoring oral, highest-scoring reject); the
+lowest-scoring reject is described by outcome only.
+
+**Marketing rule (standing):** describe the result as "validated against the
+public ICLR 2026 review record on OpenReview" — never "ICLR-validated" or any
+wording implying venue endorsement.

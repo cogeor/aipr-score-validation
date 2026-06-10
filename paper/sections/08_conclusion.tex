@@ -17,9 +17,20 @@ validated use is narrow: an automated first pass that surfaces weak work for hum
 attention, not a replacement for the judgment that follows.
 
 \paragraph{Reproducibility.}
-The de-identified scored table, labels, analysis code, and pre-registration are released
+The scored table (keyed by public OpenReview submission identifiers), labels, analysis
+code, and pre-registration are released
 at \url{https://github.com/cogeor/aipr-score-validation}; one command regenerates every
 figure and number. The full review text for identifiable
 submissions is retained as a controlled audit artifact. The grading rubric, prompts, and
 model configuration remain proprietary; the manuscript-to-score function is audited
 through its outputs.
+
+\paragraph{Competing interests.}
+The author founded and operates AIPR (\url{https://aipr.pub}), the commercial system
+evaluated in this study, and stands to benefit from a favorable result. The study was
+self-funded; no external funding was received. The mitigations are structural rather
+than rhetorical: the analysis plan was frozen at a public tag before any score was
+joined to an outcome, every reported number regenerates from released code and data,
+and the primary comparison includes a baseline designed to make the pipeline redundant.
+Nothing in this study implies endorsement by ICLR, OpenReview, or the authors of any
+cited submission.

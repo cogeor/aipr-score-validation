@@ -24,10 +24,22 @@ raises before any figure renders.
 
 ## What is and isn't committed
 
-- **Committed** (the public release unit): the de-identified `submissions.csv`,
-  `gradings.csv`, and `reviews.csv` for real datasets — their contents
-  (forum ids, public decisions, public reviewer ratings) are already public on
-  OpenReview.
+- **Committed** (the public release unit): `submissions.csv`, `gradings.csv`,
+  and `reviews.csv` for real datasets, keyed by public OpenReview forum ids —
+  identifiable by construction; their contents (forum ids, public decisions,
+  public reviewer ratings) are already public on OpenReview, and the AIPR
+  score columns are newly published by this study.
 - **Never committed** (`.gitignore`): the `synthetic/` directory, any
   `findings.jsonl` (AIPR-generated weaknesses about named papers), and any
   manuscript `*.pdf`.
+
+## Data licensing
+
+The OpenReview-derived columns (forum ids, `decision_raw`/`decision_tier`,
+`mean_reviewer_rating`, `n_reviews`) are facts from the public ICLR 2026 record
+on OpenReview; the underlying notes are licensed CC BY 4.0 (OpenReview Terms of
+Use, "Comments" clause; confirmed by the per-note `license` field on the
+ICLR.cc/2026/Conference venue). Attribution: "Contains public peer-review
+metadata from OpenReview (https://openreview.net), ICLR 2026 Conference, (c) the
+respective reviewers/authors, CC BY 4.0." AIPR-generated columns (the
+`gradings.csv` scores) are original to this project.
