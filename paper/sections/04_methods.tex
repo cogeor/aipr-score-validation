@@ -25,8 +25,11 @@ pinned it, so it discriminates at chance (\S\ref{sec:discussion})---and we test
 whether the headline survives dropping it entirely (\S\ref{sec:res-value}). We treat the system as a fixed
 black box: it was not tuned on the venue, the decisions, or the reviewer ratings,
 and no model in this study was trained or fine-tuned on the evaluation data. The
-weighting was frozen before this study from separate internal calibration and was
-not fit to any decision, rating, or outcome used here; we therefore evaluate the
+dimension weights were set by empirical internal validation on a separate,
+held-out collection of manuscripts during product development---containing no
+ICLR submissions from any year, and none of the papers, decisions, or ratings
+used here---and were frozen before this study; they were not fit to any decision,
+rating, or outcome in this cohort. We therefore evaluate the
 scoring rule \emph{as deployed} and report its sensitivity to the weighting
 (equal-weight and leave-one-dimension-out) in Appendix~\ref{app:robust}.
 

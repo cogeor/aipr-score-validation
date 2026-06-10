@@ -1,11 +1,16 @@
 \section{Results}
 \label{sec:results}
 
-Our results answer the study's two pre-registered questions in turn. First, does
-the AIPR score agree with the human outcome (\S\ref{sec:res-validity}, hypotheses
-H1--H5)? Second, what does the \emph{engineered pipeline} add over the underlying
-model alone---a generic one-paragraph prompt on the same model and PDF
-(\S\ref{sec:res-value}, the pre-registered value comparison V1)? Throughout we lead with the large full-mini cohort
+Our results answer the study's two pre-registered questions in turn, and the two
+are not on equal footing. The first is the paper's headline result: does the AIPR
+score agree with the human outcome (\S\ref{sec:res-validity}, hypotheses H1--H5)?
+The answer is yes, and that validated agreement is what licenses the deployable
+triage claim---it stands on its own, regardless of how the second question
+resolves. The second asks what the \emph{engineered pipeline} adds over the
+underlying model alone---a generic one-paragraph prompt on the same model and PDF
+(\S\ref{sec:res-value}, the pre-registered value comparison V1). That is a question
+about the \emph{source} of the validated signal, not about whether the signal is
+real. Throughout we lead with the large full-mini cohort
 ($n=\NminiPrimary$) and confirm on the frontier cohort ($n=\NfullPrimary$);
 headline metrics for both appear in Table~\ref{tab:headline}.
 
@@ -158,6 +163,13 @@ report the comparison plainly, as the pre-registration committed us to. The
 non-significant \aurocDiffPrel{} result is evidence that the naive baseline is
 already strong and that our paired cohort is not powered for small differences; it
 is not proof that AIPR and the naive prompt have identical discrimination.
+Crucially, this unresolved comparison does not weaken the paper's headline. Both
+graders validate against the human outcome---the full pipeline at
+AUROC~\aurocFullFull{} and the bare prompt at \aurocNaiveFull{}---so a frontier
+model's first-pass score is a useful triage signal whichever of the two produces
+it. That high discrimination, not the margin between two already-validated graders,
+is the result; the open question V1 leaves is \emph{where} the signal comes from,
+not \emph{whether} it is there.
 
 What the engineered pipeline adds is not a higher score but a deployable one.
 First, reliability: AIPR grades far more consistently across repeated runs (median

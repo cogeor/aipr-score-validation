@@ -29,7 +29,9 @@ server-side weighted mean,
   + 4\,s_{\text{app}} + 1\,s_{\text{cla}} + 0.5\,s_{\text{cit}}}{11.5},
   \label{eq:overall}
 \end{equation}
-frozen from separate internal calibration and not fit to any outcome used here. Two
+set by empirical internal validation on a separate, held-out manuscript set (no
+ICLR submissions from any year) and frozen before this study, not fit to any
+outcome used here. Two
 configurations run this identical pipeline and differ only in the reviewer model:
 \textbf{full-mini} (\texttt{gpt-5.4-mini}) and \textbf{full} (\texttt{gpt-5.4}; the
 production configuration, exported as \texttt{full\_full}). The naive baseline (V1)
