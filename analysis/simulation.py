@@ -206,7 +206,7 @@ def jt_type_one(n_rep: int, n: int, n_perm: int, noise_sd: float, seed: int):
 # ---------------------------------------------------------------------------
 # Outputs
 # ---------------------------------------------------------------------------
-def render_power_figure(grid, synthetic_flag: bool = True):
+def render_power_figure(grid, synthetic_flag: bool = False):
     import matplotlib.pyplot as plt
 
     from common import COL_WIDTH, TEXT_WIDTH
@@ -290,7 +290,9 @@ def main():
     }
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     (RESULTS_DIR / "simulation.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
-    render_power_figure(grid)
+    # The power analysis is a pre-data design simulation (it never uses the cohort),
+    # so it is not dummy "results" and carries no SYNTHETIC watermark.
+    render_power_figure(grid, synthetic_flag=False)
     write_sim_macros(summary)
 
     print(f"\nfiducial true AUROC ~ {fid['true_auroc']:.2f}")

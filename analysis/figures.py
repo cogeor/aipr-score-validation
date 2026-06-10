@@ -71,7 +71,7 @@ def fig_design(d, R):
     box(1, 23, 20, 12, "Submitted PDF\n(version reviewers saw)", "#EAEAEA")
     box(1, 4, 20, 12, "OpenReview venue\n(ICLR 2026)", "#EAEAEA")
     box(27, 21, 24, 16,
-        "AIPR v6 grading\n" + r"$M \supseteq H$" + "\n(full-mini / full)\n+ naive baseline",
+        "AIPR v6 grading\n" + r"$M \supseteq H$" + "\n(GPT-5.4-mini / GPT-5.4)\n+ Direct baseline",
         CONFIG_COLORS["full_mini"] + "55")
     box(57, 23, 22, 12, "5 subscores +\nweighted overall\n+ tokens used", "#EAEAEA")
     box(40, 4, 26, 12, "Decision tier +\nmean reviewer rating\n(ground truth)", "#EAEAEA")
@@ -179,9 +179,9 @@ def fig_validation_panel(d, R):
 # RocFigure (frontier / full-mini / naive). Naive is orange here: a ROC panel
 # carries no decision tiers, so there is no clash with the poster-tier colour.
 ROC_OVERLAY = (
-    (PRODUCTION_CONFIG, "Frontier", "#0072B2"),
-    (PRIMARY_CONFIG, "Full-mini", "#56B4E9"),
-    ("naive", "Naive judge", "#E69F00"),
+    (PRODUCTION_CONFIG, "AIPR (GPT-5.4)", "#0072B2"),
+    (PRIMARY_CONFIG, "AIPR (GPT-5.4-mini)", "#56B4E9"),
+    ("naive", "Direct (GPT-5.4)", "#E69F00"),
 )
 
 
@@ -215,7 +215,10 @@ def fig_naive_baseline(d, R):
         return
     full = _primary(d.config_frame(PRODUCTION_CONFIG))
     h_ids = set(full["submission_id"])
-    fig, (axl, axr) = plt.subplots(1, 2, figsize=(TEXT_WIDTH, 2.9))
+    # Panel (a) (the ROC) gets the larger share: it is square (aspect="equal") and
+    # carries the three-grader AUROC legend, which clips if the panel is too narrow.
+    fig, (axl, axr) = plt.subplots(1, 2, figsize=(TEXT_WIDTH, 3.0),
+                                   gridspec_kw={"width_ratios": [1.6, 1.0]})
 
     # (a) discrimination: all three graders' ROC overlaid (reject vs accept).
     # The naive curve is on cohort H (where it is graded); full-mini carries the
@@ -232,12 +235,21 @@ def fig_naive_baseline(d, R):
             df = df[df["submission_id"].isin(h_ids)]
         fpr, tpr = roc_points(df["accept_bool"].values, df["overall"].values)
         a = auroc_by[cfg]
-        axl.plot(fpr, tpr, color=color, lw=1.7,
-                 label=f"{label}: {a['point']:.2f} [{a['lo']:.2f}, {a['hi']:.2f}]")
+        # Frontier (production) leads; the cheap-model proxy is shown as a thin,
+        # dashed secondary curve so the panel reads as the frontier-score result
+        # with full-mini in support, not as a three-way tie.
+        if cfg == PRODUCTION_CONFIG:
+            style = {"lw": 2.4, "ls": "-", "alpha": 1.0, "zorder": 4}
+        elif cfg == PRIMARY_CONFIG:
+            style = {"lw": 1.1, "ls": "--", "alpha": 0.7, "zorder": 2}
+        else:
+            style = {"lw": 1.7, "ls": "-", "alpha": 0.95, "zorder": 3}
+        axl.plot(fpr, tpr, color=color,
+                 label=f"{label}: {a['point']:.2f} [{a['lo']:.2f}, {a['hi']:.2f}]", **style)
     axl.plot([0, 1], [0, 1], ":", color="grey", lw=0.8)
     ad = nb["auroc_diff"]
     axl.annotate(
-        rf"frontier$-$naive $\Delta$AUROC $={ad['delta']:.2f}$ "
+        rf"AIPR$-$Direct $\Delta$AUROC $={ad['delta']:.2f}$ "
         rf"[{ad['lo']:.2f}, {ad['hi']:.2f}], {_pbracket(ad['p'])}"
         "\n(paired stratified bootstrap)",
         xy=(0.5, -0.30), xycoords="axes fraction", ha="center", va="top", fontsize=6.3)
@@ -267,7 +279,7 @@ def fig_naive_baseline(d, R):
             axr.annotate(f"med {sd:.1f}", xy=(x0 + 0.31, sd), fontsize=7, va="center",
                          ha="left", color="0.25")
     axr.set_xticks([1, 2])
-    axr.set_xticklabels([CONFIG_LABELS[PRODUCTION_CONFIG], CONFIG_LABELS["naive"]])
+    axr.set_xticklabels(["AIPR", "Direct"])  # both on GPT-5.4; short labels avoid clip in the narrower panel
     axr.set_ylabel("Within-paper SD (pts)")
     axr.set_xlim(0.5, 2.7); axr.set_ylim(bottom=0)
     axr.legend(handles=[Patch(facecolor=TIER_COLORS[t], label=TIER_LABELS[t]) for t in TIER_ORDER],
@@ -342,7 +354,7 @@ def fig_bridge(d, R):
              transform=axL.transAxes, va="top", ha="left", fontsize=7)
     axL.legend(handles=[Patch(facecolor=TIER_COLORS[t], label=TIER_LABELS[t]) for t in TIER_ORDER],
                fontsize=6, loc="lower right", handletextpad=0.3, borderpad=0.3)
-    axL.set_xlabel("Full-mini overall"); axL.set_ylabel("Full (frontier) overall")
+    axL.set_xlabel("AIPR (GPT-5.4-mini) overall"); axL.set_ylabel("AIPR (GPT-5.4) overall")
     axL.set_xlim(lim); axL.set_ylim(lim); axL.set_aspect("equal")
 
     # Right: bottom-quintile membership agreement.
@@ -371,7 +383,9 @@ def fig_bridge(d, R):
 # ---------------------------------------------------------------------------
 def fig_subscore_auroc(d, R):
     fig, ax = plt.subplots(figsize=(COL_WIDTH, 2.4))
-    dims = list(DIMENSIONS)
+    # Citation is excluded from interpretation in this run (technical issue in the
+    # citation audit); show only the four informative dimensions.
+    dims = [x for x in DIMENSIONS if x != "citation"]
     pts = [R[PRIMARY_CONFIG]["subscore_auroc"][dim]["point"] for dim in dims]
     err = [[R[PRIMARY_CONFIG]["subscore_auroc"][dim]["point"] - R[PRIMARY_CONFIG]["subscore_auroc"][dim]["lo"] for dim in dims],
            [R[PRIMARY_CONFIG]["subscore_auroc"][dim]["hi"] - R[PRIMARY_CONFIG]["subscore_auroc"][dim]["point"] for dim in dims]]

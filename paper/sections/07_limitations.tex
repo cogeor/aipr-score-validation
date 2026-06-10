@@ -1,114 +1,99 @@
-\section{Threats to Validity and Limitations}
+\section{Threats to validity and limitations (full)}
 \label{sec:limits}
 
+This appendix is the full version of the limitations summarized in \S\ref{sec:discussion}.
+
 \paragraph{Population and ground-truth noise.}
-Submissions to a top venue are self-selected above average, so the reject class
-here is ``weak \emph{relative to the venue bar},'' not weak in absolute terms; we
-do not generalize beyond this population. The accept/reject decision is itself
-noisy and partly reflects reviewer disagreement, area-chair effects, and venue
-fit \citep{cortes2021inconsistency,beygelzimer2023arbitrary}. We mitigate the
-latter by also validating against the continuous mean reviewer rating (H4), but
-no analysis here can exceed the reliability of its ground truth.
+Submissions to a top venue are self-selected above average, so the reject class here
+is ``weak \emph{relative to the venue bar},'' not weak in absolute terms; we do not
+generalize beyond this population. The accept/reject decision is itself noisy and
+partly reflects reviewer disagreement, area-chair effects, and venue fit
+\citep{cortes2021inconsistency,beygelzimer2023arbitrary}. We mitigate this by also
+validating against the continuous mean reviewer rating (H4), but no analysis here can
+exceed the reliability of its ground truth.
 
 \paragraph{Leakage and contamination.}
-Beyond verbatim memorization---excluded by construction through the post-cutoff
-cohort---the model holds priors on institutions, authors, and topics that could
-correlate with outcomes. We address this with the arXiv-before-cutoff sensitivity
-split detailed in \S\ref{sec:discussion}, and the question of whether printed
-identity moves the score by the separate prestige-perturbation experiment. A fully
-pre-cutoff contaminated contrast and a prospective cohort are planned follow-ups
-(\S\ref{sec:discussion}), not part of this analysis. Residual indirect familiarity
-cannot be fully excluded retrospectively; only the prospective cohort closes it
-entirely.
+Beyond verbatim memorization, excluded by construction through the post-cutoff cohort,
+the model holds priors on institutions, authors, and topics that could correlate with
+outcomes. We address this with the arXiv-before-cutoff sensitivity split
+(\S\ref{sec:discussion}), and the question of whether printed identity moves the score
+by the separate prestige-perturbation experiment. A fully pre-cutoff contaminated
+contrast and a prospective cohort are planned follow-ups, not part of this analysis.
+Residual indirect familiarity cannot be fully excluded retrospectively; only the
+prospective cohort closes it entirely.
 
 \paragraph{Ground truth may itself be partly machine-generated.}
 A growing fraction of submitted peer reviews are now LLM-assisted at the venues we
 study \citep{liang2024monitoring}. To the extent the reviewer ratings we validate
-against are themselves shaped by language models, our agreement metric partly
-measures agreement with other AI systems rather than with unaided human judgment.
-We cannot separate the two components with the available data; the effect, if
-present, inflates apparent agreement and is a ceiling on the interpretation of H4.
+against are themselves shaped by language models, our agreement metric partly measures
+agreement with other AI systems rather than with unaided human judgment. We cannot
+separate the two components with the available data; the effect, if present, inflates
+apparent agreement and is a ceiling on the interpretation of H4.
 
 \paragraph{The cheap-model proxy.}
 The scale of the headline rests on the bridge (H5), which we measure and gate on
-rather than assume; had it failed, we would have led with the smaller frontier
-cohort ($n=\NfullPrimary$) and wider intervals. The frontier cohort is modest by
-budget and is used for confirmation, not as the sole evidence. The bridge is also
-strongest globally and weaker exactly where the deployable claim lives: within the
-full-mini bottom quintile the two scores agree at only $\rho=\bridgeLowRhoFull$ and
-\bridgeOverlap\% of that band recurs in the frontier bottom quintile
-(\S\ref{sec:res-validity}). The cheap-model score is therefore a valid large-$N$
-proxy for the relationship, but a low cheap-model flag is best read as a screen to
-be confirmed on the frontier score, not an exact substitute for it on an individual
-submission. This is exactly why we report the deployable bottom-flag (H1) on the
-frontier model directly (\S\ref{sec:res-validity},
-\bottomRejectRateFrontier\%): the production claim does not route through the weak
-low-end bridge, which constrains only the use of the cheap model as a standalone
-bottom screen, not the headline.
+rather than assume. The bridge is strongest globally and weaker exactly where the
+deployable claim lives: within the cohort-$M$ bottom quintile the two scores agree at
+only $\rho=\bridgeLowRhoFull$ and \bridgeOverlap\% of that band recurs in the cohort-$H$
+bottom quintile (\S\ref{sec:res-validity}). A low AIPR (GPT-5.4-mini) flag is therefore
+best read as a screen to be confirmed on the AIPR (GPT-5.4) score, not an exact
+substitute on an individual submission. This is why we report the deployable bottom-flag
+(H1) on AIPR (GPT-5.4) directly (\bottomRejectRateFrontier\%): the production claim does
+not route through the weak low-end bridge.
 
-\paragraph{An uninformative citation dimension.}
-The citation subscore is pinned at the maximum on \citationPinnedFull\% of frontier
-papers and discriminates at chance (AUROC \citationAUROC; \S\ref{sec:discussion}),
-because the citation audit returned no recommendations for the original frontier
-run and the pipeline scores an empty audit as a perfect bibliography---a silent
-fallback, confirmed against re-grades that produce real scores. It does not affect
-the headline---citation is the most lightly weighted dimension, and dropping it from
-the weighting leaves discrimination unchanged (AUROC \aurocDropCitationFull{} vs.\
-\aurocFull)---and the search-backed fix (and the lesson that grounded retrieval
-enhances the model) is discussed in \S\ref{sec:discussion}.
+\paragraph{The excluded citation dimension.}
+In this run the citation audit returned no recommendations and the pipeline scored an
+empty audit as a perfect bibliography, so the citation subscore was uninformative (AUROC
+\citationAUROC, chance). We exclude it from interpretation; because it is the most lightly
+weighted dimension, dropping it leaves discrimination unchanged (AUROC
+\aurocDropCitationFull{} vs.\ \aurocFull). Scoring an empty audit as \emph{unknown} and
+re-grading under a search-backed configuration is the fix (\S\ref{sec:discussion}).
 
 \paragraph{Single venue and field.}
 The primary cohort is one venue in one field, and we do not claim cross-field
 generalization here. A planned follow-up grades a full review set at a second,
 different-field venue; because venues that publish \emph{rejected} submissions are
-rare, that study validates against the continuous reviewer rating---which
-generalizes across fields---rather than the reject class, and is reported
-separately. A within-family contaminated contrast (a prior ICLR year) is a planned
-follow-up that would address year-to-year stability only, not cross-field
-generalization.
+rare, that study validates against the continuous reviewer rating, which generalizes
+across fields, rather than the reject class, and is reported separately. A
+within-family contaminated contrast (a prior ICLR year) is a planned follow-up that
+addresses year-to-year stability only.
 
 \paragraph{Defined semantics, fixed weights.}
-A score's meaning is fixed by the grading rubric---each dimension is defined by
-explicit criteria---so it is an anchored construct, and the overall is a fixed
-weighted mean (Eq.~\ref{eq:overall}) set on substantive grounds and deliberately
-\emph{not} fit to the outcome. Holding the weights label-independent is what
-licenses the validity test. We validate that submissions \emph{ordered} by the
-rubric track the human signal (discrimination and rank agreement); we do
-\emph{not} calibrate the absolute level to an acceptance probability---a distinct,
-venue-specific exercise we leave to future work. We report the dimension scores
-and the weighting so a reader can reweight, but we do not optimize against the
-decision.
+A score's meaning is fixed by the grading rubric, with each dimension defined by
+explicit criteria, so it is an anchored construct, and the overall is a fixed weighted
+mean (Eq.~\ref{eq:overall}) set on substantive grounds and deliberately \emph{not} fit
+to the outcome. Holding the weights label-independent is what licenses the validity
+test. We validate that submissions \emph{ordered} by the rubric track the human signal
+(discrimination and rank agreement); we do \emph{not} calibrate the absolute level to
+an acceptance probability, a distinct venue-specific exercise we leave to future work.
 
 \paragraph{Reproducibility with a proprietary scorer.}
-The scored dataset, the decision and rating labels, the analysis code, and this
-paper are released, so every figure, statistic, and the entire score-to-outcome
-analysis reproduces independently. The grading rubric, prompts, and model
-configuration are proprietary: the manuscript-to-score function is audited through
-its outputs---and can be exercised on new manuscripts via the system---rather than
-re-implemented. This is a defensible posture for validating a deployed instrument,
-but weaker than full independent reproducibility of the scorer itself: the validation
-is open even though the instrument is closed. Because the design was
-frozen and pre-registered before unblinding, this openness is what lets a single
-author's validation be independently checked rather than taken on trust. Additional
-minor threats (post-rebuttal rating drift, citation relevance vs.\ groundedness,
-run-to-run variance) are detailed in Appendix~\ref{app:limits}.
+The scored dataset, the decision and rating labels, the analysis code, and this paper
+are released, so every figure, statistic, and the entire score-to-outcome analysis
+reproduces independently. The grading rubric, prompts, and model configuration are
+proprietary: the manuscript-to-score function is audited through its outputs, and can
+be exercised on new manuscripts via the system, rather than re-implemented. This is a
+defensible posture for validating a deployed instrument, though weaker than full
+independent reproducibility of the scorer itself. Because the design was frozen and
+pre-registered before unblinding, this openness is what lets a single author's
+validation be checked rather than taken on trust. Additional minor threats
+(post-rebuttal rating drift, citation relevance vs.\ groundedness, run-to-run variance)
+are detailed in Appendix~\ref{app:limits}.
 
 \paragraph{Sample-vs-eligible representativeness and per-review sensitivities.}
-The population-boundary ledger (Appendix~\ref{app:robust},
-Table~\ref{tab:popboundary}) reports counts and exclusion reasons for every
-eligible submission, but a covariate-level comparison of the graded cohort to the
-full eligible population is not possible because manuscript covariates (page and
-word counts, reference and figure counts, primary area) were not extracted for
-the ungraded submissions. Separately, the released two-CSV data carries only the
-mean reviewer rating, so per-review sensitivities---a human-review reliability
-ceiling and alternate rating aggregations (median or trimmed mean)---are deferred
-to future work and available on request rather than reported here; we do not
-synthesize per-review ratings to fill the gap.
+The population-boundary ledger (Appendix~\ref{app:robust}, Table~\ref{tab:popboundary})
+reports counts and exclusion reasons for every eligible submission, but a
+covariate-level comparison of the graded cohort to the full eligible population is not
+possible because manuscript covariates were not extracted for the ungraded submissions.
+The released two-CSV data carries only the mean reviewer rating, so per-review
+sensitivities (a human-review reliability ceiling and alternate rating aggregations)
+are deferred to future work and available on request; we do not synthesize per-review
+ratings to fill the gap.
 
 \paragraph{What we do not claim.}
-We do not claim the score predicts acceptance probability, ranks strong papers,
-or should be used for positive selection or any consequential decision without a
-human in the loop. The validated use is narrow and stated as such---the action we
-validate is prioritization for human attention, not rejection. The
-deployment-boundary, independence, and proprietary-scorer audit commitments this
-posture rests on are collected in Appendix~\ref{app:posture}.
+We do not claim the score predicts acceptance probability, ranks strong papers, or
+should be used for positive selection or any consequential decision without a human in
+the loop. The validated use is narrow: the action we validate is prioritization for
+human attention, not rejection. The deployment-boundary, independence, and
+proprietary-scorer audit commitments this posture rests on are collected in
+Appendix~\ref{app:posture}.

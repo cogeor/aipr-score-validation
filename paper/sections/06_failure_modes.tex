@@ -1,17 +1,18 @@
-\section{Failure Modes}
+\section{Failure modes in detail}
 \label{sec:failure}
 
-A score that is useful in deployment must be characterized where it errs as well
-as where it succeeds. We examine both directions of error on the frontier cohort,
-and because the venue is open we read the actual human reviews to explain each.
+This appendix gives the full treatment summarized in \S\ref{sec:res-secondary}. A score
+that is useful in deployment must be characterized where it errs as well as where it
+succeeds. We examine both directions of error on cohort $H$, and because the venue is
+open we read the actual human reviews to explain each.
 Table~\ref{tab:casestudy} (Appendix~\ref{app:cases}) places AIPR's stated weakness
 beside a verbatim excerpt from the human reviews for a matched set of submissions
 spanning the patterns below; we paraphrase here and quote in full there.
 
 \subsection{What the score catches (and why)}
 For rejected submissions the score rated low, the in-depth review's stated
-weaknesses align closely with the reasons human reviewers gave---and at the level of
-the specific defect, not merely the overall verdict. The recurring,
+weaknesses align closely with the reasons human reviewers gave, and at the level of
+the specific defect rather than merely the overall verdict. The recurring,
 correctly-flagged patterns, each instantiated in Table~\ref{tab:casestudy}, are:
 \begin{itemize}\itemsep1pt
   \item \textbf{Unquantified or synthetic data construction}: AIPR flags that the
@@ -37,17 +38,16 @@ judgment} that a competent manuscript surface does not betray:
 \citet{reactivesynth2026} (AIPR~77),\fi{} reviewers call the method ``an arguably
 trivial combination of existing'' techniques with ``little conceptual novelty,''
 while AIPR, scoring a well-written and well-executed paper, places it in the upper
-band. A second, structural cause is a defect the system
-cannot see at all---it reads the manuscript as written and cannot execute an
-experiment, reproduce a result, or re-derive a proof---so where rejection hinges on
-such a defect a high score is expected and is not evidence against the bounded claim
-of \S\ref{sec:results}. Either way, the rate of these errors at the top of the score
+band. A second, structural cause is a defect the system cannot see at all: it reads
+the manuscript as written and cannot execute an experiment, reproduce a result, or
+re-derive a proof, so where rejection hinges on such a defect a high score is expected
+and is not evidence against the bounded claim of \S\ref{sec:results}. Either way, the rate of these errors at the top of the score
 range is quantified directly in the reliability curve (Fig.~\ref{fig:validation}b).
 
 \paragraph{False positives: strong work the score underrated.}
 The mirror error is accepted work scored low. In the observed examples AIPR's lower
-score reflects a \emph{genuine} concern---an over-reaching theoretical claim, or a
-theory whose assumptions do not match practice---that a human reviewer often raised
+score reflects a \emph{genuine} concern (an over-reaching theoretical claim, or a
+theory whose assumptions do not match practice) that a human reviewer often raised
 as well, but that the community forgave in light of the contribution: the papers
 were accepted as orals on their merits. AIPR underweights a strong contribution when
 it carries a real but pardonable gap. These cost a second human look, which is the

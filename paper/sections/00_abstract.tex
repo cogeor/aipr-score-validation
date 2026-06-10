@@ -1,40 +1,23 @@
 \begin{abstract}
 \noindent
-Large language model (LLM) systems are increasingly proposed to assist scholarly
-peer review, yet most evaluations judge the prose of machine-generated review
-\emph{text} rather than the validity of the numeric \emph{score} a system assigns.
-We validate \textsc{AIPR}, which reads a submitted manuscript and emits five
-0--100 quality dimensions (novelty, rigor, applicability, clarity, citation) and a
+Large language model (LLM) systems are increasingly proposed to assist peer review,
+yet most evaluations judge the prose of machine-generated review \emph{text}, not the
+validity of the numeric \emph{score} a system assigns. We validate \textsc{AIPR},
+which reads a submitted manuscript and emits five 0--100 quality dimensions and a
 weighted overall score, against the public decision outcomes of a major machine
-learning venue. We validate the overall score; one subscore, citation, is not
-validated in this cohort, where an audit fallback pinned it. AIPR is deployed as an interactive assistant; here we validate its
-non-interactive baseline score, the first-pass signal produced before any reviewer
-engages with it. Across \NminiPrimary{} \mbox{ICLR} submissions with public
-decision tiers (reject/poster/oral) and mean reviewer ratings, graded
-under a single frozen pipeline version (v6) with hypotheses and thresholds
-pre-registered before any score met any outcome, the overall score separates rejected from accepted submissions
-(AUROC~\aurocMiniFull), rises monotonically across the three tiers (Spearman
-$\rho=\trendRho$, permutation $\trendPrel$), and correlates with the mean reviewer
-rating ($\rho =$~\spearmanRatingMiniFull). The signal is strongest where we claim it:
-the lowest score quintile is rejected at \bottomRejectRateFrontier\% on the
-production model directly (\bottomRejectRate\% at scale on a cheap-model cohort, a
-\bottomLift$\times$ lift over the \baseRejectRate\% base rate), with oral papers
-absent from that band. Our central finding is about the model, not the pipeline. A
-generic one-paragraph prompt on the same frontier model and PDF---no rubric, no
-audit---already separates rejected from accepted submissions on its own
-(AUROC~\aurocNaiveFull). The full pipeline is higher by
-$\Delta$AUROC \aurocDiffFullNaive{} (95\% CI \aurocDiffCI, \aurocDiffPrel), but this
-planned comparison is not statistically resolved; the study was not powered to
-rule in or rule out such a small difference over an already strong naive baseline.
-\emph{Within this ICLR cohort, with or without our prompt, a frontier model already
-produces a first-pass reviewing signal that agrees substantially with human
-outcomes}: \emph{intelligence is not the observed bottleneck}, and the human keeps
-the decision. What the engineered pipeline adds is
-therefore not validity but deployability---it matches that score while grading far
-more consistently across repeated runs (within-paper SD \fullRunSD{} vs.\
-\naiveRunSD{} points) and returns a grounded, rubric-anchored review in a single
-pass. We do not claim the score predicts the acceptance decision or replaces reviewers; we
-characterize its failure modes directly. The result supports a narrow, defensible
-use: an automated first pass that reliably surfaces weak submissions for human
-attention.
+learning venue. AIPR grades by prompting alone, with no fine-tuning on reviews or
+decisions. Across \NminiPrimary{} ICLR submissions with public decision tiers and
+reviewer ratings, graded under a frozen pipeline with hypotheses pre-registered before
+any score met any outcome, the overall score separates rejected from accepted
+submissions (AUROC~\aurocMiniFull), rises monotonically across tiers, and tracks the
+mean reviewer rating. The signal is strongest where we claim it: the lowest-scoring
+fifth is rejected far above the base rate, with oral papers absent. Two findings locate
+the system's value. The validity comes mostly from the model: a one-paragraph prompt on
+the same model discriminates almost as well as the full pipeline (the small gap favours
+the pipeline but is underpowered, $p=0.09$). What the engineering adds is
+\emph{reliability} and a grounded review: AIPR's score barely moves across repeated runs
+(\fullRunSD{} vs.\ \naiveRunSD{} points within-paper SD) where the bare prompt swings,
+and the same pass returns a rubric-structured, evidence-grounded review rather than a
+bare number. Intelligence is not the bottleneck; reliability is, and the human keeps the
+decision.
 \end{abstract}

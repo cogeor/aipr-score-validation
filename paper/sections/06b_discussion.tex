@@ -1,133 +1,105 @@
 \section{Discussion}
 \label{sec:discussion}
 
-\paragraph{Intelligence is not the bottleneck.}
-The load-bearing result is that a bare one-paragraph prompt on the frontier model
-already separates rejected from accepted submissions on its own (AUROC
-\aurocNaiveFull; \S\ref{sec:res-value}). The full pipeline's AUROC is higher, but
-the planned paired comparison is not statistically resolved
-($\Delta$AUROC \aurocDiffFullNaive, 95\% CI \aurocDiffCI, \aurocDiffPrel), so the
-study does not prove either superiority or equivalence. Read that way, the result
-points to a different bottleneck: with or without our prompt, the model already
-produces an outcome-aligned first-pass score in this setting---raw judgment is not what this
-deployment is shortest of; stability, grounding, and accountable presentation are. The open problem is
-not building a model that \emph{can} judge, but turning that capability into an
-instrument a reviewer can rely on: one
-that returns the same verdict on the same paper across runs, grounds its claims in
-evidence rather than generating them, and surfaces an anchored, rubric-structured
-review instead of a bare number. That is an engineering problem, and it is the one
-AIPR addresses. Framed this way the contribution shifts from ``can an LLM produce an outcome-aligned
-quality signal in this setting?''---which the strong naive baseline answers yes---to
-``can a system deliver that signal \emph{reliably and accountably} at deployment?'',
-which is what the reliability gap (Fig.~\ref{fig:naive}b) and the grounded review
-speak to. The implication for the field is that effort is better spent on the
-processing layer---reliability, grounding, interaction---than on waiting for a more
+\paragraph{Intelligence is not the bottleneck; reliability is.}
+The load-bearing result is that Direct (GPT-5.4), a one-paragraph prompt, already
+separates rejected from accepted submissions on its own (AUROC \aurocNaiveFull),
+indistinguishably from AIPR ($\Delta$AUROC \aurocDiffFullNaive, \aurocDiffPrel). Raw
+judgment is not what this deployment is shortest of; reliability is, the bare prompt's
+score swinging \naiveRunSD{} points between identical runs against AIPR's \fullRunSD{}.
+The open problem is not building a model that \emph{can} judge but turning that
+capability into an instrument a reviewer can rely on: one that returns the same verdict
+across runs, grounds its claims in evidence, and surfaces an anchored review instead of a
+number. That is an engineering problem, and the one AIPR addresses. The field's effort is
+better spent on the processing layer (reliability, grounding, interaction) than on a more
 intelligent base model the task does not appear to need.
 
-\paragraph{The citation dimension: a silent scoring fallback, and what fixes it.}
-One dimension does not carry its weight in the graded cohort, and we report the
-cause rather than quietly drop it. The citation subscore is pinned at the maximum
-on \citationPinnedFull\% of frontier papers (\citationPinnedMini\% on full-mini),
-AUROC \citationAUROC{} (chance; \S\ref{sec:res-value}). The mechanism is a scoring
-fallback: the grounded citation audit issues literature-search queries and proposes
-missing references; when it proposes \emph{none}, the pipeline records a citation
-score of 100 (``no gaps found''). In the original frontier grading run the audit
-returned an empty recommendation list for every paper---the conservative frontier
-auditor proposed nothing---so every paper pinned to 100, and an empty or failed
-search is indistinguishable in the score from a genuinely complete bibliography.
-We confirmed this by re-grading a \runSDnPapers{}-paper subset on the same pipeline:
-the search and audit fire and produce real, varying citation scores, so the pin was
-a silent failure mode, not a measurement. The result does not move the validity
-finding---citation is the most lightly weighted dimension, and dropping it leaves
-the headline unchanged (AUROC \aurocDropCitationFull{} vs.\ \aurocFull{}). It does,
-though, point at a general lesson: equipping the model with a live literature-search
-tool---letting it look up and \emph{ground} citation recommendations against real
-records rather than generate them---is exactly the kind of tool use that turns a
-capable model into a more reliable instrument, the same theme as our headline
-result. That grounded, search-backed audit is what the deployed product runs; the
-fix to the study artifact is to score an empty or failed audit as \emph{unknown}
-rather than perfect, and to re-grade under the search-backed configuration.
+\paragraph{Compressed scores are a feature, not a defect.}
+AIPR's production scores are compressed: they cluster high, near the venue bar, and move
+little between runs (within-paper SD \fullRunSD{} vs.\ \naiveRunSD{} for the bare prompt).
+Such clustering is a known behaviour of scalar LLM judges, which compress toward the top
+of the scale and are unstable under resampling \citep{girrbach2025referencefree}, and for
+a deployed grader reliability rather than spread is the property that governs whether the
+score can be trusted \citep{gu2024surveyllmjudge,schroeder2024trustllm}. We trade spread
+for stability deliberately. This is the bias--variance logic of shrinkage: pulling a noisy
+estimate toward a reference centre reduces total error
+\citep{james1961estimation,mcelreath2020rethinking}, so a reproducible value near the mean
+is closer to an optimal estimator than a wider-ranging but noisier one. The alternative, a
+low point estimate carried with a wide interval, fails as a deployment object because a
+reader anchors on the point estimate and under-weights the uncertainty around it
+\citep{hofman2020inferential}; a stable scalar is the safer thing to hand a reviewer.
+Because a quality score is subjective and reference-relative, a compressed, anchored value
+also communicates where a submission sits against the venue bar without an explicit
+pairwise comparison. We do not claim compression improves discrimination (AIPR's AUROC is
+not higher than the bare prompt's), nor that it improves reviewers' actual decisions,
+which we have not measured and which would need a calibration study or a user trial; the
+claim is about the estimator and how it is read, not measured downstream behaviour. On
+that bounded basis, a stable compressed scalar is a better-behaved object to act on.
+
+\paragraph{An obvious next step: grounded citation checking.}
+The deployed score includes a lightly weighted citation dimension that was uninformative
+in this run for a technical reason in its audit and is excluded from the analysis here
+(the headline is unchanged without it). Adding a grounded, search-backed citation signal,
+which looks references up against real records rather than generating them, is the natural
+next addition and the same reliability lesson as our headline; it matters given fabricated
+references in accepted papers at NeurIPS~2025 \citep{neurips2025citations}. We omit it here
+rather than report a known-broken dimension.
 
 \paragraph{Do the subscores reflect independent assessment?}
-A multi-dimensional score invites the question of whether the model evaluates each
-dimension on its own merits or forms a global verdict and fits the parts to it---the
-halo effect familiar from human rating. The four informative dimensions are
-moderately correlated (mean pairwise $r=\haloMeanR$ on cohort M, $n=\haloN$, range
-\haloMinR--\haloMaxR; Table~\ref{tab:subscore-corr}): they share a general-quality
-component, as expected, but each keeps distinct variance, so the breakdown is not
-one number wearing four hats. The correlation is high enough, though, to be
-consistent with partial anchoring---a verdict-first read that the subscores are then
-dressed to support. Two clarifications keep this honest. First, this concerns the
-\emph{initial} grade; it is separate from a model's tendency to revise under
-conversational pressure, which is a property of the interactive review rather than
-of the score, and which a good instrument should resist rather than indulge. Second,
-our design cannot separate genuine cross-dimensional evidence---a rigor red flag that
-legitimately lowers the novelty read---from anchoring; the correlation bounds the
-concern without diagnosing its mechanism. Eliciting each dimension
-independently---separate, isolated judgments aggregated after the fact rather than
-one holistic pass---is the natural way to decorrelate the verdict from the parts and
-to test whether such independence improves or degrades validity; we leave that
-architectural comparison, together with an order-perturbation probe that measures the
-anchoring directly, to future work.
+A multi-dimensional score invites the halo question: does the model judge each dimension
+on its merits or fit the parts to a global verdict? The four informative dimensions are
+moderately correlated (mean $r=\haloMeanR$; Table~\ref{tab:subscore-corr}), sharing a
+general-quality component but keeping distinct variance, so the breakdown is not one
+number wearing four hats, though the correlation is consistent with partial anchoring.
+Eliciting each dimension independently is the natural way to decorrelate the verdict from
+the parts; we leave that comparison, with an order-perturbation probe, to future work.
 
-\paragraph{Relation to concurrent comment-quality benchmarks.}
-A concurrent line of work benchmarks the \emph{review comments} humans and AI
-systems produce. ReviewBench \citep{reviewbench2026} scores comments by structural
-completeness and an LLM-judged ``consequential'' flag, and---like us---concludes
-that AI is best framed as complementary to human review. Our study is orthogonal:
-ReviewBench measures \emph{intrinsic} properties of review text and, by its
-authors' own statement, ``not their correctness,'' whereas we measure the
-\emph{extrinsic} validity of a numeric \emph{score} against an external outcome. A
-well-structured, claim-targeting comment can still be wrong; a benchmark of comment
-form cannot see this, and an outcome-validated score is the complementary evidence.
-The two views are additive; a comment-level comparison on the ReviewBench axis,
-plus the correctness axis it omits, is left to future work.
-
-\paragraph{Relation to acceptance prediction.}
-Predicting editorial outcomes from text is not new: prior work predicts
-accept/reject from \emph{review} text and sentiment
-\citep{wang2018sentiment,ghosal2019deepsentipeer,kang2018peerread} and analyzes the
-drivers of acceptance \citep{jung2025whatdrives}. Our task differs in two ways that
-make it both harder and more useful: we score the \emph{manuscript}, not the
-reviews (so the signal is available before any review exists), and we validate the
-score as a \emph{measurement} against the outcome rather than training a classifier
-to maximize accuracy on it. We therefore report agreement and discrimination, not a
-tuned acceptance classifier, and we do not claim to predict the acceptance decision.
+\paragraph{Relation to work on review text and decision prediction.}
+ReviewBench \citep{reviewbench2026} scores review \emph{comments} by structural
+completeness and, like us, frames AI as complementary, but measures intrinsic text
+properties, ``not their correctness,'' where we measure the extrinsic validity of a
+\emph{score} against an outcome. A separate line predicts the accept/reject
+\emph{decision}: from review text and sentiment
+\citep{wang2018sentiment,ghosal2019deepsentipeer,kang2018peerread,jung2025whatdrives},
+and recently from the manuscript itself with prompted LLM reviewers at near-human accuracy
+\citep{reviewertoo2025}. That last result corroborates our headline, that a frontier model
+alone already carries much of the outcome signal; its goal differs from ours, optimizing a
+binary decision as a reviewer stand-in, whereas we validate a graded \emph{score} as a
+measurement against two ground truths (tiers and ratings), bound the claim to low-end
+triage, and characterize the score's reliability and failure modes rather than its
+decision accuracy. A finding that LLM reviewers can overrate weak submissions
+\citep{li2026llmreviewer} is then a reason to measure the low-end flag empirically, as H1
+does, rather than assume it.
 
 \paragraph{Contamination and temporal leakage.}
-The central threat to any score--outcome study built on a public venue is that the
-grading model may have memorized the outcome---the decision or the reviews---during
-training, which would inflate the relationship we measure; LLM-generated review
-content is already widespread at these venues \citep{liang2024monitoring}. We
-control for this by construction in the choice of cohort: the grading model
-(\texttt{gpt-5.4}) has a knowledge cutoff of August~2025, whereas the primary
-cohort's (ICLR~2026) decisions and reviews were released in January~2026, so the
-outcome could not have been in training. We add a direct robustness check: we flag
-submissions whose arXiv preprint predates the cutoff and report the headline
-metrics with and without them, bounding any residual \emph{paper-text} leakage (the
-model seeing the manuscript, as a reviewer would, is not itself a confound;
-memorizing its reception is). This arXiv-before-cutoff sensitivity split is reported
-in Appendix~\ref{app:robust}. Two further checks are planned but deferred to future
-work (\S\ref{sec:limits}): a fully pre-cutoff ICLR~2025 cohort as a contaminated
-contrast---if the score--outcome relationship is no stronger there than on the clean
-2026 cohort, memorization is not driving it---and a prospective confirmation that
-grades a future venue's submissions before its decisions are released, making
-leakage logically impossible. The
-distinct question of whether the model's \emph{priors} on authors and
-institutions move the score, which matters for the non-blind venues AIPR also
-targets, is addressed by a separate prestige-perturbation experiment that holds
-the manuscript fixed and varies only the printed identity, reported separately.
-We report this threat explicitly; no current LLM-review study resolves it as
-directly.
+The central threat is that the grading model memorized the outcome in training, which
+would inflate the relationship; LLM-generated review content is already widespread
+\citep{liang2024monitoring}. We control for it by cohort choice: GPT-5.4's August~2025
+cutoff precedes the January~2026 release of ICLR~2026 decisions, so the outcome could not
+have been in training. We add an arXiv-before-cutoff sensitivity split bounding residual
+paper-text leakage (Appendix~\ref{app:robust}). A fully pre-cutoff contaminated contrast
+and a prospective cohort, which would close leakage entirely, are deferred
+(Appendix~\ref{sec:limits}); whether the model's \emph{priors} on authors and
+institutions move the score is addressed by a separate prestige-perturbation experiment.
 
-\paragraph{What the human signal's structure implies for our metric.}
-Individual reviewers are highly variable, with a bimodal per-reviewer distribution
-of claim-undermining comments that persists within accepted and rejected papers
-alike \citep{reviewbench2026}. This is why we validate against the \emph{mean}
-reviewer rating rather than any single reviewer: a score cannot agree with a ground
-truth more reliable than the ground truth is with itself, which is part of why we
-lead with the robust low-end claim (H1) rather than with ranking the top. AIPR
-also weights novelty and applicability most heavily
-(Eq.~\ref{eq:overall})---the contribution-facing axis humans prioritize over the
-validity-checking axis easiest for an LLM to produce---and that these dimensions
-carry the most signal against the human outcome (Appendix~\ref{app:robust}).
+\paragraph{Limitations.}
+The strongest threats follow; the full treatment is in Appendix~\ref{sec:limits}. The
+reject class is ``weak \emph{relative to the venue bar},'' not weak absolutely, and the
+decision is itself noisy \citep{cortes2021inconsistency,beygelzimer2023arbitrary}; we
+mitigate by also validating against the mean rating, but no analysis exceeds its ground
+truth, and that ground truth may itself be partly LLM-assisted
+\citep{liang2024monitoring}, a ceiling on H4. The scale rests on the cheap-model bridge,
+which is weakest at the low end, which is why we report the deployable flag on AIPR
+(GPT-5.4) directly. The primary cohort is one venue in one field, so we do not claim
+cross-field generalization. And the scorer is proprietary: the released data, labels, and
+analysis code make the score-to-outcome study fully reproducible, but the
+manuscript-to-score function is audited through its outputs rather than re-implemented, a
+defensible posture for a deployed instrument that pre-registration before unblinding lets
+a reader check rather than trust. We do not claim the score predicts acceptance, ranks
+strong papers, or should drive any decision without a human in the loop.
+
+\paragraph{What the human signal's structure implies.}
+Individual reviewers are highly variable \citep{reviewbench2026}, which is why we validate
+against the \emph{mean} rating: a score cannot agree with a ground truth more reliable
+than that truth is with itself, part of why we lead with the low-end claim rather than
+ranking the top.

@@ -38,8 +38,8 @@ def table_sample(d, R):
         "Decision tier & Submissions (cohort M) \\\\\n\\midrule\n"
         + "\n".join(rows)
         + "\n\\midrule\n"
-        + rf"\textbf{{Total full-mini (cohort M)}} & \textbf{{{R['sample']['n_mini']}}} \\" + "\n"
-        + rf"Full / GPT-5.4 (cohort H, $\subseteq$ M) & {R['sample']['n_full']} \\" + "\n"
+        + rf"\textbf{{Total (cohort M, GPT-5.4-mini)}} & \textbf{{{R['sample']['n_mini']}}} \\" + "\n"
+        + rf"AIPR (GPT-5.4), cohort H ($\subseteq$ M) & {R['sample']['n_full']} \\" + "\n"
         "\\bottomrule\n\\end{tabular}\n"
     )
     _w("tab_sample.tex", body)
@@ -91,6 +91,8 @@ def table_subscores(d, R):
     bh = R.get("subscore_bh", {})
     rows = []
     for dim in DIMENSIONS:
+        if dim == "citation":
+            continue  # excluded from interpretation (technical issue in this run's citation audit)
         e = R[PRIMARY_CONFIG]["subscore_auroc"][dim]
         q = bh.get(dim, {}).get("q")
         qcell = f"{q:.3f}" if q is not None else "---"
@@ -207,7 +209,7 @@ def table_covariate_control(d, R):
     if not cc:
         return
     rows = []
-    for key, label in (("mini", "Full-mini"), ("full", "Frontier")):
+    for key, label in (("mini", "AIPR (GPT-5.4-mini)"), ("full", "AIPR (GPT-5.4)")):
         if key in cc:
             c = cc[key]
             rows.append(
@@ -278,7 +280,7 @@ def table_disagreement(d, R):
     if not dm:
         return
     rows = []
-    for key, label in (("mini", "Full-mini"), ("full", "Frontier")):
+    for key, label in (("mini", "AIPR (GPT-5.4-mini)"), ("full", "AIPR (GPT-5.4)")):
         if key in dm:
             c = dm[key]
 
@@ -373,7 +375,7 @@ def table_naive_baseline(d, R):
     ]
     body = (
         "\\begin{tabular}{lcc}\n\\toprule\n"
-        "Metric & AIPR (full pipeline) & Naive judge \\\\\n\\midrule\n"
+        "Metric & AIPR (GPT-5.4) & Direct (GPT-5.4) \\\\\n\\midrule\n"
         + "\n".join(rows)
         + "\n\\bottomrule\n\\end{tabular}\n"
     )

@@ -2,82 +2,47 @@
 \label{sec:data}
 
 \paragraph{Venue and ground truth.}
-We draw submissions from a recent edition of a major machine learning conference
-hosted on OpenReview (primary cohort: \mbox{ICLR}~2026). The venue is chosen for
-two properties. First, it operates open review, so \emph{rejected}
-submissions, their reviews, and the final decision are all public; venues that
-publish only accepted papers cannot support the central claim of this study,
-which concerns the reject class. Second, its decisions and reviews were released
-in January~2026, \emph{after} the grading model's August~2025 knowledge cutoff,
-so the model cannot have memorized the outcome (\S\ref{sec:discussion}); the
-earlier, fully pre-cutoff \mbox{ICLR}~2025 cohort is reserved as a future
-contaminated contrast (\S\ref{sec:limits}), not used here. For each submission we
-record two ground-truth signals:
-\begin{itemize}\itemsep1pt
-  \item the \textbf{decision tier} on the ordered ladder
-  reject $<$ poster $<$ oral, and its binary collapse into
-  accept/reject; and
-  \item the \textbf{mean reviewer rating}, a continuous signal that is richer
-  than the discrete decision and partially averages out individual reviewer
-  noise.
-\end{itemize}
-We grade the \textbf{submitted} version of each manuscript---the PDF a reviewer
-actually saw---never the camera-ready, so the score is computed on the same
-artifact the human signal responded to.
+We draw submissions from a recent edition of a major machine learning conference on
+OpenReview (primary cohort: ICLR~2026), chosen for two properties. It operates open
+review, so \emph{rejected} submissions, their reviews, and decisions are all public;
+venues that publish only accepted papers cannot support a claim about the reject class.
+And its decisions and reviews were released in January~2026, after the grading model's
+August~2025 knowledge cutoff, so the outcome could not have been memorized
+(\S\ref{sec:discussion}). For each submission we record two ground-truth signals: the
+\textbf{decision tier} on the ordered ladder reject $<$ poster $<$ oral (and its binary
+collapse to accept/reject), and the \textbf{mean reviewer rating}, a continuous signal
+that partially averages out individual reviewer noise. We grade the \textbf{submitted}
+PDF a reviewer actually saw, never the camera-ready, so the score is computed on the
+same artifact the human signal responded to, and we record its SHA-256 for provenance.
 
-\paragraph{Sampling.}
+\paragraph{Sampling, exclusions, and nested cohorts.}
 The natural acceptance rate would starve the accepted tiers, so we sample
-\emph{balanced} across decision tiers and report metrics both as sampled and
-re-weighted to the venue's natural prevalence (\S\ref{sec:results},
-Appendix~\ref{app:robust}). Table~\ref{tab:sample} gives the realized counts.
-Sampling is reproducible from a committed cohort manifest, frozen before any
-frontier-model grading so the expensive budget is spent on exactly the
-pre-registered submissions.
-
-\paragraph{Exclusions (pre-registered).}
-We exclude desk-rejected and withdrawn-before-review submissions (no completed
-reviewer signal), submissions whose PDF failed to parse, and submissions the
-pipeline's self-identity step flags as an already-published manuscript under a
-different title (an arXiv-twin leakage risk for the citation audit). Excluded
-counts and reasons are reported and the excluded set never enters a primary
-metric.
-
-\paragraph{Nested cohorts.}
-To establish the relationship at scale while respecting a fixed frontier-model
-budget, gradings are organized into two strictly nested cohorts
-(Table~\ref{tab:sample}): every sampled submission is graded by the full pipeline
-on a cheap model (cohort $M$, full-mini); a stratified subset is additionally
-graded by the same full pipeline on a frontier model (cohort $H$, full), with
-$H \subseteq M$. The two configurations differ only in the reviewer model, so each
-frontier grading has a paired cheap-model score, enabling the mini-to-frontier
-bridge analysis of \S\ref{sec:results}.
+\emph{balanced} across decision tiers and report metrics both as sampled and re-weighted
+to the venue's natural prevalence (\S\ref{sec:results}, Appendix~\ref{app:robust});
+Table~\ref{tab:sample} gives the realized counts. Pre-registered exclusions
+(desk-rejected or withdrawn submissions with no reviewer signal, PDFs that failed to
+parse, and arXiv-twin leakage risks flagged by the pipeline's self-identity step) never
+enter a primary metric. To establish the relationship at scale under a fixed budget,
+gradings are organized into two strictly nested cohorts: every sampled submission is
+graded by AIPR on the cheaper GPT-5.4-mini (cohort $M$, $n=\NminiPrimary$), and a
+stratified subset is additionally graded by AIPR on the frontier GPT-5.4 (cohort
+$H \subseteq M$). The two differ only in the model, so each frontier grading has a
+paired cheap-model score (the bridge, H5).
 
 \begin{table}[t]
   \centering
-  \caption{Realized sample. Cohort $M$ (full-mini, cheap model) carries the
-  statistical power; the nested frontier cohort $H$ (full) carries the production
-  model. Both run the full two-pass pipeline. Counts exclude pre-registered
-  exclusions.}
+  \caption{Realized sample. Cohort $M$ (GPT-5.4-mini) carries the statistical power; the
+  nested cohort $H$ (GPT-5.4) carries the production model. Both run the full two-pass
+  pipeline. Counts exclude pre-registered exclusions.}
   \label{tab:sample}
   \input{tables/tab_sample}
 \end{table}
 
 \paragraph{Data contract and release.}
-All analysis reads a two-table contract (one row per submission for labels, one
-row per grading run for scores; full schema in Appendix~\ref{app:schema}). We
-release the de-identified scored table and the analysis code so every figure and
-number reproduces with a single command. We do not publicly release the full
-AIPR review text for every identifiable submission by default; that corpus is a
-controlled audit artifact that can be provided to editors or reviewers if needed.
-
-\paragraph{PDF provenance and the cohort manifest.}
-For every retained submission we record the SHA-256 of the graded PDF
-(\texttt{pdf\_sha}) and grade the OpenReview \emph{submitted} manuscript---the
-double-blind version reviewers saw at decision time, with no author block
-(\texttt{is\_anonymized} is uniformly~1 at this venue)---not the camera-ready or
-post-rebuttal revision, pinning the artifact to the version available at the
-decision. The realized cohort manifest---submission ids, sampling stratum, and
-assigned configuration---is the released \texttt{submissions} and \texttt{gradings}
-tables themselves, anchored to the public pre-registration tag; the analysis plan
-was frozen before any score was joined to an outcome, so the release \emph{is} the
-manifest a reader audits against rather than a separately asserted artifact.
+All analysis reads a two-table contract (one row per submission for labels, one per
+grading run for scores; schema in Appendix~\ref{app:schema}), released with the analysis
+code so every figure and number reproduces with one command. The released tables,
+anchored to the public pre-registration tag, \emph{are} the cohort manifest a reader
+audits against. We do not release the full AIPR review text for every identifiable
+submission by default; that corpus is a controlled audit artifact available to editors
+or reviewers on request.

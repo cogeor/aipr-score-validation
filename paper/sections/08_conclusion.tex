@@ -1,43 +1,25 @@
 \section{Conclusion}
 \label{sec:conclusion}
 
-We validated a structured LLM paper-scoring system against the public decisions
-and reviewer ratings of a major machine learning venue, under a pre-registered,
-fully reproducible protocol. The score separates rejected from accepted
-submissions (AUROC~$\aurocMini$), rises monotonically across decision tiers, and
-correlates with continuous reviewer ratings ($\rho=\spearmanRatingMini$). The
-signal is strongest at the low end: weak submissions are consistently flagged,
-with the lowest score quintile rejected at \bottomRejectRateFrontier\% on the
-production model (\bottomRejectRate\% at scale on the cheap-model cohort), a lift
-over base rate with strong work absent from that band. We confirmed the effect on a frontier-model cohort and showed that a cheap
-model proxies the frontier score well enough to establish the relationship at
-scale. The study's central result is about the model rather than the pipeline. A generic
-one-paragraph prompt on the same model and PDF already separates rejected from
-accepted submissions (AUROC~\aurocNaive), and the structured rubric-and-audit
-pipeline's observed AUROC is higher but not statistically resolved
-($\Delta$AUROC \aurocDiffFullNaive, 95\% CI \aurocDiffCI, \aurocDiffPrel). This
-does not prove equal performance; it shows that the naive baseline is already
-strong and that this paired cohort was not powered to resolve a small difference.
-With or without our prompt, a frontier model already produces a
-first-pass reviewing signal that substantially tracks human outcomes in this cohort,
-so raw model intelligence is not the observed bottleneck, and the reviewer keeps the
-decision. What the engineered pipeline
-adds is not a higher score but a deployable one---grading far more consistently
-across repeated runs and returning a grounded, anchored review in the same pass.
-
-Pre-registering the claim, validating against two complementary ground truths,
-generating every number from the data, and cataloguing the failure modes together
-keep the result inside the boundary the evidence supports: an automated first pass that reliably
-surfaces weak work for human attention, not a replacement for the judgment that
-follows. That boundary follows the reliable-at-the-bottom asymmetry the human
-process itself exhibits.
+We validated a training-free, prompt-only LLM manuscript score against the public
+decisions and reviewer ratings of a major machine learning venue, under a
+pre-registered, reproducible protocol. The score separates rejected from accepted
+submissions (AUROC~$\aurocMini$), rises across decision tiers, and tracks reviewer
+ratings ($\rho=\spearmanRatingMini$); it is strongest at the low end, where the lowest
+quintile is rejected at \bottomRejectRateFrontier\% on the production model, with strong
+work absent. Two findings locate the system's value. The validity comes mostly from the
+model: a one-paragraph prompt on the same model already discriminates, indistinguishably
+from the full pipeline ($\Delta$AUROC \aurocDiffFullNaive, \aurocDiffPrel). What the
+engineering adds is reliability: AIPR's score barely moves across runs (\fullRunSD{}
+vs.\ \naiveRunSD{} points) where the bare prompt swings, delivered with a grounded,
+anchored review in one pass. Intelligence is not the bottleneck; reliability is. The
+validated use is narrow: an automated first pass that surfaces weak work for human
+attention, not a replacement for the judgment that follows.
 
 \paragraph{Reproducibility.}
-The de-identified scored table, the decision and rating labels, the analysis
-code, and the pre-registration are released; \texttt{run\_all.py} regenerates
-every figure, table, and number in this paper from the data with a single
-command. The full generated review text for identifiable submissions is not
-published by default; it is retained as a controlled audit artifact for editors
-or reviewers if needed. The grading rubric, prompts, and model configuration
-remain proprietary; the manuscript-to-score function is audited through its
-outputs rather than re-implemented.
+The de-identified scored table, labels, analysis code, and pre-registration are released
+at \url{https://github.com/cogeor/aipr-score-validation}; one command regenerates every
+figure and number. The full review text for identifiable
+submissions is retained as a controlled audit artifact. The grading rubric, prompts, and
+model configuration remain proprietary; the manuscript-to-score function is audited
+through its outputs.

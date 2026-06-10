@@ -68,10 +68,14 @@ CONFIGS = ("full_mini", "full")
 # standalone prestige-perturbation experiment — see the paper's Methods.)
 BASELINE_CONFIGS = ("naive",)
 ALL_CONFIGS = CONFIGS + BASELINE_CONFIGS
+# Display labels only (the dict KEYS and the released CSV column keys are unchanged:
+# full_mini / full / naive). Scheme: METHOD (model), method primary. "Direct" is the
+# neutral standard term for a single-prompt baseline (replaces the strawman-flavored
+# "naive"); "AIPR" carries the production system name across both model tiers.
 CONFIG_LABELS = {
-    "full_mini": "Full (all-mini)",
-    "full": "Full (all-frontier)",
-    "naive": "Naive judge",
+    "full_mini": "AIPR (GPT-5.4-mini)",
+    "full": "AIPR (GPT-5.4)",
+    "naive": "Direct (GPT-5.4)",
 }
 
 # The config whose numbers become the paper's headline. Full-mini carries the

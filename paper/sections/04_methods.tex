@@ -2,102 +2,93 @@
 \label{sec:methods}
 
 \subsection{The scoring system}
-\textsc{AIPR} grades a manuscript in a single frozen pipeline version (denoted
-v6; never mixed with other versions in one cohort). The pipeline uploads the PDF
-and, in its full configuration, runs a two-pass review: a reviewer pass that
-reads the paper and produces the five dimension scores with justifications, and
-an audit pass that re-reads the paper with a literature-search tool to verify the
-reviewer's claims and surface omitted citations against a real bibliographic
-index (so a recommended citation is always a record the tool returned, never a
-hallucination). Both study configurations run this same full two-pass pipeline;
-they differ only in the reviewer model. The overall score is computed server-side
-as a fixed weighted mean of the five dimensions,
+\textsc{AIPR} grades a manuscript in a single frozen pipeline version (v6), applying the
+now-standard practice of scoring by prompting an LLM against a rubric
+\citep{liu2023geval,zheng2023judging} to a new object: the manuscript. The pipeline
+uploads the submitted PDF and runs two passes. A \emph{reviewer} pass reads the paper
+and emits the five dimension scores with justifications and verbatim-anchored
+highlights. An \emph{audit} pass re-reads the paper with a live literature-search tool,
+checks each highlight against the manuscript, and proposes missing citations against a
+real bibliographic index, so a recommended citation is always a record the tool
+returned, not a generated string. The overall score is a fixed weighted mean of the five
+dimensions,
 \begin{equation}
   \text{overall} = \frac{4\,s_{\text{nov}} + 2\,s_{\text{rig}}
   + 4\,s_{\text{app}} + 1\,s_{\text{cla}} + 0.5\,s_{\text{cit}}}{11.5},
   \label{eq:overall}
 \end{equation}
-with novelty and applicability carrying the top weight and citation the least;
-the model does not emit the overall directly. Because the citation dimension is a
-lightly weighted, audit-derived signal, we report it separately from the main
-outcome-validity claim; in this cohort it proved uninformative---an audit fallback
-pinned it, so it discriminates at chance (\S\ref{sec:discussion})---and we test
-whether the headline survives dropping it entirely (\S\ref{sec:res-value}). We treat the system as a fixed
-black box: it was not tuned on the venue, the decisions, or the reviewer ratings,
-and no model in this study was trained or fine-tuned on the evaluation data. The
-dimension weights were set by empirical internal validation on a separate,
-held-out collection of manuscripts during product development---containing no
-ICLR submissions from any year, and none of the papers, decisions, or ratings
-used here---and were frozen before this study; they were not fit to any decision,
-rating, or outcome in this cohort. We therefore evaluate the
-scoring rule \emph{as deployed} and report its sensitivity to the weighting
-(equal-weight and leave-one-dimension-out) in Appendix~\ref{app:robust}.
+with novelty and applicability weighted most and citation least; the model does not emit
+the overall directly. The pipeline's product is this structured, evidence-grounded
+review; the overall score is a by-product of producing it, not the system's purpose, and
+the baseline of \S\ref{sec:res-value} returns only the number. The system is prompt-only:
+it is not fine-tuned on reviews, decisions, or ratings, and no model here is trained on
+the evaluation data.
 
-\subsection{Grading configurations and cost design}
-Two configurations run the identical full two-pass pipeline and differ only in the
-reviewer model (Table~\ref{tab:configs-app}, Appendix~\ref{app:configs}):
-\textbf{full-mini} (cheap model, reviewer \texttt{gpt-5.4-mini}) and \textbf{full}
-(frontier model, reviewer \texttt{gpt-5.4})---the production
-configuration.\footnote{The \textbf{full} configuration is exported as
-\texttt{full\_full} in the released \texttt{gradings.csv}; we write \textbf{full}
-throughout. The naive baseline (V1) runs the same \texttt{gpt-5.4} model on the
-same submitted PDF with a single one-paragraph prompt and no rubric or audit.} The
-cheap-model configuration is effectively
-unconstrained in volume; the frontier configuration is budgeted (the realized
-per-configuration token cost is reported in Appendix~\ref{app:robust}). We
-therefore establish the score--outcome relationship on the large full-mini cohort
-and use the frontier cohort to confirm it, after first verifying that the
-cheap-model and frontier scores agree well enough for the former to stand in for
-the latter (the bridge, hypothesis~H5).
+The contrast with the baseline is concrete. Where the baseline prompt
+(\S\ref{sec:res-value}) is one paragraph of about fifty words, the reviewer pass is
+driven by a ${\approx}2{,}200$-word rubric instruction paired with a $1{,}200$-word
+output schema, and the audit pass adds ${\approx}1{,}200$ words plus a tool loop of up to
+eight OpenAlex search rounds. The two passes are role-separated, opening respectively
+``You are an expert peer reviewer\,\ldots\ Produce a structured review'' and ``You are a
+senior scientific editor\,\ldots\ audit the reviewer's highlights against the paper, and
+find real missing citations.'' The full rubric, anchors, and schema are proprietary
+(\S\ref{sec:discussion}); the point of \S\ref{sec:res-value} is that this instruction
+footprint, almost two orders of magnitude larger than the baseline, buys reliability and
+a grounded review rather than a higher discrimination score.
+
+\subsection{Configurations and the baseline}
+Two configurations run the identical two-pass pipeline and differ only in the model:
+\textbf{AIPR (GPT-5.4-mini)} on the cheaper model and \textbf{AIPR (GPT-5.4)} on the
+frontier model, the production configuration.\footnote{Exported as \texttt{full\_mini}
+and \texttt{full\_full} in the released \texttt{gradings.csv}; we use the display names
+throughout. The baseline \textbf{Direct (GPT-5.4)} is exported as \texttt{naive}.} The
+cheap configuration is effectively unconstrained in volume; the frontier configuration is
+budgeted. We therefore establish the score--outcome relationship on the large cohort $M$
+and confirm it on cohort $H$, after verifying the two scores agree well enough for the
+former to proxy the latter (H5). The pre-registered baseline, \textbf{Direct (GPT-5.4)},
+runs the same frontier model on the same PDF with a single one-paragraph prompt and no
+rubric or audit. We treat the system as a fixed black box: the dimension weights were set
+by empirical internal validation on a separate, held-out manuscript set during product
+development (no ICLR submissions from any year, none of the papers, decisions, or ratings
+used here) and frozen before this study, not fit to any outcome in this cohort. The
+lightly weighted citation dimension was uninformative in this run for a technical reason
+in its audit, so we exclude it from interpretation; the headline is unchanged when it is
+dropped, and a grounded, search-backed citation signal is an obvious next step
+(\S\ref{sec:discussion}). We evaluate the rule \emph{as deployed} and report weighting
+sensitivity (equal-weight, leave-one-out) in Appendix~\ref{app:robust}.
 
 \subsection{Hypotheses, metrics, and pre-registration}
-All hypotheses, the primary metric, and the low-score threshold were fixed before
-any score was joined to any outcome (Appendix~\ref{app:prereg}). We report effect
-sizes with bootstrap confidence intervals throughout, because ``strong signal''
-is an effect-size claim, not a $p$-value claim. In the vocabulary of measurement
-validation, H1--H4 assemble criterion-related evidence for a specific score
-interpretation (weak relative to the venue bar) under a specific use (triage);
-validity here attaches to that interpretation and use, following the unified
-framework of the \emph{Standards for Educational and Psychological Testing}
-\citep{aera2014standards}. A separate pre-registered comparison (V1) asks whether
-that validity is a product of the engineered pipeline rather than of the
-underlying model---the primary \emph{value} question, on which the case for
-building the system rests.
+All hypotheses, the primary metric, and the low-score threshold were fixed before any
+score was joined to any outcome (Appendix~\ref{app:prereg}). We report effect sizes with
+bootstrap confidence intervals throughout, because ``strong signal'' is an effect-size
+claim rather than a $p$-value claim. H1--H4 assemble criterion-related validity evidence
+for a specific interpretation (weak relative to the venue bar) under a specific use
+(triage), following the \emph{Standards for Educational and Psychological Testing}
+\citep{aera2014standards}; a separate comparison (V1) asks whether that validity is the
+pipeline's or the model's.
 
 \begin{description}\itemsep2pt
-  \item[H1 (primary): low-end flagging.] Submissions in the lowest AIPR-score
-  quintile are rejected at a rate well above the base rate, and top-tier (oral)
-  papers are essentially absent from that band. Reported as reject rate and as
-  \emph{lift} over the base reject rate, with Wilson intervals.
-  \item[H2: separation.] The overall score discriminates reject from accept,
-  measured by AUROC with a stratified bootstrap CI.
-  \item[H3: monotone gradient.] Mean overall score increases monotonically across
-  the three ordered tiers, tested by the Jonckheere--Terpstra trend statistic with
-  a \emph{Monte Carlo permutation} $p$-value and reported with Spearman $\rho$
-  against tier rank.
-  \item[H4: continuous agreement.] The overall score correlates with the mean
-  reviewer rating (Spearman $\rho$, bootstrap CI).
-  \item[H5 (gate): mini-to-frontier bridge.] On cohort $H$, the full-mini and
-  frontier overall scores correlate at $\rho \ge 0.8$, licensing the large-$N$
-  full-mini results as a proxy for the production (frontier) score.
-  \item[V1 (primary value): pipeline vs.\ generic prompt.] On cohort $H$, the full
-  pipeline out-discriminates a single one-paragraph ``grade this paper'' prompt run
-  on the same model and PDF, with the only variable the pipeline. Pre-declared
-  success: AUROC(full)~$-$~AUROC(naive)~$>0$ with the CI excluding zero; reported
-  alongside accept/reject agreement at AIPR@60 (and each method at its own
-  accept-rate-matched threshold) and run-to-run reliability. A null is reported
-  plainly as a negative product result.
+  \item[H1 (primary): low-end flagging.] Submissions in the lowest score quintile are
+  rejected well above the base rate, with oral papers essentially absent. Reported as
+  reject rate and \emph{lift} over the base rate, with Wilson intervals.
+  \item[H2: separation.] The overall score discriminates reject from accept (AUROC,
+  stratified bootstrap CI).
+  \item[H3: monotone gradient.] Mean overall score increases across the three ordered
+  tiers (Jonckheere--Terpstra trend test, Monte Carlo permutation $p$; Spearman $\rho$).
+  \item[H4: continuous agreement.] The overall score correlates with the mean reviewer
+  rating (Spearman $\rho$, bootstrap CI).
+  \item[H5 (gate): mini-to-frontier bridge.] On cohort $H$, AIPR (GPT-5.4-mini) and
+  AIPR (GPT-5.4) overall scores correlate at $\rho \ge 0.8$, licensing the large-$N$
+  cohort-$M$ results as a proxy for the production score.
+  \item[V1 (primary value): pipeline vs.\ baseline.] On cohort $H$, AIPR (GPT-5.4)
+  out-discriminates Direct (GPT-5.4) on the same model and PDF. Pre-declared success:
+  AUROC difference $>0$ with the CI excluding zero; reported alongside accept/reject
+  agreement and run-to-run reliability. A null is reported plainly.
 \end{description}
-Secondary analyses (per-dimension discrimination, whether the audit pass adds
-signal, run-to-run variance, prevalence re-weighting, weighting robustness, and the
-leakage controls of \S\ref{sec:discussion}; a second-venue replication is deferred
-to future work) are reported in
-\S\ref{sec:results} and Appendix~\ref{app:robust}. Effect sizes use Cohen's $d$
-and Cliff's $\delta$ for the two-group contrast; multiple comparisons across the
-five dimensions are controlled by the Benjamini--Hochberg procedure. Confidence
-intervals are 4{,}000-resample bias-corrected and accelerated (BCa) bootstraps,
-which attain nominal coverage on skewed statistics such as AUROC at the frontier
-cohort's sample size (Appendix~\ref{app:power}); AUROC and other class-conditional
-statistics use a \emph{stratified} resample that preserves the observed
-reject/accept counts. The Monte Carlo trend test uses 10{,}000 permutations. The
-entire analysis is deterministic under a fixed seed.
+Confidence intervals are 4{,}000-resample BCa bootstraps (stratified for class-conditional
+statistics such as AUROC; Appendix~\ref{app:power}); the trend test uses 10{,}000 Monte
+Carlo permutations; multiple comparisons across the five dimensions use Benjamini--Hochberg;
+and the analysis is deterministic under a fixed seed. Secondary analyses (per-dimension
+discrimination, audit-pass contribution, run-to-run variance, prevalence re-weighting,
+weighting robustness, leakage controls) are reported in \S\ref{sec:results} and
+Appendix~\ref{app:robust}.
