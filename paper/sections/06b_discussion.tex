@@ -99,20 +99,20 @@ The central threat to any score--outcome study built on a public venue is that t
 grading model may have memorized the outcome---the decision or the reviews---during
 training, which would inflate the relationship we measure; LLM-generated review
 content is already widespread at these venues \citep{liang2024monitoring}. We
-control for this by construction in the choice of cohort: the grading model's
-knowledge cutoff is August~2025, whereas the primary cohort's (ICLR~2026)
-decisions and reviews were released in January~2026, so the outcome could not have
-been in training. We add three checks. First, we flag submissions whose arXiv
-preprint predates the cutoff and report the headline metrics with and without
-them, bounding any residual \emph{paper-text} leakage (the model seeing the
-manuscript, as a reviewer would, is not itself a confound; memorizing its
-reception is). Second, we run the fully pre-cutoff ICLR~2025 cohort as a
-contaminated contrast: if the score--outcome relationship is no stronger there
-than on the clean 2026 cohort, memorization is not driving it. Third, a
-prospective confirmation grades a future venue's submissions before its decisions
-are released, making leakage logically impossible. The arXiv-before-cutoff
-sensitivity split and the contaminated contrast are reported in
-Appendix~\ref{app:robust}; the prospective confirmation is follow-up. The
+control for this by construction in the choice of cohort: the grading model
+(\texttt{gpt-5.4}) has a knowledge cutoff of August~2025, whereas the primary
+cohort's (ICLR~2026) decisions and reviews were released in January~2026, so the
+outcome could not have been in training. We add a direct robustness check: we flag
+submissions whose arXiv preprint predates the cutoff and report the headline
+metrics with and without them, bounding any residual \emph{paper-text} leakage (the
+model seeing the manuscript, as a reviewer would, is not itself a confound;
+memorizing its reception is). This arXiv-before-cutoff sensitivity split is reported
+in Appendix~\ref{app:robust}. Two further checks are planned but deferred to future
+work (\S\ref{sec:limits}): a fully pre-cutoff ICLR~2025 cohort as a contaminated
+contrast---if the score--outcome relationship is no stronger there than on the clean
+2026 cohort, memorization is not driving it---and a prospective confirmation that
+grades a future venue's submissions before its decisions are released, making
+leakage logically impossible. The
 distinct question of whether the model's \emph{priors} on authors and
 institutions move the score, which matters for the non-blind venues AIPR also
 targets, is addressed by a separate prestige-perturbation experiment that holds

@@ -33,8 +33,13 @@ scoring rule \emph{as deployed} and report its sensitivity to the weighting
 \subsection{Grading configurations and cost design}
 Two configurations run the identical full two-pass pipeline and differ only in the
 reviewer model (Table~\ref{tab:configs-app}, Appendix~\ref{app:configs}):
-\textbf{full-mini} (cheap model) and \textbf{full} (frontier model)---the
-production configuration. The cheap-model configuration is effectively
+\textbf{full-mini} (cheap model, reviewer \texttt{gpt-5.4-mini}) and \textbf{full}
+(frontier model, reviewer \texttt{gpt-5.4})---the production
+configuration.\footnote{The \textbf{full} configuration is exported as
+\texttt{full\_full} in the released \texttt{gradings.csv}; we write \textbf{full}
+throughout. The naive baseline (V1) runs the same \texttt{gpt-5.4} model on the
+same submitted PDF with a single one-paragraph prompt and no rubric or audit.} The
+cheap-model configuration is effectively
 unconstrained in volume; the frontier configuration is budgeted (the realized
 per-configuration token cost is reported in Appendix~\ref{app:robust}). We
 therefore establish the score--outcome relationship on the large full-mini cohort

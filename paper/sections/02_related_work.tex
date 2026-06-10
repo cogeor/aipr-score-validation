@@ -24,8 +24,15 @@ dataset to surface deficiencies in machine-written reviews and
 and weaknesses does not translate into reliable decision prediction. The
 ecosystem-level risk is captured by \citet{russolatona2024lottery}, who estimate
 that AI-assisted reviews already inflate scores and acceptance probabilities at
-scale. Crucially, almost all of this work evaluates generated review \emph{text}
-rather than a calibrated numeric \emph{score}.
+scale, and by \citet{lin2025hidden}, who documents adversarial hidden prompts
+embedded in manuscripts that manipulate AI-assisted reviews outright---risks that
+make uncontrolled, undisclosed AI use in review a live concern. On the constructive
+side, a large-scale randomized controlled study at ICLR~2025
+\citep{thakkar2026feedback} deployed an LLM feedback agent to over 20{,}000 reviews
+and found that automated feedback measurably improved review informativeness and
+reviewer--author engagement. Crucially, almost all of this work---including these
+interventions---evaluates generated review \emph{text} rather than a calibrated
+numeric \emph{score}.
 
 \paragraph{Reliability and noise in the human ground truth.}
 Any claim that an automated signal tracks ``quality'' must be calibrated against
