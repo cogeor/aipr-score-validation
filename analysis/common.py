@@ -38,10 +38,15 @@ DIM_LABELS = {
 # v6 overall = weighted mean of the five subscores.
 SCORE_WEIGHTS = {"novelty": 4.0, "rigor": 2.0, "applicability": 4.0, "clarity": 1.0, "citation": 0.5}
 
-# Three ordinal tiers, low→high. ICLR 2026 (the only graded venue) awards
+# Three ordinal tiers, low→high. ICLR 2026 (the only graded venue here) awards
 # Poster + Oral only — there is no Spotlight tier (verified live 2026-06-04:
 # 5,128 posters / 224 orals / 0 spotlights). Mirrors aipr's
-# ``platform/openreview/decisions.py::TIER_ORDER`` — keep the two in lockstep.
+# ``platform/openreview/decisions.py::_PROFILES[("iclr", 2026)]`` — the
+# producer is per-venue-year now (its ICLR 2025 profile is 4-tier:
+# reject < poster < spotlight < oral) — keep the two sides in lockstep. This
+# module stays single-dataset 3-tier until the dataset-keyed restructure
+# lands; until then the iclr2026 order below is the only one ``schema.py``'s
+# tier bijection (schema.py:144-153) validates against.
 TIER_ORDER = ("reject", "poster", "oral")
 TIER_RANK = {t: i for i, t in enumerate(TIER_ORDER)}
 TIER_LABELS = {"reject": "Reject", "poster": "Poster", "oral": "Oral"}
