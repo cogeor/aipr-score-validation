@@ -1,3 +1,5 @@
+[![CI](https://github.com/cogeor/aipr-score-validation/actions/workflows/ci.yml/badge.svg)](https://github.com/cogeor/aipr-score-validation/actions/workflows/ci.yml)
+
 # Validating an Automated Paper-Scoring System Against Peer-Review Outcomes
 
 Reproducible analysis and manuscript for a pre-registered study that validates

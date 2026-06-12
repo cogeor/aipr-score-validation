@@ -227,6 +227,13 @@ def cmd_paper(args):
     print(f"OK: {pdf} ({pdf.stat().st_size} bytes, {pages} pages)")
 
 
+def _strip_tex_comments(text: str) -> str:
+    """Drop unescaped-% TeX comments so deliberately commented-out blocks (e.g.
+    the deferred figS_replication figure, sections/09_appendix.tex) are not
+    linted as live macro uses or figure/table references."""
+    return re.sub(r"(?<!\\)%.*", "", text)
+
+
 def _defined_macros() -> set[str]:
     names: set[str] = set()
     for f in ("macros.tex", "macros/results_macros.tex", "macros/sim_macros.tex", "macros/secondary_macros.tex"):
@@ -256,7 +263,7 @@ def cmd_check(args):
     used: set[str] = set()
     srcs = list((PAPER_DIR / "sections").glob("*.tex")) + [PAPER_DIR / "main.tex"]
     for s in srcs:
-        used |= set(re.findall(r"\\([a-zA-Z]+)", s.read_text(encoding="utf-8")))
+        used |= set(re.findall(r"\\([a-zA-Z]+)", _strip_tex_comments(s.read_text(encoding="utf-8"))))
     undefined = sorted(used - defined)
     if undefined:
         problems.append(f"undefined macros referenced: {undefined}")
@@ -266,7 +273,7 @@ def cmd_check(args):
     # 3. referenced figures / tables exist
     missing = []
     for s in srcs:
-        body = s.read_text(encoding="utf-8")
+        body = _strip_tex_comments(s.read_text(encoding="utf-8"))
         for fig in re.findall(r"\\includegraphics(?:\[[^\]]*\])?\{([^}]+)\}", body):
             stem = fig.split("/")[-1]
             if not (FIG_DIR / f"{stem}.pdf").exists():
