@@ -244,3 +244,50 @@ lowest-scoring reject is described by outcome only.
 **Marketing rule (standing):** describe the result as "validated against the
 public ICLR 2026 review record on OpenReview" — never "ICLR-validated" or any
 wording implying venue endorsement.
+
+## 2026-06-12 — Phase-2 pre-registration addendum (prereg-iclr2026-phase2)
+
+> **Status: DRAFT pending owner approval.** This addendum becomes the frozen
+> Phase-2 pre-registration only when the `prereg-iclr2026-phase2` tag is
+> created and pushed to the public remote by the owner — neither the tag nor
+> any push happens in this change. The tag push is the run trigger: no
+> Phase-2 grading call is made before it. (The v1 appendix is unaffected:
+> `prereg_verbatim.tex` renders from the `prereg-iclr2026-v2` tag, never the
+> working tree.)
+
+**Pillar 1 — citation-audit re-validation (config `full_full_p2`).**
+Cohort: the frozen cohort-H ids (the n=100 frontier papers already released
+in `gradings.csv`). Config: `full_full_p2` — the current v6 pipeline with the
+abstract-based citation audit (post-fix #7), the same frontier model as
+`full_full`; single run per paper, Flex tier. Reported metrics:
+citation-subscore AUROC (reject vs. accept) and the citation pinned-at-100
+rate, each beside the frozen v1 artifact row (pinned rate 1.0, AUROC 0.50).
+This is explicitly a **validation of the FIXED pipeline — the frozen v1
+result stands unmodified**; the comparison row is labeled new-validation and
+no v1 number is recomputed.
+
+**Pillar 2 — ICLR 2025 ordinal arm (pre-declared metrics).**
+
+- Headline triplet, mirroring v1: accept/reject AUROC; bottom-quintile
+  reject rate (band 0 of the score-band table); Spearman(score, mean
+  reviewer rating).
+- Ordinal additions — the reason for the 2025 arm (ICLR 2025 awards FOUR
+  decision tiers, reject < poster < spotlight < oral, one tier finer than
+  2026): Spearman(score, tier_rank) over the 4-tier ladder;
+  adjacent-boundary AUROCs (reject|poster, poster|spotlight, spotlight|oral)
+  with BCa CIs; per-tier median score with a monotonicity statement.
+- Cohort: stratified full-mini n=300 (mirrors the v1 primary cohort M).
+  Strata sized by the observed 2025 tier proportions; the EXACT split is
+  recorded in this addendum once the bare `labels` manifest exists —
+  labeling is observation, not experiment, and may precede the tag; the tag
+  lands before `select-cohort` freezes ids and before any grading. **NO 2025
+  frontier arm** (this is a confirmation arm; mini is the deployable tier).
+- Spotlight base-rate caveat: spotlights are a small fraction of accepts
+  (~5% historically), so the poster|spotlight boundary AUROC is expected to
+  be noisy at n=300 — its CI is reported, never headline-claimed.
+- Contamination framing, fixed in advance: ICLR 2025 decisions precede the
+  grading model's Aug-2025 training cutoff, so the 2025 arm is reported as
+  an **in-training-window consistency check**; ICLR 2026 remains the clean
+  primary.
+
+**Scope statement.** No other v1 number is re-run or revised by Phase 2.

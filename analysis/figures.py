@@ -31,6 +31,7 @@ from common import (
     TIER_ORDER,
     VARIANCE_SUBSTUDY_PAPERS,
     apply_style,
+    tiers_for,
     watermark,
 )
 from stats import mwu_pvalue, reliability_table, roc_points
@@ -540,6 +541,50 @@ def fig_replication(d, R):
     _save(fig, "figS_replication", d.is_synthetic)
 
 
+def fig_phase2_tiers(d, R):
+    """Phase-2 exhibit: AIPR overall-score distribution across the FOUR ordered
+    ICLR-2025 decision tiers (violin + box + jitter — the 4-tier twin of the
+    validation panel's tier panel), full-mini cohort, coloured/labeled via the
+    (ICLR, 2025) ladder. ALWAYS written: when the export carries no 2025 rows
+    a placeholder render notes the data is awaited, so the Phase-2 section's
+    \\includegraphics target exists on every dataset (the section itself is
+    gated off by PHASE2.flag). Stamped SYNTHETIC by the standard watermark on
+    synthetic data."""
+    p2 = R.get("phase2", {})
+    if not p2:
+        fig, ax = plt.subplots(figsize=(COL_WIDTH, 2.4))
+        ax.axis("off")
+        ax.text(0.5, 0.5, "Awaiting Phase-2 data\n(no ICLR 2025 rows in this export)",
+                ha="center", va="center", fontsize=9, color="0.4")
+        _save(fig, "fig_phase2_tiers", d.is_synthetic)
+        return
+    tiers = tiers_for(*REPLICATION_VENUE)
+    df = d.config_frame(PRIMARY_CONFIG)
+    df = df[(df["venue"] == REPLICATION_VENUE[0]) & (df["year"] == REPLICATION_VENUE[1])]
+    fig, ax = plt.subplots(figsize=(COL_WIDTH, 2.8))
+    data = [df.loc[df["decision_tier"] == t, "overall"].values for t in tiers]
+    parts = ax.violinplot(data, showextrema=False, widths=0.8)
+    for i, b in enumerate(parts["bodies"]):
+        b.set_facecolor(TIER_COLORS[tiers[i]])
+        b.set_alpha(0.45)
+    bp = ax.boxplot(data, widths=0.18, showfliers=False, patch_artist=True,
+                    medianprops={"color": "black"})
+    for i, box in enumerate(bp["boxes"]):
+        box.set_facecolor(TIER_COLORS[tiers[i]])
+        box.set_alpha(0.9)
+    for i, t in enumerate(tiers):
+        x = np.random.default_rng(i).normal(i + 1, 0.05, len(data[i]))
+        ax.scatter(x, data[i], s=2, color="black", alpha=0.12, zorder=3)
+    ax.set_xticks(range(1, len(tiers) + 1))
+    ax.set_xticklabels([TIER_LABELS[t] for t in tiers], rotation=20, ha="right")
+    ax.set_ylabel("AIPR overall score")
+    ax.set_xlabel("Decision tier (ICLR 2025)")
+    st = p2["spearman_tier"]
+    ax.text(0.03, 0.97, rf"$\rho={st['point']:.2f}$ [{st['lo']:.2f}, {st['hi']:.2f}]",
+            transform=ax.transAxes, va="top", ha="left", fontsize=7)
+    _save(fig, "fig_phase2_tiers", d.is_synthetic)
+
+
 def fig_contamination(d, R):
     """Supp: temporal leakage controls. Full-mini AUROC on the clean primary cohort,
     the pre-cutoff replication venue (contaminated contrast), and the primary
@@ -669,6 +714,7 @@ def render_all(d, R):
     fig_runvar(d, R)
     fig_prevalence(d, R)
     fig_replication(d, R)
+    fig_phase2_tiers(d, R)
     fig_contamination(d, R)
     fig_weight_robustness(d, R)
     fig_cost(d, R)

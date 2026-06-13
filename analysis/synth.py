@@ -20,18 +20,20 @@ import pandas as pd
 
 from common import (
     COHORT_H_SPLIT,
+    COHORT_M25_SPLIT,
     COHORT_M_SPLIT,
     DATA_DIR,
     DIMENSIONS,
     GLOBAL_SEED,
     SCORE_WEIGHTS,
     SUBJECT_AREAS,
-    TIER_ORDER,
-    TIER_RANK,
+    tiers_for,
 )
 
 # Per-tier latent-quality mean (sd shared) — drives separation across tiers.
-TIER_Q_MEAN = {"reject": -0.9, "poster": 0.0, "oral": 1.1}
+# Spotlight (the 2025-only fourth tier) sits between poster and oral, so the
+# 4-tier ladder is monotone by construction.
+TIER_Q_MEAN = {"reject": -0.9, "poster": 0.0, "spotlight": 0.6, "oral": 1.1}
 Q_SD = 0.6
 
 # Dimension loadings on latent quality (novelty/applicability strong; citation weak),
@@ -46,17 +48,23 @@ DIM_BASE = {"novelty": 60, "rigor": 63, "applicability": 60, "clarity": 66, "cit
 # rubric/audit — hand-set NOISIER and WEAKER than full so its AUROC sits clearly
 # below full (the pipeline adds discrimination) and its run-to-run SD sits clearly
 # above full (the pipeline adds reliability).
-CONFIG_NOISE = {"full_mini": 7.0, "full": 6.0, "naive": 12.0}
-CONFIG_GAIN = {"full_mini": 12.5, "full": 13.5, "naive": 8.0}
+# `full_full_p2` is the Pillar-1 re-grade: SAME model + v6 pipeline as `full`,
+# post-fix citation audit, single run on the cohort-H papers. Its subscores go
+# through the same informative machinery (synth never models the v1 pinned-100
+# citation artifact, so the p2 citation column is informative by construction).
+CONFIG_NOISE = {"full_mini": 7.0, "full": 6.0, "naive": 12.0, "full_full_p2": 6.0}
+CONFIG_GAIN = {"full_mini": 12.5, "full": 13.5, "naive": 8.0, "full_full_p2": 13.5}
 CONFIG_MODEL = {
     "full_mini": "gpt-5.4-mini-synthetic",
     "full": "gpt-5.4-synthetic",
     "naive": "gpt-5.4-synthetic",  # same model as full — only the pipeline differs
+    "full_full_p2": "gpt-5.4-synthetic",  # same model as full — only the audit state differs
 }
 # full + naive get 3 runs so the variance sub-study (run_variance with min_run=1,
 # which excludes run 0) has >=2 consistent-config runs to take an SD over — mirrors
 # the real export, where the ~10 variance papers are graded 3x on full_full+naive.
-CONFIG_RUNS = {"full_mini": 1, "full": 3, "naive": 3}
+# full_full_p2 is single-run by protocol (the addendum's Pillar-1 design).
+CONFIG_RUNS = {"full_mini": 1, "full": 3, "naive": 3, "full_full_p2": 1}
 
 # Naive overall = single noisy draw on latent quality (no five-subscore averaging,
 # so its run SD is larger than full's by construction).
@@ -66,9 +74,32 @@ NAIVE_BASE = 62.0
 # two-pass (reviewer + audit) so read the manuscript twice; naive reads it once
 # (single prompt). Output reflects how much the config writes (the audit pass
 # adds findings/citations).
-CONFIG_PASSES = {"full_mini": 2, "full": 2, "naive": 1}
-CONFIG_INPUT_OVERHEAD = {"full_mini": 2500, "full": 2500, "naive": 1000}
-CONFIG_OUTPUT_MEAN = {"full_mini": 1500, "full": 2500, "naive": 400}
+CONFIG_PASSES = {"full_mini": 2, "full": 2, "naive": 1, "full_full_p2": 2}
+CONFIG_INPUT_OVERHEAD = {"full_mini": 2500, "full": 2500, "naive": 1000, "full_full_p2": 2500}
+CONFIG_OUTPUT_MEAN = {"full_mini": 1500, "full": 2500, "naive": 400, "full_full_p2": 2500}
+
+# ICLR-2025 decision_raw vocabulary, copied VERBATIM from the recorded L02
+# fixtures (aipr: tests/test_platform/test_openreview/fixtures/iclr_2025/
+# submissions.json) — never from a live OpenReview call. Rejected papers
+# alternate between the recorded human tag and the recorded machine venueid
+# so both forms are exercised downstream.
+ICLR2025_DECISION_RAW = {
+    "oral": "ICLR 2025 Oral",
+    "spotlight": "ICLR 2025 Spotlight",
+    "poster": "ICLR 2025 Poster",
+}
+ICLR2025_REJECT_RAW = ("Submitted to ICLR 2025", "ICLR.cc/2025/Conference/Rejected_Submission")
+
+
+def _decision_raw(venue: str, year: int, tier: str, k: int) -> str:
+    """A realistic raw venue tag for one synthetic row. The (ICLR, 2025) ladder
+    uses the recorded fixture vocabulary verbatim; other venues keep the
+    generic machine-id form."""
+    if (venue, year) == ("ICLR", 2025):
+        if tier == "reject":
+            return ICLR2025_REJECT_RAW[k % 2]
+        return ICLR2025_DECISION_RAW[tier]
+    return f"{venue}.cc/{year}/Conference/{tier.capitalize()}"
 
 
 def _usage(token_count: int, config: str, rng: np.random.Generator) -> tuple[int, int]:
@@ -98,17 +129,25 @@ def _subscores(q: float, config: str, rng: np.random.Generator) -> dict:
 def _make_venue(venue: str, year: int, mini_split: dict, full_split: dict | None, rng) -> tuple[list, list, list, list]:
     """Build one venue's synthetic cohorts.
 
-    ``mini_split`` (tier->count) is the full-mini cohort M = the graded
-    submission population for this venue (the primary large-N cohort).
-    ``full_split`` (tier->count, or None) is the nested frontier cohort H ⊆ M,
-    graded additionally by `full` + the `naive` baseline; ``None`` makes a
-    full-mini-only venue (the pre-cutoff replication contrast). H ⊆ M holds by
-    construction (the first ``full_split[tier]`` papers per tier are also in H).
+    The venue's tier ladder comes from ``common.tiers_for(venue, year)`` —
+    (ICLR, 2026) is 3-tier, (ICLR, 2025) is 4-tier incl. spotlight — and every
+    row's ``tier_rank`` is its index in THAT ladder (a 2025 oral is rank 3).
+    ``mini_split`` (tier->count, keys = the ladder's tiers) is the full-mini
+    cohort M = the graded submission population for this venue (the primary
+    large-N cohort). ``full_split`` (tier->count, or None) is the nested
+    frontier cohort H ⊆ M, graded additionally by `full`, the `naive`
+    baseline, and the Pillar-1 `full_full_p2` re-grade (so p2 ids ⊆ H by
+    construction); ``None`` makes a full-mini-only venue (the pre-cutoff
+    Phase-2 replication arm — NO 2025 frontier arm, per the addendum). H ⊆ M
+    holds by construction (the first ``full_split[tier]`` papers per tier are
+    also in H).
 
     Returns (submission_rows, grading_rows, review_rows, findings)."""
     subs, grads, reviews, findings = [], [], [], []
+    tiers = tiers_for(venue, year)
     sid = 0
-    for tier in TIER_ORDER:
+    for tier in tiers:
+        rank = tiers.index(tier)
         n_mini = mini_split[tier]
         n_full = full_split[tier] if full_split else 0
         for k in range(n_mini):
@@ -125,7 +164,7 @@ def _make_venue(venue: str, year: int, mini_split: dict, full_split: dict | None
             # Manuscript-surface + provenance metadata. Deliberately drawn
             # INDEPENDENT of latent quality q, so the confounding checks render
             # the honest default (AIPR does not merely reward length / area).
-            decision_raw = f"{venue}.cc/{year}/Conference/{tier.capitalize()}"
+            decision_raw = _decision_raw(venue, year, tier, k)
             pdf_sha = hashlib.sha1(f"{sub_id}-submitted".encode()).hexdigest()[:16]
             page_count = int(np.clip(rng.normal(9.5, 1.3), 6, 14))
             word_count = int(np.clip(page_count * rng.normal(680, 60), 2000, 14000))
@@ -134,8 +173,8 @@ def _make_venue(venue: str, year: int, mini_split: dict, full_split: dict | None
                 {
                     "submission_id": sub_id, "venue": venue, "year": year,
                     "decision_raw": decision_raw,
-                    "decision_tier": tier, "tier_rank": TIER_RANK[tier],
-                    "accept_bool": int(TIER_RANK[tier] >= 1),
+                    "decision_tier": tier, "tier_rank": rank,
+                    "accept_bool": int(rank >= 1),
                     "mean_reviewer_rating": rating, "rating_std": rstd, "n_reviews": n_rev,
                     "stratum": tier, "excluded": excluded, "exclude_reason": reason,
                     "primary_area": str(rng.choice(SUBJECT_AREAS)),
@@ -151,13 +190,16 @@ def _make_venue(venue: str, year: int, mini_split: dict, full_split: dict | None
             )
             # cohort membership: every paper in this venue is in cohort M
             # (full_mini); the first ``n_full`` per tier are also in cohort H
-            # (full + naive). H ⊆ M by construction.
+            # (full + naive + the Pillar-1 full_full_p2 re-grade, so p2 ids ⊆ H
+            # by construction). H ⊆ M by construction.
             in_h = k < n_full
             present = ["full_mini"]
             if in_h:
                 present.append("full")
                 # naive-judge baseline (rung 0), paired on cohort H
                 present.append("naive")
+                # Pillar-1 post-fix citation-audit re-grade (single run)
+                present.append("full_full_p2")
             for config in present:
                 for run_idx in range(CONFIG_RUNS[config]):
                     in_tok, out_tok = _usage(token_count, config, rng)
@@ -207,26 +249,34 @@ def generate() -> None:
     out = DATA_DIR / "synthetic"
     out.mkdir(parents=True, exist_ok=True)
 
-    # Primary venue (ICLR 2026, post-cutoff): full-mini cohort M (n=300) with a
-    # nested frontier cohort H (n=100) + naive baseline. The ICLR 2025
-    # replication is deferred (2026-only first analysis), so no second venue is
-    # generated; run_all's replication section self-skips when 2025 rows are absent.
+    # Primary venue (ICLR 2026, post-cutoff, 3-tier): full-mini cohort M
+    # (n=300) with a nested frontier cohort H (n=100) + naive baseline + the
+    # Pillar-1 `full_full_p2` re-grade (single run on the H papers).
     s1, g1, r1, f1 = _make_venue("ICLR", 2026, COHORT_M_SPLIT, COHORT_H_SPLIT, rng)
+    # Phase-2 replication venue (ICLR 2025, pre-cutoff, 4-tier incl.
+    # spotlight): full-mini ONLY — no 2025 frontier arm, per the Phase-2
+    # addendum. Its decision_raw strings copy the recorded fixture vocabulary
+    # verbatim (see _decision_raw), so the 2025 ladder + raw-tag plumbing is
+    # exercised end to end before any real grading is funded.
+    s2, g2, r2, f2 = _make_venue("ICLR", 2025, COHORT_M25_SPLIT, None, rng)
 
-    subs = pd.DataFrame(s1)
-    grads = pd.DataFrame(g1)
+    subs = pd.DataFrame(s1 + s2)
+    grads = pd.DataFrame(g1 + g2)
     subs.to_csv(out / "submissions.csv", index=False)
     grads.to_csv(out / "gradings.csv", index=False)
-    pd.DataFrame(r1).to_csv(out / "reviews.csv", index=False)
+    pd.DataFrame(r1 + r2).to_csv(out / "reviews.csv", index=False)
     with open(out / "findings.jsonl", "w", encoding="utf-8") as fh:
-        for rec in f1:
+        for rec in f1 + f2:
             fh.write(json.dumps(rec) + "\n")
 
     print(f"wrote {len(subs)} submissions, {len(grads)} gradings -> {out}")
     print("cohort sizes (primary ICLR2026):")
     g_primary = grads[grads["submission_id"].str.startswith("ICLR2026")]
-    for c in ("full_mini", "full", "naive"):
-        print(f"  {c:10s}: {g_primary[g_primary['config'] == c]['submission_id'].nunique()} submissions")
+    for c in ("full_mini", "full", "naive", "full_full_p2"):
+        print(f"  {c:12s}: {g_primary[g_primary['config'] == c]['submission_id'].nunique()} submissions")
+    g_rep = grads[grads["submission_id"].str.startswith("ICLR2025")]
+    print("cohort sizes (Phase-2 ICLR2025, full-mini only):")
+    print(f"  {'full_mini':12s}: {g_rep[g_rep['config'] == 'full_mini']['submission_id'].nunique()} submissions")
 
 
 if __name__ == "__main__":

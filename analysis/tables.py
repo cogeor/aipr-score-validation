@@ -27,6 +27,15 @@ def _w(name: str, body: str):
     (TAB_DIR / name).write_text(body, encoding="utf-8")
 
 
+def _placeholder_tabular(msg: str) -> str:
+    """A one-cell tabular for always-written tables whose data block is absent
+    (e.g. the Phase-2 tables before any 2025 rows exist). Keeps the section's
+    ``\\input`` target present so ``cli.py check`` #3 passes on every dataset;
+    the section itself is gated off by PHASE2.flag, so this body never renders
+    in the canonical build."""
+    return "\\begin{tabular}{l}\n\\toprule\n" + msg + " \\\\\n\\bottomrule\n\\end{tabular}\n"
+
+
 def table_sample(d, R):
     mini = _primary(d.config_frame(PRIMARY_CONFIG, include_excluded=True))
     rows = []
@@ -412,6 +421,65 @@ def table_population_boundary(d, R):
     _w("tab_population_boundary.tex", body)
 
 
+def table_phase2_ordinal(d, R):
+    """Phase-2 ordinal exhibit (ICLR 2025, full-mini): per-tier n + median AIPR
+    overall over the 4-tier ladder, then the adjacent-boundary AUROCs with BCa
+    CIs. ALWAYS written — placeholder body when the export carries no 2025
+    rows — so the Phase-2 section's \\input target exists on every dataset."""
+    p2 = R.get("phase2", {})
+    if not p2:
+        _w("tab_phase2_ordinal.tex",
+           _placeholder_tabular("Awaiting Phase-2 data (no ICLR 2025 rows in this export)."))
+        return
+    rows = []
+    for t in p2["tier_order"]:
+        cell = p2["per_tier"]["tiers"][t]
+        med = "---" if cell["median"] != cell["median"] else f"{cell['median']:.1f}"
+        rows.append(rf"{TIER_LABELS[t]} & {cell['n']} & {med} \\")
+    brows = []
+    for name, e in p2["boundary_aurocs"].items():
+        lo_t, hi_t = name.split("|")
+        brows.append(
+            rf"{TIER_LABELS[lo_t]} vs.\ {TIER_LABELS[hi_t]} & {e['n']} & "
+            rf"{e['point']:.2f} [{e['lo']:.2f}, {e['hi']:.2f}] \\"
+        )
+    body = (
+        "\\begin{tabular}{lcc}\n\\toprule\n"
+        "Decision tier & $n$ & Median AIPR overall \\\\\n\\midrule\n"
+        + "\n".join(rows)
+        + "\n\\midrule\n"
+        "Adjacent boundary & $n$ & AUROC [95\\% CI] \\\\\n\\midrule\n"
+        + "\n".join(brows)
+        + "\n\\bottomrule\n\\end{tabular}\n"
+    )
+    _w("tab_phase2_ordinal.tex", body)
+
+
+def table_pillar1(d, R):
+    """Pillar-1 citation-audit comparison: the FROZEN v1 artifact row (citation
+    pinned at 100, chance AUROC — never recomputed; the v1 result stands
+    unmodified) beside the post-fix `full_full_p2` re-grade, labeled new
+    validation. ALWAYS written (placeholder when the export carries no p2
+    rows)."""
+    p1 = R.get("pillar1_p2", {})
+    if not p1:
+        _w("tab_pillar1.tex",
+           _placeholder_tabular("Awaiting Phase-2 data (no full\\_full\\_p2 rows in this export)."))
+        return
+    e = p1["citation_auroc"]
+    fro = p1["frozen_v1"]
+    body = (
+        "\\begin{tabular}{lccc}\n\\toprule\n"
+        "Citation audit state & $n$ & Pinned at 100 & Citation AUROC \\\\\n\\midrule\n"
+        # the frozen v1 row is the published cohort-H artifact (n=100), a constant
+        + rf"v1 artifact (frozen; result stands) & 100 & {100 * fro['pinned_rate']:.0f}\% & {fro['auroc']:.2f} \\" + "\n"
+        + rf"Post-fix re-grade (new validation) & {p1['n']} & {100 * p1['pinned_rate']:.1f}\% & "
+        + rf"{e['point']:.2f} [{e['lo']:.2f}, {e['hi']:.2f}] \\" + "\n"
+        "\\bottomrule\n\\end{tabular}\n"
+    )
+    _w("tab_pillar1.tex", body)
+
+
 def write_all(d, R):
     table_sample(d, R)
     table_headline(d, R)
@@ -429,4 +497,6 @@ def write_all(d, R):
     table_cost(d, R)
     table_naive_baseline(d, R)
     table_population_boundary(d, R)
+    table_phase2_ordinal(d, R)
+    table_pillar1(d, R)
     print(f"wrote tables -> {TAB_DIR}")

@@ -31,10 +31,13 @@ from common import (
     REPLICATION_VENUE,
     RESULTS_DIR,
     SCORE_WEIGHTS,
+    TIER_RANK,
     VARIANCE_SUBSTUDY_PAPERS,
+    tiers_for,
 )
 from schema import Dataset, base_reject_rate, load_dataset, load_out_of_population
 from stats import (
+    adjacent_boundary_aurocs,
     area_subgroup_audit,
     auroc,
     auroc_ci,
@@ -52,6 +55,7 @@ from stats import (
     mwu_pvalue,
     paired_auroc_diff,
     paired_run_sd_test,
+    per_tier_summary,
     population_boundary,
     roc_points,
     prevalence_reweighted_bottom_precision,
@@ -304,6 +308,13 @@ def compute(d: Dataset) -> dict:
             "auroc": auroc_ci(rep["accept_bool"].values, rep["overall"].values).as_dict(),
             "spearman_rating": spearman_ci(rep["mean_reviewer_rating"].values, rep["overall"].values).as_dict(),
         }
+
+    # ---- Phase 2: the ICLR-2025 4-tier ordinal arm + Pillar-1 re-validation.
+    # Both self-skip ({}) when their rows are absent, so the canonical
+    # iclr2026 build is unaffected; write_macros still ALWAYS emits their
+    # macro names (`--` placeholders) so the Phase-2 section lints clean.
+    R["phase2"] = _phase2(d)
+    R["pillar1_p2"] = _pillar1(d)
     return R
 
 
@@ -311,6 +322,75 @@ def _primary_pair(d: Dataset):
     p = d.paired_frame(PRIMARY_CONFIG, PRODUCTION_CONFIG)
     ids = set(_primary(d.config_frame(PRODUCTION_CONFIG))["submission_id"])
     return p[p["submission_id"].isin(ids)].reset_index(drop=True)
+
+
+# Frozen v1 citation artifact (the "always-100%" bug): in the v1 frozen config
+# the audit pass had no live retrieval, so the citation subscore pinned at 100
+# (rate 1.0) and discriminated at chance (AUROC 0.50). These constants are the
+# v1 ARTIFACT ROW the Pillar-1 comparison renders against — frozen, NEVER
+# recomputed: the v1 result stands unmodified and the `full_full_p2` re-grade
+# is labeled new-validation, not a revision.
+FROZEN_V1_CITATION = {"pinned_rate": 1.0, "auroc": 0.50}
+
+
+def _phase2(d: Dataset) -> dict:
+    """Phase-2 pre-declared metrics on the ICLR-2025 full-mini cohort.
+
+    Self-skips (returns ``{}``) when the export carries no 2025 rows or only
+    one decision class. When present: the headline triplet mirroring v1
+    (accept/reject AUROC; bottom-quintile reject rate, band 0 of the score-band
+    table; Spearman vs the mean reviewer rating) plus the ORDINAL additions —
+    the reason for the 2025 arm, whose 4-tier ladder (reject < poster <
+    spotlight < oral) is one tier finer than the 2026 primary: Spearman vs
+    tier_rank, adjacent-boundary AUROCs, per-tier medians + monotonicity, and
+    the JT trend test."""
+    rep = d.config_frame(PRIMARY_CONFIG)
+    rep = rep[(rep["venue"] == REPLICATION_VENUE[0]) & (rep["year"] == REPLICATION_VENUE[1])].reset_index(drop=True)
+    if not len(rep) or rep["accept_bool"].nunique() < 2:
+        return {}
+    tiers = tiers_for(*REPLICATION_VENUE)
+    y = rep["accept_bool"].values
+    s = rep["overall"].values
+    # score_band_table counts its oral_rate via the PRIMARY ladder's oral rank
+    # (TIER_RANK["oral"] == 2); on the 4-tier rows oral is rank 3, so map the
+    # rows onto that contract explicitly — the band's oral_rate must count
+    # ORALS, never whatever tier happens to sit at rank 2 here (spotlight).
+    oral_rank = np.where(rep["decision_tier"].values == "oral", TIER_RANK["oral"], 0)
+    bands = score_band_table(s, y, oral_rank, n_bins=_N_BANDS, seed=GLOBAL_SEED)
+    return {
+        "venue": f"{REPLICATION_VENUE[0]} {REPLICATION_VENUE[1]}",
+        "n": int(len(rep)),
+        "tier_order": list(tiers),
+        # headline triplet (mirrors v1)
+        "auroc": auroc_ci(y, s).as_dict(),
+        "bottom_band": bands[0].__dict__,
+        "spearman_rating": spearman_ci(rep["mean_reviewer_rating"].values, s).as_dict(),
+        # ordinal additions (pre-declared in the Phase-2 addendum)
+        "spearman_tier": spearman_ci(rep["tier_rank"].values.astype(float), s).as_dict(),
+        "boundary_aurocs": adjacent_boundary_aurocs(s, rep["decision_tier"].values, tiers),
+        "per_tier": per_tier_summary(s, rep["decision_tier"].values, tiers),
+        "trend": jonckheere_trend(s, rep["tier_rank"].values, n_perm=N_PERM).as_dict(),
+    }
+
+
+def _pillar1(d: Dataset) -> dict:
+    """Pillar-1 new-validation block: the post-fix citation audit.
+
+    ``full_full_p2`` re-grades the frozen cohort-H ids (v6 pipeline +
+    abstract-based citation audit, single run each); reported here as the
+    citation pinned-at-100 rate and the citation-subscore reject/accept AUROC,
+    beside the FROZEN v1 artifact constants (``FROZEN_V1_CITATION`` — never
+    recomputed; the v1 result stands unmodified). Self-skips (``{}``) when the
+    export carries no p2 rows."""
+    p2 = _primary(d.config_frame("full_full_p2"))
+    if not len(p2) or p2["accept_bool"].nunique() < 2:
+        return {}
+    return {
+        "n": int(len(p2)),
+        "pinned_rate": float((p2["citation"] >= 100).mean()),
+        "citation_auroc": auroc_ci(p2["accept_bool"].values, p2["citation"].values).as_dict(),
+        "frozen_v1": dict(FROZEN_V1_CITATION),
+    }
 
 
 def _contamination(d: Dataset, mini, full) -> dict:
@@ -1003,6 +1083,41 @@ def write_macros(R: dict) -> None:
         ci_macro("aurocRep", R["replication"]["auroc"])
         cmd("repVenue", R["replication"]["venue"])
 
+    # Phase-2 + Pillar-1 macros — ALWAYS defined, on every dataset, so
+    # sections/10_phase2.tex passes the undefined-macro lint even on the
+    # canonical iclr2026 build (where the section itself is gated off by
+    # PHASE2.flag). When the blocks are empty the values are `--` placeholders
+    # — never `??`/`TBD`, which check #4 flags as a placeholder leak.
+    p2 = R.get("phase2", {})
+    if p2:
+        cmd("pTwoVenue", p2["venue"])
+        cmd("pTwoN", str(p2["n"]))
+        ci_macro("pTwoAuroc", p2["auroc"])
+        ci_macro("pTwoSpearmanRating", p2["spearman_rating"])
+        ci_macro("pTwoSpearmanTier", p2["spearman_tier"])
+        cmd("pTwoBottomReject", _pct(p2["bottom_band"]["reject_rate"]))
+        cmd("pTwoBottomLift", f"{p2['bottom_band']['lift']:.2f}")
+        cmd("pTwoMonotone", "monotone" if p2["per_tier"]["monotone"] else "non-monotone")
+        tp = p2["trend"]["p_permutation"]
+        cmd("pTwoTrendPrel", ("p<0.0001" if tp < 1e-4 else f"p={tp:.4f}"))
+    else:
+        for name in ("pTwoVenue", "pTwoN", "pTwoAuroc", "pTwoAurocCI", "pTwoAurocFull",
+                     "pTwoSpearmanRating", "pTwoSpearmanRatingCI", "pTwoSpearmanRatingFull",
+                     "pTwoSpearmanTier", "pTwoSpearmanTierCI", "pTwoSpearmanTierFull",
+                     "pTwoBottomReject", "pTwoBottomLift", "pTwoMonotone", "pTwoTrendPrel"):
+            cmd(name, "--")
+    p1 = R.get("pillar1_p2", {})
+    # the frozen v1 artifact constants are dataset-independent (never recomputed)
+    cmd("pOneFrozenPinned", _pct(FROZEN_V1_CITATION["pinned_rate"]))
+    cmd("pOneFrozenAuroc", f"{FROZEN_V1_CITATION['auroc']:.2f}")
+    if p1:
+        cmd("pOneN", str(p1["n"]))
+        cmd("pOnePinned", _pct(p1["pinned_rate"]))
+        ci_macro("pOneCitAuroc", p1["citation_auroc"])
+    else:
+        for name in ("pOneN", "pOnePinned", "pOneCitAuroc", "pOneCitAurocCI", "pOneCitAurocFull"):
+            cmd(name, "--")
+
     header = (
         "% AUTO-GENERATED by analysis/run_all.py — DO NOT EDIT.\n"
         "% Regenerate: python run_all.py --dataset <name>\n"
@@ -1015,6 +1130,15 @@ def write_macros(R: dict) -> None:
         flag.write_text("synthetic\n", encoding="utf-8")
     elif flag.exists():
         flag.unlink()
+    # Drop/raise the Phase-2 section gate (mirrors the SYNTHETIC.flag pattern):
+    # main.tex \inputs sections/10_phase2.tex only when this flag exists, so the
+    # canonical iclr2026 build of main.pdf is bit-for-bit unaffected until the
+    # 2025 / full_full_p2 rows land.
+    p2flag = MACRO_DIR / "PHASE2.flag"
+    if R.get("phase2"):
+        p2flag.write_text("phase2\n", encoding="utf-8")
+    elif p2flag.exists():
+        p2flag.unlink()
     print(f"wrote {len(L)} macros -> {MACRO_DIR / 'results_macros.tex'}")
 
 

@@ -1,0 +1,79 @@
+% Phase-2 appendix scaffolding. Rendered ONLY when the analysis emitted
+% macros/PHASE2.flag (i.e. the export carries ICLR 2025 / full_full_p2 rows);
+% the canonical ICLR-2026 build of main.pdf is bit-for-bit unaffected. Every
+% number flows through generated macros (run_all.write_macros) — nothing is
+% hand-typed. Wording rules: the data is "the public ICLR 2025/2026 review
+% record on OpenReview" (CC BY constraint), never wording implying venue
+% endorsement; the v1 criterion-not-met framing stands; the Pillar-1
+% paragraph is labeled new-validation against the frozen v1 artifact row.
+\section{Phase 2: ICLR 2025 ordinal arm and citation-audit re-validation}
+\label{app:phase2}
+
+This appendix reports the pre-registered Phase-2 extension (addendum tag
+\texttt{prereg-iclr2026-phase2}): a four-tier ordinal validation arm on the
+public ICLR 2025 review record on OpenReview, and a re-validation of the
+citation audit after its fix. The v1 findings are unchanged: every v1
+reading --- including the criterion-not-met results --- stands as published,
+and no v1 number is re-run or revised here.
+
+\subsection{Ordinal validation on the ICLR 2025 record}
+\label{app:phase2:ordinal}
+
+ICLR 2025 awards four decision tiers (Reject $<$ Poster $<$ Spotlight $<$
+Oral), one tier finer than the 2026 primary venue --- a finer ordinal
+discrimination test of the score. On the stratified full-mini cohort
+($n=\pTwoN$, \pTwoVenue): accept/reject AUROC \pTwoAurocFull; Spearman
+$\rho$ against the mean reviewer rating \pTwoSpearmanRatingFull;
+bottom-quintile reject rate \pTwoBottomReject\% (lift
+$\pTwoBottomLift\times$ over the base rate). The pre-declared ordinal
+additions: Spearman $\rho$ against the four-tier rank
+\pTwoSpearmanTierFull; the per-tier median scores are \pTwoMonotone\ along
+the ladder (trend test, \pTwoTrendPrel); the adjacent-boundary AUROCs are
+reported in Table~\ref{tab:phase2ordinal} and the per-tier distributions in
+Figure~\ref{fig:phase2tiers}. Per the addendum, the Poster--Spotlight
+boundary CI is reported but not headline-claimed (spotlights are a small
+fraction of accepts). Because ICLR 2025 decisions precede the grading
+model's training cutoff, this arm is an in-training-window consistency
+check; ICLR 2026 remains the clean primary.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.62\linewidth]{fig_phase2_tiers}
+  \caption{\textbf{Score distribution across the four ICLR 2025 decision
+  tiers} (full-mini cohort, public ICLR 2025 review record on OpenReview).
+  The annotated $\rho$ is the Spearman correlation of the AIPR overall score
+  with the four-tier rank.}
+  \label{fig:phase2tiers}
+\end{figure}
+
+\begin{table}[t]
+  \centering
+  \caption{Phase-2 ordinal exhibit (ICLR 2025, full-mini cohort): per-tier
+  $n$ and median AIPR overall, and adjacent-boundary AUROCs with 95\% BCa
+  CIs. The Poster--Spotlight boundary is reported, not headline-claimed.}
+  \label{tab:phase2ordinal}
+  \input{tables/tab_phase2_ordinal}
+\end{table}
+
+\subsection{Citation-audit re-validation (new validation; the v1 result stands)}
+\label{app:phase2:pillar1}
+
+The v1 release documented the citation subscore as uninformative in the
+frozen grading configuration (pinned at 100, chance discrimination); that
+artifact row is frozen and stands unmodified. Phase 2 re-grades the same
+frozen cohort-H ids under \texttt{full\_full\_p2} --- the v6 pipeline with
+the fixed, abstract-based citation audit; single run per paper --- as a
+\emph{new validation} of the fixed pipeline, not a revision of v1. On the
+re-graded cohort ($n=\pOneN$): citation pinned-at-100 rate \pOnePinned\%
+and citation-subscore AUROC \pOneCitAurocFull, beside the frozen v1 row
+(pinned \pOneFrozenPinned\%, AUROC \pOneFrozenAuroc) in
+Table~\ref{tab:pillar}.
+
+\begin{table}[h]
+  \centering
+  \caption{Pillar-1 citation-audit comparison: the frozen v1 artifact row
+  (never recomputed; the v1 result stands) vs.\ the post-fix
+  \texttt{full\_full\_p2} re-grade, labeled new validation.}
+  \label{tab:pillar}
+  \input{tables/tab_pillar1}
+\end{table}

@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from common import ALL_CONFIGS, CONFIGS, DATA_DIR, DIMENSIONS, TIER_ORDER, TIER_RANK
+from common import ALL_CONFIGS, CONFIGS, DATA_DIR, DIMENSIONS, VENUE_TIERS
 
 # The model-output scores carried per grading row. Confidence is intentionally
 # absent: the v6 pipeline currently emits a constant confidence, so exporting it
@@ -141,13 +141,34 @@ def validate(subs: pd.DataFrame, grad: pd.DataFrame, *, require_metadata: bool =
     dup_g = gkey[gkey.duplicated()]
     assert dup_g.empty, f"duplicate (submission_id, config, run_index): {dup_g.head().to_dict('records')}"
 
-    # 2. tier_rank <-> decision_tier bijection + accept_bool consistency
-    bad = subs[subs.apply(lambda r: TIER_RANK.get(r["decision_tier"]) != r["tier_rank"], axis=1)]
-    assert bad.empty, f"tier_rank/decision_tier mismatch on {bad['submission_id'].tolist()[:5]}"
+    # 2. ROW-WISE tier_rank <-> decision_tier bijection under each row's
+    #    (venue, year) ladder (common.VENUE_TIERS — the consumer mirror of
+    #    aipr decisions.py::_PROFILES). An unprofiled (venue, year) fails
+    #    loudly — never a silent fallthrough to another year's ladder (the
+    #    same property the producer pins with `unknown_venue_year`). A tier
+    #    outside the row's ladder (e.g. spotlight under ICLR 2026) also fails
+    #    here. accept_bool == (tier_rank >= 1) is ladder-independent: reject
+    #    is rank 0 in every profile.
+    keys = {(v, int(y)) for v, y in zip(subs["venue"], subs["year"])}
+    unprofiled = sorted(k for k in keys if k not in VENUE_TIERS)
+    assert not unprofiled, (
+        f"no tier ladder profiled for (venue, year): {unprofiled} — extend "
+        "common.VENUE_TIERS in lockstep with aipr decisions.py::_PROFILES"
+    )
+
+    def _tier_ok(r) -> bool:
+        tiers = VENUE_TIERS[(r["venue"], int(r["year"]))]
+        t = r["decision_tier"]
+        return t in tiers and tiers.index(t) == r["tier_rank"]
+
+    bad = subs[~subs.apply(_tier_ok, axis=1)]
+    assert bad.empty, (
+        "tier_rank/decision_tier mismatch under the row's (venue, year) ladder on "
+        f"{bad['submission_id'].tolist()[:5]}"
+    )
     assert ((subs["accept_bool"] == (subs["tier_rank"] >= 1).astype(int)).all()), (
         "accept_bool != (tier_rank>=1)"
     )
-    assert set(subs["decision_tier"]).issubset(set(TIER_ORDER)), "unknown decision_tier value"
 
     # 3. decision_raw present for every row (lets a third party re-derive the tier)
     assert (subs["decision_raw"].fillna("").str.len() > 0).all(), "decision_raw empty on some rows"
@@ -194,6 +215,10 @@ def validate(subs: pd.DataFrame, grad: pd.DataFrame, *, require_metadata: bool =
     for lc in ("naive",):
         lc_ids = set(grad.loc[grad["config"] == lc, "submission_id"])
         assert lc_ids <= ids["full"], f"{lc} gradings must be a subset of cohort H"
+    # 9b. Pillar-1 nesting: full_full_p2 (the post-fix citation-audit re-grade)
+    #     is graded on the frozen cohort-H ids only.
+    p2_ids = set(grad.loc[grad["config"] == "full_full_p2", "submission_id"])
+    assert p2_ids <= ids["full"], "full_full_p2 gradings must be a subset of cohort H (full)"
 
     # 10. exclusion reasons present. ``astype(str)`` so the check survives a
     # dataset with zero exclusions, where ``exclude_reason`` is an all-NaN float
@@ -246,6 +271,9 @@ def load_dataset(name: str) -> Dataset:
     # the frontier model). The analysis uses `full` as its single frontier slot
     # (see common.CONFIGS); map the released id onto it so the published data
     # plugs in unchanged. The legacy mixed `full` is no longer produced.
+    # `full_full_p2` (the Pillar-1 post-fix re-grade) is deliberately NOT
+    # remapped — it is its own config slot, compared against the frozen v1
+    # artifact row (the exact-value replace below cannot touch it).
     grad["config"] = grad["config"].replace({"full_full": "full"})
     validate(subs, grad)
     _fill_metadata_defaults(subs, grad)

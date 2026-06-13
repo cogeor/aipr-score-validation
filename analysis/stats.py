@@ -283,6 +283,53 @@ def spearman_ci(x, y, **kw) -> Estimate:
 
 
 # ----------------------------------------------------------------------------
+# Ordinal (Phase-2) discrimination over a per-(venue, year) tier ladder.
+# The pre-declared 4-tier additions: adjacent-boundary AUROCs and the
+# per-tier median summary with a monotonicity statement.
+# ----------------------------------------------------------------------------
+def adjacent_boundary_aurocs(score, decision_tier, tier_order, **kw) -> dict[str, dict]:
+    """AUROC at every ADJACENT tier boundary of an ordinal ladder.
+
+    For each consecutive pair ``(lo, hi)`` of ``tier_order`` (e.g. the 4-tier
+    ICLR-2025 ladder yields reject|poster, poster|spotlight, spotlight|oral),
+    subset to the rows in those two tiers and compute the AUROC of ``score``
+    predicting membership in the HIGHER tier, with the same stratified BCa
+    bootstrap CI machinery as :func:`auroc_ci` (``**kw`` forwarded, e.g.
+    ``n_boot``). Returns ``{"lo|hi": Estimate-dict}`` in ladder order; a
+    boundary with either tier empty is skipped (no degenerate AUROC)."""
+    score = np.asarray(score, float)
+    decision_tier = np.asarray(decision_tier)
+    out: dict[str, dict] = {}
+    for lo_t, hi_t in zip(tier_order[:-1], tier_order[1:]):
+        mask = (decision_tier == lo_t) | (decision_tier == hi_t)
+        y = (decision_tier[mask] == hi_t).astype(int)
+        if len(np.unique(y)) < 2:
+            continue
+        out[f"{lo_t}|{hi_t}"] = auroc_ci(y, score[mask], **kw).as_dict()
+    return out
+
+
+def per_tier_summary(score, decision_tier, tier_order) -> dict:
+    """Per-tier ``{tier: {n, median}}`` in ladder order, plus ``monotone``.
+
+    ``monotone`` is True iff the per-tier medians are non-decreasing along the
+    ladder (empty tiers — median NaN — are skipped in the comparison, so a
+    missing tier never spuriously breaks monotonicity)."""
+    score = np.asarray(score, float)
+    decision_tier = np.asarray(decision_tier)
+    tiers: dict[str, dict] = {}
+    medians: list[float] = []
+    for t in tier_order:
+        s = score[decision_tier == t]
+        med = float(np.median(s)) if len(s) else float("nan")
+        tiers[t] = {"n": int(len(s)), "median": med}
+        medians.append(med)
+    present = [m for m in medians if m == m]
+    monotone = all(b >= a for a, b in zip(present, present[1:]))
+    return {"tiers": tiers, "monotone": bool(monotone)}
+
+
+# ----------------------------------------------------------------------------
 # Descriptive supplementary checks (reviewer-requested, NOT confirmatory):
 #   1. covariate-control CV AUROC — does the score-outcome relationship survive
 #      conditioning on manuscript-surface + area covariates?

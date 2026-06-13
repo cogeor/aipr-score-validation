@@ -80,5 +80,10 @@ Validating an LLM First-Pass Manuscript Score Against Peer-Review Outcomes}}
 \input{sections/09_appendix}
 \input{sections/06_failure_modes}
 \input{sections/07_limitations}
+% Phase-2 appendix: rendered only when the analysis emitted macros/PHASE2.flag
+% (the export carries ICLR 2025 / full_full_p2 rows — mirrors the
+% SYNTHETIC.flag pattern above). Absent on the canonical iclr2026 build, so
+% main.pdf is unaffected until the Phase-2 data lands.
+\IfFileExists{macros/PHASE2.flag}{\input{sections/10_phase2}}{}
 
 \end{document}

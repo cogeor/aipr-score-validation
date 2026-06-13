@@ -105,11 +105,13 @@ def test_synthetic_has_metadata_and_leakage_configs():
     assert g[g["config"] == "full"]["input_tokens"].mean() > g[g["config"] == "naive"]["input_tokens"].mean()
     configs = set(d.gradings["config"].unique())
     assert "naive" in configs
+    # the Phase-2 Pillar-1 re-grade config is present
+    assert "full_full_p2" in configs
     # the dropped leakage configs must not reappear in the export
     assert not ({"blinded", "prior_only"} & configs)
-    # the naive baseline is graded on the H cohort only
+    # naive and the Pillar-1 re-grade are graded on the H cohort only
     h_ids = set(d.gradings.loc[d.gradings["config"] == "full", "submission_id"])
-    for lc in ("naive",):
+    for lc in ("naive", "full_full_p2"):
         lc_ids = set(d.gradings.loc[d.gradings["config"] == lc, "submission_id"])
         assert lc_ids <= h_ids and lc_ids
 
@@ -151,6 +153,103 @@ def test_validate_rejects_nonnaive_missing_subscore():
     grad = d.gradings.copy()
     idx = grad.index[grad["config"] == "full"][0]
     grad.loc[idx, "novelty"] = float("nan")
+    with pytest.raises(AssertionError):
+        schema.validate(d.submissions, grad)
+
+
+# ------------------------------------------------------------ per-(venue, year) ladders
+def test_synthetic_iclr2025_arm_and_vocabulary():
+    """The synthetic Phase-2 arm: all four 2025 tiers, ranked by the 4-tier
+    ladder (spotlight rank 2, oral rank 3), decision_raw drawn verbatim from
+    the recorded fixture vocabulary, and full-mini ONLY (no 2025 frontier
+    arm, per the addendum)."""
+    d = schema.load_dataset("synthetic")
+    rep = d.submissions[(d.submissions["venue"] == "ICLR") & (d.submissions["year"] == 2025)]
+    assert len(rep)
+    assert set(rep["decision_tier"]) == {"reject", "poster", "spotlight", "oral"}
+    assert (rep.loc[rep["decision_tier"] == "spotlight", "tier_rank"] == 2).all()
+    assert (rep.loc[rep["decision_tier"] == "oral", "tier_rank"] == 3).all()
+    allowed = {"ICLR 2025 Oral", "ICLR 2025 Spotlight", "ICLR 2025 Poster",
+               "Submitted to ICLR 2025", "ICLR.cc/2025/Conference/Rejected_Submission"}
+    assert set(rep["decision_raw"]) <= allowed
+    g25 = d.gradings[d.gradings["submission_id"].isin(set(rep["submission_id"]))]
+    assert set(g25["config"]) == {"full_mini"}
+
+
+def test_validate_rejects_spotlight_under_2026_ladder():
+    """Consumer mirror of the producer's stray-spotlight pin: a spotlight row
+    under (ICLR, 2026) — whose ladder has no spotlight — must be rejected."""
+    d = schema.load_dataset("synthetic")
+    subs = d.submissions.copy()
+    idx = subs.index[(subs["year"] == 2026) & (subs["decision_tier"] == "oral")][0]
+    subs.loc[idx, "decision_tier"] = "spotlight"  # rank stays 2: valid for 2025, not 2026
+    with pytest.raises(AssertionError):
+        schema.validate(subs, d.gradings)
+
+
+def test_validate_rejects_unprofiled_venue_year():
+    """An unprofiled (venue, year) fails loudly — never a silent fallthrough
+    to another year's ladder."""
+    d = schema.load_dataset("synthetic")
+    subs = d.submissions.copy()
+    subs.loc[subs.index[0], "year"] = 2024
+    with pytest.raises(AssertionError):
+        schema.validate(subs, d.gradings)
+
+
+def test_validate_rejects_2025_rank_under_wrong_ladder():
+    """A 2025 oral mis-ranked with the 3-tier rank (2 instead of 3) must fail
+    the row-wise bijection."""
+    d = schema.load_dataset("synthetic")
+    subs = d.submissions.copy()
+    idx = subs.index[(subs["year"] == 2025) & (subs["decision_tier"] == "oral")][0]
+    subs.loc[idx, "tier_rank"] = 2
+    with pytest.raises(AssertionError):
+        schema.validate(subs, d.gradings)
+
+
+def test_full_full_p2_contract():
+    """The Pillar-1 re-grade rows: single run, v6, same model as full, all
+    five subscores present, citation informative (not pinned), ids ⊆ H."""
+    d = schema.load_dataset("synthetic")
+    p2 = d.gradings[d.gradings["config"] == "full_full_p2"]
+    assert len(p2)
+    assert set(p2["run_index"]) == {0}
+    assert set(p2["pipeline_version"]) == {"v6"}
+    full_model = set(d.gradings.loc[d.gradings["config"] == "full", "model_name"])
+    assert set(p2["model_name"]) == full_model
+    for dim in schema.DIMENSIONS:
+        assert p2[dim].notna().all(), f"full_full_p2 must carry the {dim} subscore"
+    assert (p2["citation"] >= 100).mean() < 0.5  # post-fix: not pinned at 100
+    h_ids = set(d.gradings.loc[d.gradings["config"] == "full", "submission_id"])
+    assert set(p2["submission_id"]) <= h_ids
+
+
+def test_validate_rejects_p2_outside_cohort_h():
+    """full_full_p2 graded outside the frozen cohort-H ids violates 9b."""
+    import pandas as pd
+
+    d = schema.load_dataset("synthetic")
+    grad = d.gradings.copy()
+    h_ids = set(grad.loc[grad["config"] == "full", "submission_id"])
+    outside = next(
+        s for s in grad.loc[grad["config"] == "full_mini", "submission_id"].unique()
+        if s not in h_ids
+    )
+    row = grad[(grad["config"] == "full_mini") & (grad["submission_id"] == outside)].iloc[[0]].copy()
+    row["config"] = "full_full_p2"
+    bad = pd.concat([grad, row], ignore_index=True)
+    with pytest.raises(AssertionError):
+        schema.validate(d.submissions, bad)
+
+
+def test_validate_rejects_p2_mislabeled_non_v6():
+    """A full_full_p2 row claiming a non-v6 pipeline must be rejected (the
+    non-naive uniform-v6 invariant covers the p2 config)."""
+    d = schema.load_dataset("synthetic")
+    grad = d.gradings.copy()
+    idx = grad.index[grad["config"] == "full_full_p2"][0]
+    grad.loc[idx, "pipeline_version"] = "v5"
     with pytest.raises(AssertionError):
         schema.validate(d.submissions, grad)
 
@@ -209,6 +308,49 @@ def test_jonckheere_null_not_significant():
     ranks = np.repeat([0, 1, 2, 3], 30)
     res = stats.jonckheere_trend(vals, ranks, n_perm=400)
     assert res.p_permutation > 0.05
+
+
+# --------------------------------------------------------------------------- ordinal (Phase 2)
+def test_adjacent_boundary_aurocs_separated_four_tier():
+    """On clearly separated per-tier score distributions every adjacent
+    boundary discriminates (>0.5), the CI brackets the point, and the boundary
+    names follow the 4-tier ladder in order."""
+    rng = np.random.default_rng(12)
+    tiers = ("reject", "poster", "spotlight", "oral")
+    means = {"reject": 0.0, "poster": 2.0, "spotlight": 4.0, "oral": 6.0}
+    ns = {"reject": 60, "poster": 40, "spotlight": 25, "oral": 20}
+    score = np.concatenate([rng.normal(means[t], 0.8, ns[t]) for t in tiers])
+    dt = np.concatenate([np.full(ns[t], t) for t in tiers])
+    out = stats.adjacent_boundary_aurocs(score, dt, tiers, n_boot=300)
+    assert list(out) == ["reject|poster", "poster|spotlight", "spotlight|oral"]
+    expected_n = {"reject|poster": 100, "poster|spotlight": 65, "spotlight|oral": 45}
+    for name, e in out.items():
+        assert e["lo"] <= e["point"] <= e["hi"]
+        assert e["point"] > 0.5
+        assert e["n"] == expected_n[name]
+
+
+def test_adjacent_boundary_aurocs_skips_empty_tier():
+    # an empty tier makes its boundaries degenerate -> they are skipped, not 0.5
+    tiers = ("reject", "poster", "spotlight", "oral")
+    dt = np.array(["reject"] * 5 + ["poster"] * 5 + ["oral"] * 5)  # no spotlight
+    score = np.arange(15, dtype=float)
+    out = stats.adjacent_boundary_aurocs(score, dt, tiers, n_boot=100)
+    assert list(out) == ["reject|poster"]
+
+
+def test_per_tier_summary_monotone_and_violation():
+    tiers = ("reject", "poster", "spotlight", "oral")
+    dt = np.array(["reject"] * 4 + ["poster"] * 4 + ["spotlight"] * 4 + ["oral"] * 4)
+    inc = np.concatenate([np.full(4, v) for v in (10.0, 20.0, 30.0, 40.0)])
+    out = stats.per_tier_summary(inc, dt, tiers)
+    assert out["monotone"] is True
+    assert [out["tiers"][t]["median"] for t in tiers] == [10.0, 20.0, 30.0, 40.0]
+    assert all(out["tiers"][t]["n"] == 4 for t in tiers)
+    # a dip at spotlight breaks monotonicity
+    dec = np.concatenate([np.full(4, v) for v in (10.0, 30.0, 20.0, 40.0)])
+    out2 = stats.per_tier_summary(dec, dt, tiers)
+    assert out2["monotone"] is False
 
 
 # --------------------------------------------------------------------------- proportions / bands
@@ -609,9 +751,9 @@ def test_new_analyses_present_and_sane():
     # cohort are all present and comparable; the clean cohort is not driven by
     # memorization (synthetic: signal is identical across cohorts by construction)
     bars = R["contamination"]["bars"]
-    # replication ("ICLR 2025") self-skips on the 2026-only synthetic cohort
-    # (synth.py defers the 2025 venue; _contamination omits it when absent).
-    assert {"primary", "arxiv_no_prior"} <= set(bars)
+    # all three bars present: synth.py now emits the ICLR-2025 venue (the
+    # Phase-2 4-tier arm), so the replication bar no longer self-skips.
+    assert {"primary", "replication", "arxiv_no_prior"} <= set(bars)
     for k in bars:
         assert 0.5 < bars[k]["auroc"]["point"] <= 1.0
     assert "auroc_no_prior" in R["contamination"]["arxiv_split"]
@@ -643,6 +785,22 @@ def test_new_analyses_present_and_sane():
         assert -1.0 <= dm[key]["rho_resid_std"] <= 1.0
     asg = R["area_subgroup"]
     assert asg and sum(r["n"] for r in asg) == len(_primary_frame(d))
+    # Phase-2 (ICLR 2025) ordinal block — present on the synthetic 4-tier arm
+    # and sane: the ladder is the 4-tier one, the score tracks the tier rank,
+    # all three adjacent boundaries are computed, and the per-tier medians are
+    # monotone (the spotlight latent mean sits between poster and oral by
+    # construction).
+    p2 = R["phase2"]
+    assert p2["tier_order"] == ["reject", "poster", "spotlight", "oral"]
+    assert p2["spearman_tier"]["point"] > 0
+    assert set(p2["boundary_aurocs"]) == {"reject|poster", "poster|spotlight", "spotlight|oral"}
+    assert p2["per_tier"]["monotone"] is True
+    assert p2["n"] == sum(p2["per_tier"]["tiers"][t]["n"] for t in p2["tier_order"])
+    # Pillar-1 new-validation block: the post-fix citation audit beats the
+    # frozen v1 artifact row (chance AUROC, pinned 100%) on synthetic data
+    p1 = R["pillar1_p2"]
+    assert p1["citation_auroc"]["point"] > p1["frozen_v1"]["auroc"]
+    assert p1["pinned_rate"] < p1["frozen_v1"]["pinned_rate"]
 
 
 def _primary_frame(d):

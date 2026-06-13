@@ -32,7 +32,7 @@ import sys
 import textwrap
 from pathlib import Path
 
-from common import ANALYSIS_DIR, FIG_DIR, MACRO_DIR, PAPER_DIR, RESULTS_DIR, TAB_DIR
+from common import ANALYSIS_DIR, FIG_DIR, MACRO_DIR, PAPER_DIR, RESULTS_DIR, TAB_DIR, VENUE_TIERS
 
 # Standard LaTeX/package control sequences the macro-lint must not flag.
 _LATEX_BUILTINS = {
@@ -255,6 +255,12 @@ def cmd_check(args):
         d = schema.load_dataset(args.dataset)
         c = d.cohort_counts()
         print(f"[ok] data contract valid; cohorts {c}")
+        # name the per-(venue, year) ladders the row-wise bijection validated
+        # against (common.VENUE_TIERS — the consumer mirror of aipr's
+        # decisions.py::_PROFILES); `check --dataset iclr2025` works unmodified
+        # once the real export lands.
+        for key in sorted({(v, int(y)) for v, y in zip(d.submissions["venue"], d.submissions["year"])}):
+            print(f"     tier ladder {key[0]} {key[1]}: {' < '.join(VENUE_TIERS[key])}")
     except Exception as e:
         problems.append(f"data contract: {e}")
 
@@ -306,6 +312,7 @@ def cmd_clean(args):
         (FIG_DIR, "*.pdf"), (FIG_DIR, "*.png"), (TAB_DIR, "*.tex"),
         (MACRO_DIR, "results_macros.tex"), (MACRO_DIR, "sim_macros.tex"),
         (MACRO_DIR, "secondary_macros.tex"), (MACRO_DIR, "SYNTHETIC.flag"),
+        (MACRO_DIR, "PHASE2.flag"),
         (RESULTS_DIR, "*.json"),
         (PAPER_DIR, "*.aux"), (PAPER_DIR, "*.bbl"), (PAPER_DIR, "*.blg"), (PAPER_DIR, "*.log"),
         (PAPER_DIR, "*.out"), (PAPER_DIR, "*.toc"), (PAPER_DIR, "pass*.log"),

@@ -24,6 +24,7 @@ paper/macros/results_macros.tex
 paper/macros/sim_macros.tex
 paper/macros/secondary_macros.tex
 paper/macros/SYNTHETIC.flag
+paper/macros/PHASE2.flag
 paper/prereg_verbatim.tex
 
 # LaTeX build artifacts

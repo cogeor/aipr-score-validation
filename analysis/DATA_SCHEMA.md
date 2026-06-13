@@ -11,6 +11,13 @@ Until then, `synth.py` writes schema-conformant **synthetic** data into
 Synthetic outputs are watermarked `SYNTHETIC` on every figure and must never
 appear in a posted draft.
 
+**Datasets.** `analysis/data/iclr2026/` is the released v1 export (primary
+venue, 3-tier). The Phase-2 export will land as `analysis/data/iclr2025/`
+(replication / contaminated-contrast venue, 4-tier incl. spotlight; full-mini
+cohort only — no 2025 frontier arm — plus the `full_full_p2` Pillar-1 re-grade
+keyed to the 2026 cohort-H ids). The synthetic dataset carries BOTH venues in
+one frame, so the per-(venue, year) ladders are exercised side by side.
+
 > **Note on configs.** The study-only **`naive`** baseline config is part of the
 > contract. The **`blinded`** and **`prior_only`** configs are dropped;
 > `schema.validate` still *accepts* them for backward compatibility, so they are
@@ -28,9 +35,9 @@ appear in a posted draft.
 | `submission_id` | str | venue-unique id | join key |
 | `venue` | str | e.g. `ICLR` | |
 | `year` | int | e.g. `2025` | |
-| `decision_raw` | str | literal OpenReview venue tag | e.g. `ICLR.cc/2026/Conference/Oral`; lets a third party re-derive `decision_tier` from the raw label + the documented map |
-| `decision_tier` | str | `reject` \| `poster` \| `oral` | the ordinal ground truth (ICLR 2026 has no spotlight tier) |
-| `tier_rank` | int | `0,1,2` | reject=0, poster=1, oral=2; must agree with `decision_tier` |
+| `decision_raw` | str | literal OpenReview venue tag | e.g. `ICLR.cc/2026/Conference/Oral`, `ICLR 2025 Spotlight`; lets a third party re-derive `decision_tier` from the raw label + the documented map |
+| `decision_tier` | str | `reject` \| `poster` \| `spotlight` \| `oral` | the ordinal ground truth, restricted to the row's **(venue, year) ladder** (`common.VENUE_TIERS`): ICLR 2026 is 3-tier (no spotlight); ICLR 2025 is 4-tier (reject < poster < spotlight < oral) |
+| `tier_rank` | int | ladder index | the tier's index in the row's (venue, year) ladder — 2026: reject=0, poster=1, oral=2; 2025: reject=0, poster=1, spotlight=2, oral=3. Must agree row-wise with `decision_tier` |
 | `accept_bool` | int | `0`/`1` | `1` iff tier_rank ≥ 1 |
 | `mean_reviewer_rating` | float | venue rating scale (e.g. 1–10) | continuous ground truth (H4) |
 | `rating_std` | float | same units | dispersion across reviewers |
@@ -69,7 +76,7 @@ dropped from a primary metric for a different reason (arXiv-twin, parse failure)
 | column | type | values / units | notes |
 |--------|------|----------------|-------|
 | `submission_id` | str | FK → submissions | |
-| `config` | str | `scan` \| `full_mini` \| `full` \| `naive` \| ~~`blinded`~~ \| ~~`prior_only`~~ | grading profile. `scan`/`full_mini`/`full` are the cost ladder (cohort nesting). **`naive`** = study-only one-paragraph "grade this paper" baseline on the same PDF + model (rung 0 of the value ladder); it emits `overall` only (subscores blank) and carries `pipeline_version=naive`. **DEPRECATED (dropped):** `blinded` (full pipeline on a blinded PDF) and `prior_only` (metadata-only). Still accepted by `validate` for backward compatibility; do not emit new rows |
+| `config` | str | `scan` \| `full_mini` \| `full` \| `naive` \| `full_full_p2` \| ~~`blinded`~~ \| ~~`prior_only`~~ | grading profile. `scan`/`full_mini`/`full` are the cost ladder (cohort nesting). **`naive`** = study-only one-paragraph "grade this paper" baseline on the same PDF + model (rung 0 of the value ladder); it emits `overall` only (subscores blank) and carries `pipeline_version=naive`. **`full_full_p2`** = the Phase-2 Pillar-1 re-validation: the same frontier model and v6 pipeline as `full_full` but with the post-fix abstract-based citation audit; carries all five subscores, `pipeline_version=v6`, single run on the frozen cohort-H ids (its ids must nest inside H — invariant 9b). It is **not** remapped onto `full` at load (unlike `full_full`); it stays its own slot, compared against the frozen v1 artifact row. **DEPRECATED (dropped):** `blinded` (full pipeline on a blinded PDF) and `prior_only` (metadata-only). Still accepted by `validate` for backward compatibility; do not emit new rows |
 | `run_index` | int | `0`-based | multiple rows per (submission,config) when re-graded |
 | `model_name` | str | e.g. `gpt-5.4-mini`, `gpt-5.4` | |
 | `pipeline_version` | str | `v6` (or `naive` for `config=naive`) | **must be uniform within the non-naive rows** — never mix v6 with another pipeline version |
@@ -113,13 +120,13 @@ One JSON object per line:
 
 0. Required columns present in each table (clear error naming the missing ones).
 1. One row per `submission_id`; `(submission_id, config, run_index)` unique.
-2. `tier_rank` ↔ `decision_tier` bijection; `accept_bool == (tier_rank >= 1)`.
+2. **Row-wise** `tier_rank` ↔ `decision_tier` bijection under the row's **(venue, year) ladder** (`common.VENUE_TIERS`, the consumer mirror of aipr `decisions.py::_PROFILES`): an unprofiled (venue, year) fails loudly (never a silent fallthrough to another year's ladder), and a tier outside the row's ladder (e.g. spotlight under ICLR 2026) fails. `accept_bool == (tier_rank >= 1)` is ladder-independent (reject is rank 0 in every ladder).
 3. `decision_raw` non-empty on every row; `n_reviews ≥ 1`.
-4. `pipeline_version` is `v6` across all non-`naive` rows (never mixed with another version); `config=naive` rows carry `pipeline_version=naive`.
-5. `config` ∈ {scan, full_mini, full, naive} (plus the DEPRECATED `blinded`/`prior_only`, still accepted pending cleanup); `run_index` a nonnegative integer.
-6. `overall` ∈ `[0,100]` on every row; the five dimension scores ∈ `[0,100]` where present — they may be **blank only for `config=naive`** (the naive judge emits no subscores).
+4. `pipeline_version` is `v6` across all non-`naive` rows (`full_full_p2` included — never mixed with another version); `config=naive` rows carry `pipeline_version=naive`.
+5. `config` ∈ {scan, full_mini, full, naive, full_full_p2} (plus the DEPRECATED `blinded`/`prior_only`, still accepted pending cleanup); `run_index` a nonnegative integer.
+6. `overall` ∈ `[0,100]` on every row; the five dimension scores ∈ `[0,100]` where present — they may be **blank only for `config=naive`** (the naive judge emits no subscores; `full_full_p2` carries all five).
 7. Every `gradings.submission_id` exists in `submissions`.
-8. Cohort nesting H ⊆ M ⊆ S (cost ladder); `naive` (and the deprecated `blinded`/`prior_only`) ⊆ H, so each pairs with a full-text score.
+8. Cohort nesting H ⊆ M ⊆ S (cost ladder); `naive` (and the deprecated `blinded`/`prior_only`) ⊆ H, so each pairs with a full-text score; **9b:** `full_full_p2` ids ⊆ H (the Pillar-1 re-grade runs on the frozen cohort-H ids only).
 9. `excluded==1` ⇒ non-empty `exclude_reason`.
 10. `run_kind == 'adhoc'` for every grading row.
 11. Metadata domains when present: `arxiv_prior_to_cutoff`/`is_anonymized` ∈ {0,1}; `page_count`/`word_count`/`token_count`/`n_references`/`n_figures` ≥ 0; `input_tokens`/`output_tokens` ≥ 0.
