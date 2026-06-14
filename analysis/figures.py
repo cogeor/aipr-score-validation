@@ -69,7 +69,7 @@ def fig_design(d, R):
                     arrowprops={"arrowstyle": "-|>", "color": "0.35", "lw": 1.1}, zorder=1)
 
     # Top lane = grading path; bottom lane = ground-truth path. No crossings.
-    box(1, 23, 20, 12, "Submitted PDF\n(version reviewers saw)", "#EAEAEA")
+    box(1, 23, 20, 12, "Submitted PDF\n(as reviewed)", "#EAEAEA")
     box(1, 4, 20, 12, "OpenReview venue\n(ICLR 2026)", "#EAEAEA")
     box(27, 21, 24, 16,
         "AIPR v6 grading\n" + r"$M \supseteq H$" + "\n(GPT-5.4-mini / GPT-5.4)\n+ Direct baseline",
@@ -246,17 +246,18 @@ def fig_naive_baseline(d, R):
         else:
             style = {"lw": 1.7, "ls": "-", "alpha": 0.95, "zorder": 3}
         axl.plot(fpr, tpr, color=color,
-                 label=f"{label}: {a['point']:.2f} [{a['lo']:.2f}, {a['hi']:.2f}]", **style)
+                 label=f"{label}: {a['point']:.2f}", **style)
     axl.plot([0, 1], [0, 1], ":", color="grey", lw=0.8)
+    # Point AUROCs only in the legend (95% CIs are in Table~\ref{tab:headline} and the
+    # caption) so the three labels do not overlap; the paired difference is qualitative.
     ad = nb["auroc_diff"]
     axl.annotate(
-        rf"AIPR$-$Direct $\Delta$AUROC $={ad['delta']:.2f}$ "
-        rf"[{ad['lo']:.2f}, {ad['hi']:.2f}], {_pbracket(ad['p'])}"
+        rf"AIPR$-$Direct $\Delta$AUROC $={ad['delta']:.2f}$, {_pbracket(ad['p'])}"
         "\n(paired stratified bootstrap)",
         xy=(0.5, -0.30), xycoords="axes fraction", ha="center", va="top", fontsize=6.3)
     axl.set_xlabel("False positive rate"); axl.set_ylabel("True positive rate")
     axl.set_aspect("equal")
-    axl.legend(loc="lower right", fontsize=6.3, title="AUROC [95% CI]", title_fontsize=6.3)
+    axl.legend(loc="lower right", fontsize=6.3, title="AUROC", title_fontsize=6.3)
     axl.set_title("(a)", loc="left", fontsize=9, fontweight="bold")
 
     # (b) reliability: one dot per variance paper = its within-paper SD over the
@@ -404,12 +405,19 @@ def fig_nested_auroc(d, R):
         return
     fig, ax = plt.subplots(figsize=(COL_WIDTH, 2.3))
     cfgs = [c for c in ("full_mini", "full") if c in R["nested_auroc"]]
-    pts = [R["nested_auroc"][c]["point"] for c in cfgs]
-    err = [[R["nested_auroc"][c]["point"] - R["nested_auroc"][c]["lo"] for c in cfgs],
-           [R["nested_auroc"][c]["hi"] - R["nested_auroc"][c]["point"] for c in cfgs]]
-    x = np.arange(len(cfgs))
+    entries = [(CONFIG_LABELS[c], R["nested_auroc"][c]) for c in cfgs]
+    # Show the Direct one-paragraph baseline alongside the two AIPR configs (same
+    # cohort H AUROC), so the figure reads as "what does the pipeline add over the
+    # cheap model AND over the bare prompt" rather than mini-vs-frontier alone.
+    nb = R.get("naive_baseline", {})
+    if nb.get("auroc_naive"):
+        entries.append((CONFIG_LABELS["naive"], nb["auroc_naive"]))
+    pts = [e["point"] for _, e in entries]
+    err = [[e["point"] - e["lo"] for _, e in entries],
+           [e["hi"] - e["point"] for _, e in entries]]
+    x = np.arange(len(entries))
     ax.errorbar(x, pts, yerr=err, fmt="o", color="black", capsize=3)
-    ax.set_xticks(x); ax.set_xticklabels([CONFIG_LABELS[c] for c in cfgs])
+    ax.set_xticks(x); ax.set_xticklabels([lbl for lbl, _ in entries])
     ax.set_ylabel("AUROC (cohort H)"); ax.set_xlabel("Grading configuration")
     _save(fig, "figS_nested_auroc", d.is_synthetic)
 
