@@ -18,33 +18,26 @@ signal of the quality humans perceive. A score is what triages a queue or flags 
 submission for a second look, so it must be validated as a measurement against an
 external outcome.
 
-We validate \textsc{AIPR}, which reads a submitted PDF and returns a structured,
-evidence-grounded review and a weighted overall quality score (\S\ref{sec:methods}).
-AIPR grades by \emph{prompting alone}: it is not
+\textsc{AIPR} is an interactive platform for reviewing manuscripts: it reads a submitted
+PDF and returns a structured, evidence-grounded review, of which a weighted overall
+quality score across five dimensions is one component (\S\ref{sec:methods}). The score is
+an AI first-pass signal, not a final human-reviewed verdict; in deployment a reviewer
+reads and acts on it interactively. AIPR grades by \emph{prompting alone}: it is not
 fine-tuned on reviews, decisions, or ratings, so the score is a property of a prompted
-frontier model, not of a classifier trained on outcomes. The review, not the number, is
-what the system is for; the score is a by-product we validate here. Our ground truth is
-the
-public OpenReview record of a major machine learning venue: each submission's decision
-tier (reject, poster, oral) and mean reviewer rating. Because the venue publishes
-\emph{rejected} submissions, the class our central claim concerns is fully observable.
-In deployment AIPR is interactive; here we isolate the baseline score it emits on first
-read, the hardest case for an automated signal and the one a triage use relies on.
+frontier model, not of a classifier trained on outcomes. Here we isolate and benchmark
+that first-pass score on first read, the hardest case for an automated signal and the one
+a triage use relies on. Our ground truth is the public OpenReview record of a major
+machine learning venue: each submission's decision tier (reject, poster, oral) and mean
+reviewer rating; because the venue publishes \emph{rejected} submissions, the class our
+central claim concerns is fully observable.
 
-The paper turns on two questions. \emph{Is the score valid?} It flags weak submissions
-(papers it scores low are rejected far above the base rate) and agrees strongly, not
-merely significantly, with human outcomes across both decision tiers and reviewer
-ratings; we do not claim it predicts the acceptance decision, ranks strong papers, or
-replaces a reviewer. \emph{What does the system add over the model it runs on?} A
-frontier model is available to anyone, so we compare AIPR against a one-paragraph prompt
-on the identical model and PDF. That bare prompt already separates rejected from
-accepted submissions on its own, almost as well as AIPR; the small gap favours the
-pipeline but does not meet the pre-declared criterion (\aurocDiffPrel). Raw intelligence is
-not the bottleneck; \emph{reliability is.} The same paper graded twice by the bare
-prompt swings \naiveRunSD{} points; AIPR holds it to \fullRunSD{}. What the engineering
-contributes is a score a reviewer can act on, stable across runs and delivered with an
-anchored, evidence-grounded review in a single pass --- the bare prompt returns only the
-number. Every number is generated from the released data by one script,
-and the hypotheses and thresholds were pre-registered before any score met any outcome
-(Appendix~\ref{app:prereg}). The full study design and data flow are diagrammed in
-Appendix~\ref{app:configs} (Fig.~\ref{fig:design}).
+The paper turns on two pre-registered questions. \emph{Is the score valid?} That is, does
+it agree with human outcomes well enough to flag weak submissions for a second look, the
+low-end triage use we scope it to; we do not claim it predicts the acceptance decision,
+ranks strong papers, or replaces a reviewer. \emph{What does the system add over the model
+it runs on?} A frontier model is available to anyone, so we compare AIPR against a
+one-paragraph prompt on the identical model and PDF, separating what the base model
+contributes from what the engineered pipeline adds. The hypotheses and thresholds were
+fixed before any score met any outcome (Appendix~\ref{app:prereg}); every number in the
+paper is generated from the released data by one script, and the full study design is
+diagrammed in Appendix~\ref{app:configs} (Fig.~\ref{fig:design}).

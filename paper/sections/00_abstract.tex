@@ -11,13 +11,11 @@ reviewer ratings, graded under a frozen pipeline with hypotheses pre-registered 
 any score met any outcome, the overall score separates rejected from accepted
 submissions (AUROC~\aurocMiniFull), rises monotonically across tiers, and tracks the
 mean reviewer rating. The signal is strongest where we claim it: the lowest-scoring
-fifth is rejected far above the base rate, with oral papers absent. Two findings locate
-the system's value. The validity comes mostly from the model: a one-paragraph prompt on
+fifth is rejected far above the base rate, with oral papers absent. The validity comes mostly from the model: a one-paragraph prompt on
 the same model discriminates almost as well as the full pipeline (the small gap favours
 the pipeline but does not meet the pre-declared criterion, $p=0.09$). What the engineering adds is
 \emph{reliability} and a grounded review: AIPR's score barely moves across repeated runs
 (\fullRunSD{} vs.\ \naiveRunSD{} points within-paper SD) where the bare prompt swings,
 and the same pass returns a rubric-structured, evidence-grounded review rather than a
-bare number. Intelligence is not the bottleneck; reliability is, and the human keeps the
-decision.
+bare number, with the human keeping the decision.
 \end{abstract}

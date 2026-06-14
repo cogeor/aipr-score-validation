@@ -17,9 +17,11 @@
 \usepackage{xcolor}
 \usepackage{subcaption}
 \usepackage[round]{natbib}
+\PassOptionsToPackage{hyphens}{url}
 \usepackage[colorlinks=true,allcolors=blue]{hyperref}
 \usepackage{caption}
 \captionsetup{font=small,labelfont=bf}
+\usepackage{microtype} % protrusion + expansion: clears residual overfull lines (e.g. Table 9 confounding paragraph) and lets long URLs break
 
 \graphicspath{{figures/}}
 
