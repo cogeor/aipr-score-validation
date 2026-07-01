@@ -106,7 +106,8 @@ jobs:
       #   base:        pdflatex, geometry, amsmath, graphics, hyperref
       #   recommended: caption/subcaption, xcolor, natbib, booktabs, xspace
       #   extra:       remaining contrib packages
-      #   fonts-rec:   lmodern, amsfonts
+      #   fonts-rec:   amsfonts
+      #   lmodern:     lmodern.sty (its own Debian/Ubuntu package, not fonts-rec)
       # texlive-binaries (bibtex) comes in as a dependency of these.
       - name: Install TeX Live
         run: |
@@ -115,7 +116,8 @@ jobs:
             texlive-latex-base \
             texlive-latex-recommended \
             texlive-latex-extra \
-            texlive-fonts-recommended
+            texlive-fonts-recommended \
+            lmodern
 
       # pdflatex + bibtex + pdflatex x2; raises on any `! ` LaTeX error.
       - name: Compile paper
