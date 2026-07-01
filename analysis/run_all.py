@@ -1144,7 +1144,7 @@ def write_macros(R: dict) -> None:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--dataset", default="synthetic")
+    ap.add_argument("--dataset", default="iclr2026")
     ap.add_argument("--no-figures", action="store_true")
     args = ap.parse_args()
 

@@ -371,7 +371,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     add("synth", cmd_synth, "generate synthetic data")
     sp = add("analyze", cmd_analyze, "compute results + macros + tables + figures")
-    sp.add_argument("--dataset", default="synthetic")
+    sp.add_argument("--dataset", default="iclr2026")
     sp.add_argument("--no-figures", action="store_true")
     sp = add("simulate", cmd_simulate, "power analysis + estimator validation")
     sp.add_argument("--quick", action="store_true")
@@ -383,11 +383,11 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--nmi", action="store_true",
                     help="build the condensed NMI variant -> main_nmi.pdf")
     sp = add("check", cmd_check, "validate data + lint macros + verify refs")
-    sp.add_argument("--dataset", default="synthetic")
+    sp.add_argument("--dataset", default="iclr2026")
     add("clean", cmd_clean, "remove generated artifacts")
     add("freeze", cmd_freeze, "stamp DECISIONS.md with git commit + date")
     sp = add("all", cmd_all, "synth -> analyze -> simulate -> paper -> check")
-    sp.add_argument("--dataset", default="synthetic")
+    sp.add_argument("--dataset", default="iclr2026")
     sp.add_argument("--quick", action="store_true")
     sp.add_argument("--skip-sim", action="store_true")
     return p
