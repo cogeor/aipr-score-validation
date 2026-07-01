@@ -1,0 +1,38 @@
+cff-version: 1.2.0
+message: "If you use this software or data, please cite the accompanying paper and this archived release."
+title: "Intelligence Is Not the Bottleneck: Validating an LLM First-Pass Manuscript Score Against Peer-Review Outcomes — analysis code and data"
+abstract: >-
+  Reproducible analysis code, pre-registration, de-identified scored data, and LaTeX
+  manuscript for a pre-registered study validating an automated LLM manuscript-scoring
+  system (AIPR) against the public peer-review outcomes of ICLR 2026 on OpenReview.
+type: software
+authors:
+  - family-names: Georgantas
+    given-names: Costa
+    orcid: "https://orcid.org/0009-0008-8891-4582"
+    affiliation: "Independent Researcher, Lausanne, Switzerland"
+version: 1.0.0
+date-released: "2026-07-01"
+license: MIT
+repository-code: "https://github.com/cogeor/aipr-score-validation"
+url: "https://github.com/cogeor/aipr-score-validation"
+keywords:
+  - peer review
+  - large language models
+  - manuscript evaluation
+  - automated scoring
+  - validation
+  - reproducibility
+preferred-citation:
+  type: article
+  title: "Intelligence Is Not the Bottleneck: Validating an LLM First-Pass Manuscript Score Against Peer-Review Outcomes"
+  year: 2026
+  authors:
+    - family-names: Georgantas
+      given-names: Costa
+      orcid: "https://orcid.org/0009-0008-8891-4582"
+      affiliation: "Independent Researcher, Lausanne, Switzerland"
+  identifiers:
+    - type: other
+      value: "arXiv:2606.15887"
+      description: "arXiv preprint"

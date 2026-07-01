@@ -1,68 +1,51 @@
 % NMI Introduction: no \section heading (journal style).
-Peer review is the gate through which scientific work passes, and it is under
-strain: submissions at major venues have outgrown the reviewer pool, and the
-process is demonstrably noisy. The NeurIPS consistency experiments found that a
-large fraction of accept/reject decisions would flip under a re-run of the same
-process, with the asymmetry that review is comparatively reliable at \emph{rejecting
-weak work} but poor at \emph{ranking strong work}
-\citep{cortes2021inconsistency,beygelzimer2023arbitrary}. Against this backdrop,
-large language models are increasingly used to assist review---and publisher policy
-is caught between uncontrolled, undisclosed use, which is risky, and categorical
-prohibition, which forgoes potentially useful signal.
+Peer review is the gate through which scientific work passes, and it is under strain.
+Submission volumes have grown faster than the reviewer pool, and the process is
+demonstrably noisy: the NeurIPS consistency experiments found that a large fraction of
+accept/reject decisions would flip under a re-run of the same process
+\citep{cortes2021inconsistency,beygelzimer2023arbitrary}, with the asymmetry that review is
+reliable at \emph{rejecting weak work} but poor at \emph{ranking strong work}. Against this
+backdrop, LLM-based assistance is now being deployed at scale
+\citep{thakkar2026feedback,biswas2026aaai}, and publisher policy is caught between
+undisclosed use, which is risky, and categorical prohibition, which forgoes potentially
+useful signal \citep{science2025funding}.
 
-Most studies of AI in peer review evaluate the \emph{text} a model produces. A
-large randomized study at ICLR~2025 showed that LLM feedback can make reviews more
-informative and increase reviewer--author engagement \citep{thakkar2026feedback};
-other work compares machine and human review comments for overlap, specificity, and
-factuality \citep{liang2024llm,darcy2024marg,du2024llmsassist}. A parallel line
-documents the risks of uncontrolled use: AI-assisted reviews already inflate scores
-and acceptance rates at scale \citep{russolatona2024lottery}, and adversarial hidden
-prompts embedded in manuscripts can manipulate AI-assisted review outright
-\citep{lin2025hidden}. Almost none of this work asks the question deployment turns
-on: whether the numeric \emph{score} such a system assigns is a valid signal of the
-quality humans ultimately perceive. A score is what triages a queue or flags a
-submission for a second look; used that way it must be validated as a measurement
-against an external outcome, with the discipline a noisy ground truth demands.
+Most studies of automated review evaluate the \emph{text} a model produces: how well its
+comments overlap a human reviewer's, how specific or factual they are
+\citep{liang2024llm,darcy2024marg,yuan2022automate,du2024llmsassist}. For deployment the
+more consequential question is whether the \emph{score} a system assigns is a valid signal
+of the quality humans perceive. A score is what triages a queue or flags a submission for a
+second look, so it must be validated as a measurement against an external outcome. Grading
+by prompting is itself an established paradigm---strong models score open-ended work against
+rubrics with near-human agreement \citep{zheng2023judging,liu2023geval,mizumoto2023exploring}---but
+it has so far been applied to review \emph{text}, or validated only against weak proxies
+such as an author's own ratings of his own papers \citep{thelwall2024chatgpt}, not against a
+venue's own reject class. To our knowledge this is the first study to validate a
+training-free, prompt-only manuscript quality \emph{score} against the public \emph{reject}
+class and reviewer ratings, and to decompose how much of that validity comes from the
+underlying model versus the engineered pipeline.
 
-We study \textsc{AIPR}, a system that reads a submitted PDF and produces five
-0--100 quality dimensions and a weighted overall score, and we use it as the
-instrument to test that question on public peer-review outcomes. Our ground truth
-is the public record of a major machine-learning venue on OpenReview: the decision
-tier of each submission (reject, poster, oral) and the mean numeric rating its
-reviewers assigned. Because this venue publishes \emph{rejected} submissions, the
-class our central claim concerns is fully observable. AIPR is deployed as an
-interactive assistant; here we validate the baseline score it emits on first read,
-before any interaction---the hardest case for an automated signal and the one a
-triage use relies on.
+\textsc{AIPR} is an interactive platform for reviewing manuscripts: it reads a submitted
+PDF and returns a structured, evidence-grounded review, of which a weighted overall quality
+score across five dimensions is one component (\S\ref{sec:methods}). The score is an AI
+first-pass signal, not a final human-reviewed verdict; in deployment a reviewer reads and
+acts on it interactively. AIPR grades by \emph{prompting alone}: it is not fine-tuned on
+reviews, decisions, or ratings, so the score is a property of a prompted frontier model, not
+of a classifier trained on outcomes. Here we isolate and benchmark that first-pass score on
+first read, the hardest case for an automated signal and the one a triage use relies on. Our
+ground truth is the public OpenReview record of a major machine learning venue: each
+submission's decision tier (reject, poster, oral) and mean reviewer rating; because the venue
+publishes \emph{rejected} submissions, the class our central claim concerns is fully
+observable.
 
-Our claim is deliberately narrow, and complementary to the feedback-quality work
-above: a feedback assistant can be useful even if it does not rank manuscripts,
-whereas a triage score must be validated against the venue's own outcomes and bounded
-to human oversight. The AIPR score (i) flags weak submissions---papers it scores low
-are rejected far above the base rate---and (ii) shows strong agreement with human
-outcomes across both the decision tiers and the continuous reviewer rating. We do
-\emph{not} claim it predicts the acceptance decision, ranks strong papers, or
-substitutes for a reviewer; the bound mirrors the ``reliable at the bottom, noisy at
-the top'' structure of human review itself.
-
-A validated score raises an obvious question: a frontier model is available to
-anyone, so what does the engineered pipeline add over simply asking that model? We
-test AIPR against a generic one-paragraph prompt on the identical model and PDF. The
-bare prompt, with no rubric and no audit, already separates rejected from accepted
-submissions on its own; the full pipeline's discrimination is higher, but the planned
-paired comparison is not statistically resolved. The lesson is about the model, not
-the pipeline---with or without our prompt, a frontier model already produces a
-first-pass reviewing signal that substantially tracks the human outcome in this
-setting, so raw model intelligence is not the observed bottleneck, and the reviewer
-keeps the decision. What the engineering adds is therefore not validity but
-\emph{deployability}: a score reliable across repeated runs that arrives with a
-grounded, auditable, rubric-anchored review. The right policy question is then not
-whether AI can ever assist review, but which controlled, disclosed, auditable,
-human-accountable systems should.
-
-The study's standard of evidence is set by three practices: the hypotheses, primary
-metric, and low-score threshold were pre-registered before any score was joined to
-any outcome; every number is generated from the released data by a single script;
-and we report the score's failure modes---the rejected papers it rated highly and the
-unconventional accepted papers it underrated---rather than headlining best-case
-agreement.
+The paper turns on two pre-registered questions. \emph{Is the score valid?} That is, does it
+agree with human outcomes well enough to flag weak submissions for a second look, the low-end
+triage use we scope it to; we do not claim it predicts the acceptance decision, ranks strong
+papers, or replaces a reviewer. \emph{What does the system add over the model it runs on?} A
+frontier model is available to anyone, so we compare AIPR against a one-paragraph prompt on
+the identical model and PDF, separating what the base model contributes from what the
+engineered pipeline adds. The hypotheses and thresholds were fixed before any score met any
+outcome (Methods; pre-registration verbatim in the Supplementary Information); every number
+is generated by one script from the openly released data and analysis code
+(\url{https://github.com/cogeor/aipr-score-validation}), and the full study design is
+diagrammed in Fig.~\ref{fig:design}.

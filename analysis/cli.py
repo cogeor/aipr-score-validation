@@ -36,7 +36,7 @@ from common import ANALYSIS_DIR, FIG_DIR, MACRO_DIR, PAPER_DIR, RESULTS_DIR, TAB
 
 # Standard LaTeX/package control sequences the macro-lint must not flag.
 _LATEX_BUILTINS = {
-    "documentclass", "usepackage", "begin", "end", "section", "subsection", "subsubsection",
+    "documentclass", "usepackage", "PassOptionsToPackage", "begin", "end", "section", "subsection", "subsubsection",
     "paragraph", "label", "ref", "input", "includegraphics", "graphicspath", "cite", "citep",
     "citet", "citealp", "itshape", "textbf", "textit", "emph", "texttt", "item", "centering", "footnote", "noindent",
     "textcolor", "fcolorbox", "parbox", "today", "maketitle", "appendix", "bibliography",

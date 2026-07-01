@@ -1,17 +1,15 @@
 \begin{abstract}
 \noindent
-Large language models are increasingly proposed to assist peer review, but most
-evaluations judge the \emph{text} of machine-generated reviews rather than the
-validity of the numeric \emph{score} a system assigns. We validate \textsc{AIPR},
-which reads a manuscript and emits a weighted 0--100 score, against the public
-outcomes at a major machine-learning venue. Across \NminiPrimary{} ICLR submissions,
-with hypotheses pre-registered before any score met any outcome, the score separates
-rejected from accepted submissions (AUROC~\aurocMini), rises across decision tiers,
-and tracks reviewer ratings; it is strongest as a low-score triage flag (bottom
-quintile rejected at \bottomRejectRateFrontier\% by the production model). A generic one-paragraph prompt
-on the same model already carries much of this signal (AUROC~\aurocNaive):
-intelligence is not the observed bottleneck. What the engineering adds is not
-validity but deployability---a score reliable across runs that arrives with a
-grounded, auditable review. The validated action is prioritizing manuscripts for
-human attention, not automated decisions.
+Large language models are proposed to assist peer review, yet most evaluations judge the
+prose of machine-generated review \emph{text}, not the validity of the numeric \emph{score}
+it assigns. We validate \textsc{AIPR}, which emits a weighted 0--100 score across five
+dimensions, against the public decisions of a major machine-learning venue, by prompting
+alone, without fine-tuning. With hypotheses pre-registered before any score met any outcome,
+the production score separates rejected from accepted submissions (AUROC~\aurocFull),
+replicated on a \NminiPrimary-paper cohort (\aurocMini); it rises across decision tiers,
+tracks reviewer ratings, and flags weak work, its lowest-scoring fifth rejected far above the
+base rate. Validity comes mostly from the model: a one-paragraph prompt discriminates nearly
+as well (gap favouring the pipeline but missing our pre-declared criterion, \aurocDiffPrel).
+What the engineering adds is \emph{reliability} and a grounded review: AIPR's score barely
+moves across runs where the bare prompt swings, the human keeping the decision.
 \end{abstract}

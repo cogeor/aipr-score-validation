@@ -18,10 +18,12 @@
 \usepackage{xspace}
 \usepackage{xcolor}
 \usepackage{subcaption}
-\usepackage[round]{natbib}
+\usepackage[numbers,sort&compress]{natbib}
+\PassOptionsToPackage{hyphens}{url}
 \usepackage[colorlinks=true,allcolors=blue]{hyperref}
 \usepackage{caption}
 \captionsetup{font=small,labelfont=bf}
+\usepackage{microtype}
 
 \graphicspath{{figures/}}
 
@@ -41,8 +43,10 @@
 Validating an LLM First-Pass Manuscript Score Against Peer-Review Outcomes}}
 
 \author{%
-  AIPR Team\\
-  \texttt{\small score-validation --- NMI Analysis variant --- \today}%
+  Costa Georgantas\\
+  Independent Researcher, Lausanne, Switzerland\\
+  \texttt{\small costa.georgantas@gmail.com}\\
+  ORCID: \href{https://orcid.org/0009-0008-8891-4582}{0009-0008-8891-4582}%
 }
 \date{}
 
@@ -64,6 +68,39 @@ Validating an LLM First-Pass Manuscript Score Against Peer-Review Outcomes}}
 \input{sections/nmi_02_results}
 \input{sections/nmi_03_discussion}
 \input{sections/nmi_04_methods}
+
+% --- End-of-paper statements (Nature Portfolio required sections) -----------
+\section*{Data availability}
+The data supporting the findings of this study are openly available at
+\url{https://github.com/cogeor/aipr-score-validation}, anchored to the pre-registration tag
+\texttt{prereg-iclr2026-v2}. The release contains the two-table contract every analysis
+reads: per-submission labels (decision tier, mean reviewer rating) and per-grading-run
+scores, keyed by public OpenReview submission identifiers. All decision outcomes, ratings,
+and review excerpts derive from the public OpenReview record of ICLR~2026
+(\texttt{ICLR.cc/2026/Conference}) under CC~BY~4.0; we redistribute only derived metadata and
+our own scores, not manuscript PDFs or full review texts. The full AIPR review text for
+identifiable submissions is a controlled audit artifact available to editors and reviewers on
+request.
+
+\section*{Code availability}
+All analysis code needed to reproduce the study is openly available at
+\url{https://github.com/cogeor/aipr-score-validation}; a single command regenerates every
+figure, table, and statistic in this paper and its Supplementary Information from the released
+data. The manuscript-to-score function evaluated here---AIPR's grading rubric, prompts, and
+model configuration---is a proprietary production system and is not released as source.
+Consistent with its role as the validated instrument, it is audited through its outputs and
+can be exercised on new manuscripts via \url{https://aipr.pub}, with the rubric, prompts, and
+configuration made available confidentially to editors, reviewers, or auditors on request.
+Because the analysis plan was pre-registered before unblinding, this arrangement lets the
+validation be checked independently even though the scorer itself is closed.
+
+\section*{Competing interests}
+The author founded and operates AIPR (\url{https://aipr.pub}), the commercial system evaluated
+in this study, and stands to benefit from a favourable result. The study was self-funded; no
+external funding was received. The mitigations are structural rather than rhetorical: the
+analysis plan was frozen at a public tag before any score was joined to an outcome, every
+reported number regenerates from released code and data, and the primary comparison includes
+a baseline designed to make the pipeline redundant.
 
 \bibliographystyle{plainnat}
 \bibliography{refs}

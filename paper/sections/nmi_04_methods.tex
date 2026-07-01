@@ -3,72 +3,92 @@
 % Alias label so the reused appendix (SI) cross-references resolve in this variant.
 \label{sec:methods}
 
-\paragraph{Study cohort and outcomes.}
-\label{sec:data}
-The primary cohort is ICLR~2026 on OpenReview, chosen because it operates open
-review---rejected submissions, their reviews, and decisions are public, which the
-central reject-class claim requires. We grade the \emph{submitted} PDF only. Two
-ground truths are recorded: the decision tier on the ordered ladder
-reject~$<$~poster~$<$~oral (and its binary accept/reject collapse), and the mean
-reviewer rating. Sampling is stratified by tier ($n=\NminiPrimary$ cheap-model,
-$n=\NfullPrimary$ frontier $\subseteq$ the larger cohort), oversampling the reject
-tier where the primary claim lives; results at the venue's natural prevalence
-(\natAcceptRate\% accept) are reported separately. Desk-rejects, withdrawals, and
-parse failures are excluded before any metric (counts in the SI). A second,
-within-venue temporal cohort (ICLR~2025) is a planned follow-up, not part of this
-analysis.
-
-\paragraph{AIPR scoring configurations.}
-All AIPR gradings use a single frozen pipeline version (v6), a two-pass read: a
-reviewer pass that emits five 0--100 dimensions (novelty, rigor, applicability,
-clarity, citation) with justifications, and an audit pass that re-reads the paper
-with a literature-search tool to ground citation claims. The overall is a fixed
-server-side weighted mean,
+\paragraph{The scoring system.}
+\textsc{AIPR} grades a manuscript with a single frozen pipeline (v6), applying the now-standard
+practice of scoring by prompting an LLM against a rubric \citep{liu2023geval,zheng2023judging} to
+a new object, the manuscript. It uploads the submitted PDF and runs two passes: a \emph{reviewer}
+pass reads the paper and emits five 0--100 dimension scores (novelty, rigor, applicability,
+clarity, citation) with justifications and verbatim-anchored highlights, and an \emph{audit} pass
+re-reads the paper with a live literature-search tool, checks each highlight, and proposes missing
+citations against a real bibliographic index, so a recommended citation is a record the tool
+returned rather than a generated string. The overall is a fixed weighted mean,
 \begin{equation}
-  \text{overall} = \frac{4\,s_{\text{nov}} + 2\,s_{\text{rig}}
-  + 4\,s_{\text{app}} + 1\,s_{\text{cla}} + 0.5\,s_{\text{cit}}}{11.5},
+  \text{overall} = \frac{4\,s_{\text{nov}} + 2\,s_{\text{rig}} + 4\,s_{\text{app}}
+  + 1\,s_{\text{cla}} + 0.5\,s_{\text{cit}}}{11.5},
   \label{eq:overall}
 \end{equation}
-set by empirical internal validation on a separate, held-out manuscript set (no
-ICLR submissions from any year) and frozen before this study, not fit to any
-outcome used here. Two
-configurations run this identical pipeline and differ only in the reviewer model:
-\textbf{full-mini} (\texttt{gpt-5.4-mini}) and \textbf{full} (\texttt{gpt-5.4}; the
-production configuration, exported as \texttt{full\_full}). The naive baseline (V1)
-runs the same \texttt{gpt-5.4} on the same PDF with one one-paragraph prompt and no
-rubric or audit. No model was trained, fine-tuned, or tuned on the venue, decisions,
-ratings, or labels.
+with novelty and applicability weighted most and citation least; the model does not emit the
+overall directly. The weights were set by internal validation on a separate held-out manuscript
+set during product development (no ICLR submissions from any year) and frozen before this study,
+not fit to any outcome used here. The system is prompt-only---not fine-tuned on reviews, decisions,
+or ratings. Where the baseline prompt is one paragraph of about fifty words, the reviewer pass is
+driven by a ${\approx}2{,}200$-word rubric and a $1{,}200$-word output schema and the audit pass
+adds a tool loop of up to eight search rounds; the point of the value comparison is that this
+instruction footprint, almost two orders of magnitude larger, buys reliability and a grounded
+review rather than a higher score.
+
+\paragraph{Configurations and baseline.}
+Two configurations run the identical two-pass pipeline and differ only in the model:
+\textbf{AIPR (GPT-5.4-mini)} on the cheaper model and \textbf{AIPR (GPT-5.4)} on the frontier
+model, the production configuration. The pre-registered baseline \textbf{Direct (GPT-5.4)} runs
+the same frontier model on the same PDF with a single one-paragraph prompt and no rubric or audit.
+The cheap configuration is effectively unconstrained in volume, the frontier one budgeted, so we
+establish the relationship on the large cohort $M$ and confirm on cohort $H$ after verifying the
+two agree well enough for the former to proxy the latter (H5).
+
+\paragraph{Cohort and ground truth.}
+\label{sec:data}% alias for reused SI cross-references
+The primary cohort is ICLR~2026 on OpenReview, chosen because it operates open review---rejected
+submissions, reviews, and decisions are public, which the reject-class claim requires---and because
+its decisions and reviews were released in January~2026, after the grading model's August~2025
+knowledge cutoff, so the outcome could not have been memorized (\S\ref{sec:discussion}). For each
+submission we record two ground truths: the decision tier on the ordered ladder reject $<$ poster
+$<$ oral (and its binary accept/reject collapse), and the mean reviewer rating, which averages out
+individual reviewer noise. We grade the \emph{submitted} PDF a reviewer saw, never the
+camera-ready, and record its SHA-256 for provenance. The natural acceptance rate would starve the
+accepted tiers, so we sample balanced across tiers and also report metrics re-weighted to the
+venue's natural prevalence (\natAcceptRate\% accept). Pre-registered exclusions---desk-rejects,
+withdrawals with no reviewer signal, parse failures, and arXiv-twin leakage risks flagged by the
+pipeline's self-identity step---never enter a primary metric. Gradings are strictly nested: every
+sampled submission is graded on GPT-5.4-mini (cohort $M$, $n=\NminiPrimary$) and a stratified
+subset additionally on GPT-5.4 (cohort $H\subseteq M$, $n=\NfullPrimary$), so each frontier
+grading has a paired cheap-model score (the bridge, H5). All analysis reads a released two-table
+contract (labels per submission, scores per grading run); we redistribute derived metadata and our
+own scores under the OpenReview CC~BY~4.0 terms, not manuscript PDFs or full review texts.
 
 \paragraph{Pre-registration and endpoints.}
-Hypotheses, the primary metric, and the low-score threshold were fixed before any
-score was joined to any outcome (verbatim in the SI). The primary endpoint (H1) is
-bottom-quintile reject enrichment, reported as lift over the base rate with Wilson
-intervals. Confirmatory: reject/accept AUROC (H2), a monotone tier gradient (H3), and
-correlation with the mean reviewer rating (H4). A gate (H5) requires the cheap-model
-and frontier scores to agree at $\rho\ge0.8$ before the large cohort stands in for
-the production score (observed \bridgeRhoFull). A pre-registered value comparison (V1)
-asks whether the pipeline out-discriminates the naive prompt; its directional success
+Hypotheses, the primary metric, and the low-score threshold were fixed before any score was joined
+to any outcome (verbatim in the SI). The primary endpoint (H1) is bottom-quintile reject
+enrichment, reported as lift over the base rate with Wilson intervals. Confirmatory endpoints are
+reject/accept AUROC (H2), a monotone tier gradient (H3), and correlation with the mean reviewer
+rating (H4). A gate (H5) requires the cheap and frontier scores to agree at $\rho\ge0.8$ before the
+large cohort stands in for the production score (observed \bridgeRhoFull). A pre-registered value
+comparison (V1) asks whether the pipeline out-discriminates the baseline; its directional success
 criterion was not met and is reported plainly as such.
 
 \paragraph{Statistical analysis.}
-Effect sizes lead every claim with 95\% confidence intervals from 4{,}000-resample
-bias-corrected and accelerated (BCa) bootstraps; class-conditional statistics such as
-AUROC use a stratified resample preserving the observed reject/accept counts. The
-monotone-trend test is a 10{,}000-permutation Monte Carlo Jonckheere--Terpstra; rates
-use Wilson intervals; per-dimension exploratory tests are Benjamini--Hochberg
-controlled. A label-shuffle null and a priori estimator-coverage simulations are in
-the SI. Secondary covariate, area, weighting, and disagreement analyses are
-descriptive and never redefine the primary claim. The entire analysis is
-deterministic under a fixed seed and regenerates from the released
-\texttt{submissions} and \texttt{gradings} tables.
+Effect sizes lead every claim with 95\% confidence intervals from 4{,}000-resample bias-corrected
+and accelerated (BCa) bootstraps; class-conditional statistics such as AUROC use a stratified
+resample preserving the observed reject/accept counts. The monotone-trend test is a
+10{,}000-permutation Monte Carlo Jonckheere--Terpstra; rates use Wilson intervals; per-dimension
+exploratory tests are Benjamini--Hochberg controlled. Secondary covariate, area, weighting, and
+disagreement analyses are descriptive and never redefine the primary claim. The entire analysis is
+deterministic under a fixed seed and regenerates from the released \texttt{submissions} and
+\texttt{gradings} tables. Two estimator choices differ from the registered plan---BCa rather than
+percentile intervals, and a whole-cohort bootstrap for the H1 lift CI---both analysis-stage
+substitutions of a better-behaved interval that leave every pre-declared threshold unchanged (SI).
 
 \paragraph{Reproducibility and audit posture.}
-The de-identified scored dataset, the decision and rating labels, the analysis code,
-and this manuscript are released, so every figure, statistic, and the entire
-score-to-outcome analysis reproduces independently. The grading rubric, prompts, and
-model configuration are proprietary: the manuscript-to-score function is audited
-through its outputs---and can be exercised on new manuscripts via the system---rather
-than re-implemented, and the prompts and configuration are available confidentially
-to editors, reviewers, or auditors. Because the design was pre-registered before
-unblinding, this openness lets a single author's validation of a closed instrument be
-independently checked rather than taken on trust.
+The de-identified scored dataset, the decision and rating labels, the analysis code, and this
+manuscript are openly released at \url{https://github.com/cogeor/aipr-score-validation}
+(anchored to the pre-registration tag \texttt{prereg-iclr2026-v2}), so every figure,
+statistic, and the entire score-to-outcome analysis reproduces independently from one command. The grading rubric, prompts, and model configuration are proprietary: the
+manuscript-to-score function is audited through its outputs---and can be exercised on new
+manuscripts via the system---rather than re-implemented, and the prompts and configuration are
+available confidentially to editors, reviewers, or auditors. Because the design was pre-registered
+before unblinding, this openness lets a single author's validation of a closed instrument be
+independently checked rather than taken on trust. The author founded and operates AIPR
+(\url{https://aipr.pub}), the system evaluated here, and stands to benefit from a favourable result;
+the study was self-funded, and the mitigations are structural---the analysis plan was frozen at a
+public tag before any score was joined to an outcome, and the primary comparison includes a baseline
+designed to make the pipeline redundant.

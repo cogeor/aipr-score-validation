@@ -1,0 +1,38 @@
+{
+  "title": "Intelligence Is Not the Bottleneck: Validating an LLM First-Pass Manuscript Score Against Peer-Review Outcomes — analysis code and data",
+  "description": "Reproducible analysis code, pre-registration, de-identified scored data, and the LaTeX manuscript for a pre-registered study validating an automated LLM manuscript-scoring system (AIPR) against the public peer-review outcomes of ICLR 2026 on OpenReview (decision tier and mean reviewer rating). A single command regenerates every figure, table, and statistic in the paper from the released two-table data contract. The proprietary manuscript-to-score function is not included; it is treated as a fixed black box and audited through its outputs. Derived outcome and rating metadata are reproduced from the public OpenReview record under CC BY 4.0; manuscript PDFs and full review texts are not redistributed.",
+  "upload_type": "software",
+  "creators": [
+    {
+      "name": "Georgantas, Costa",
+      "orcid": "0009-0008-8891-4582",
+      "affiliation": "Independent Researcher, Lausanne, Switzerland"
+    }
+  ],
+  "license": "MIT",
+  "access_right": "open",
+  "keywords": [
+    "peer review",
+    "large language models",
+    "LLM-as-a-judge",
+    "manuscript evaluation",
+    "automated scoring",
+    "validation",
+    "pre-registration",
+    "OpenReview",
+    "ICLR",
+    "reproducibility"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "arXiv:2606.15887",
+      "relation": "isSupplementTo",
+      "scheme": "arxiv"
+    },
+    {
+      "identifier": "https://aipr.pub/publications",
+      "relation": "isDocumentedBy",
+      "scheme": "url"
+    }
+  ]
+}

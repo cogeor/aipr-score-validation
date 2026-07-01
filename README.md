@@ -126,6 +126,20 @@ changing the core claims.
   metric, the low-score threshold, and the hypotheses before any score is joined
   to any outcome, and is reproduced verbatim in the paper's appendix.
 
+## Citation
+
+If you use this code or data, please cite the paper and the archived release
+(machine-readable metadata is in [`CITATION.cff`](CITATION.cff)):
+
+> Georgantas, C. (2026). *Intelligence Is Not the Bottleneck: Validating an LLM
+> First-Pass Manuscript Score Against Peer-Review Outcomes.* arXiv:2606.15887.
+
+- **Preprint:** https://arxiv.org/abs/2606.15887
+- **Interactive companion:** https://aipr.pub/publications
+- **Archived release (Zenodo):** DOI minted on first GitHub release — add the
+  badge and DOI here once available:
+  `[![DOI](https://zenodo.org/badge/DEPOSIT_ID.svg)](https://doi.org/10.5281/zenodo.XXXXXXX)`
+
 ## License
 
 Code is released under the MIT License ([`LICENSE`](LICENSE)). The manuscript
