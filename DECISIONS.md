@@ -291,3 +291,58 @@ no v1 number is recomputed.
   primary.
 
 **Scope statement.** No other v1 number is re-run or revised by Phase 2.
+
+## 2026-07-01 — Phase-3 pre-registration addendum (prereg-iclr2026-phase3)
+
+> **Status: FROZEN** at tag `prereg-iclr2026-phase3` (owner-approved 2026-07-01).
+> The tag on the public remote is the authoritative anchor and the **run
+> trigger**: no Phase-3 grading ran before it. (The v1 appendix is unaffected:
+> `prereg_verbatim.tex` renders from the `prereg-iclr2026-v2` tag, never the
+> working tree.)
+
+**Motivation.** Reviewer request: (1) the Direct one-paragraph baseline at the
+**mini** model tier and at larger n, to power the pipeline-vs-prompt
+discrimination comparison the v1 frontier cohort left at p=0.09 (n=100); and (2)
+a clean, tier-**balanced** reliability comparison across all four
+model/pipeline arms. Both are **post-hoc** (planned after v1 unblinding) and are
+reported as such. No v1 or Phase-2 number is recomputed.
+
+**Follow-up B — Direct-mini discrimination at scale (config `naive_mini`).**
+
+- Cohort: **all 300 cohort-M ids** (frozen; no new draw). Config `naive_mini` =
+  the one-paragraph Direct prompt (byte-identical to `naive`) run on the **mini**
+  model (gpt-5.4-mini), single run per paper, Flex. Pairs with the released
+  AIPR-mini (`full_mini`) scores on the same 300.
+- Pre-declared metrics: AUROC(Direct-mini) with bootstrap CI; the **paired
+  ΔAUROC(AIPR-mini − Direct-mini)** on the 300 (stratified bootstrap CI +
+  two-sided p); the cohort-H (n=100) subset reported for continuity with the v1
+  frontier comparison.
+- **Outcome-neutral rule, fixed before running:** success = the paired ΔAUROC CI
+  **excludes 0** (the pipeline adds discrimination at the mini tier). A CI
+  straddling 0 is reported plainly as "not resolved even at n=300; the pipeline's
+  value is reliability + grounding." The metric, cohort, and band are fixed here —
+  no threshold shopping, no re-running to significance.
+
+**Follow-up A — balanced four-arm reliability (dataset `iclr2026_followup`).**
+
+- Cohort: a **fresh, tier-balanced** draw of **30 ICLR-2026 papers (10 reject /
+  10 poster / 10 oral)**, drawn deterministically with the study seed and
+  **disjoint from cohort M/H**. **Reliability is the object of this arm;**
+  discrimination on n=30 is illustrative only and is never headline-claimed (its
+  CI is wide and reported as such).
+- Arms: **all four** — AIPR (`full`, gpt-5.4), AIPR (`full_mini`, gpt-5.4-mini),
+  Direct (`naive`, gpt-5.4), Direct (`naive_mini`, gpt-5.4-mini) — each paper
+  graded **3×** (run_index 0–2).
+- Pre-declared metric: per-arm **median within-paper SD** of the overall across
+  the 3 runs; the AIPR-vs-Direct within-paper-SD contrast **at each model tier**
+  (paired exact Wilcoxon signed-rank). This mirrors v1's reliability claim
+  (AIPR SD ≪ Direct SD) now at both tiers and balanced across outcomes.
+- **Outcome-neutral rule:** the fresh balanced result is reported **alongside**
+  the pre-registered n=10 variance result, not in place of it; if they disagree,
+  both are shown and the discrepancy discussed.
+
+**Scope statement.** No v1 (`prereg-iclr2026-v2`) or Phase-2 number is re-run or
+revised. Every Phase-3 output is an additive grading row (`naive_mini`), an
+additional dataset (`iclr2026_followup`), or an additional figure curve, labelled
+**post-review follow-up (not pre-registered)** in the manuscript — consistent
+with §5's "no post-hoc promotion": a follow-up never becomes the headline.
