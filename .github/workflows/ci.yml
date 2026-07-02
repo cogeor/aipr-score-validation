@@ -101,24 +101,23 @@ jobs:
       - name: Install dependencies
         run: pip install -r analysis/requirements.txt
 
-      # Explicit package list covering paper/main.tex's preamble; the action
-      # caches the TeX tree between runs. subcaption ships inside `caption`.
+      # Install TeX Live from Ubuntu's archive rather than a third-party action.
+      # The four collections below cover paper/main.tex's full preamble:
+      #   base:        pdflatex, geometry, amsmath, graphics, hyperref
+      #   recommended: caption/subcaption, xcolor, natbib, booktabs, xspace
+      #   extra:       remaining contrib packages
+      #   fonts-rec:   amsfonts
+      #   lmodern:     lmodern.sty (its own Debian/Ubuntu package, not fonts-rec)
+      # texlive-binaries (bibtex) comes in as a dependency of these.
       - name: Install TeX Live
-        uses: teatimeguest/setup-texlive-action@v3
-        with:
-          packages: >-
-            scheme-basic
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            texlive-latex-base \
+            texlive-latex-recommended \
+            texlive-latex-extra \
+            texlive-fonts-recommended \
             lmodern
-            geometry
-            amsmath
-            amsfonts
-            graphics
-            booktabs
-            xspace
-            xcolor
-            caption
-            natbib
-            hyperref
 
       # pdflatex + bibtex + pdflatex x2; raises on any `! ` LaTeX error.
       - name: Compile paper
