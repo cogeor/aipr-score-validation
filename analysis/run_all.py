@@ -243,6 +243,19 @@ def compute(d: Dataset) -> dict:
     # ---- naive-judge baseline: the "why us" comparison on cohort H --------
     R["naive_baseline"] = _naive_baseline(d, full)
 
+    # ---- Phase-3 follow-up B: AIPR-mini vs Direct-mini on cohort M (n=300) --
+    # The powered version of the pipeline-vs-prompt comparison (V1 left it at
+    # p=0.09 ns on the n=100 frontier cohort). Post-review, NOT pre-registered
+    # primary (prereg-iclr2026-phase3). Self-skips when no naive_mini rows.
+    R["naive_baseline_mini"] = _naive_baseline_mini(d, mini)
+
+    # ---- Phase-3 follow-up A: balanced four-arm reliability rerun ---------
+    # Fresh, tier-balanced n=30 cohort (disjoint from M/H), each paper graded 3x
+    # under all four arms. Loaded from the SEPARATE `iclr2026_followup` dataset;
+    # self-skips when absent so the canonical iclr2026 build is unaffected until
+    # the followup grades land. Post-review, NOT pre-registered primary.
+    R["followup_reliability"] = _followup_reliability()
+
     # ---- manuscript-length confounding: does AIPR just reward length? -----
     R["length_confound"] = _length_confound(mini)
 
@@ -521,6 +534,135 @@ def _naive_baseline(d: Dataset, full) -> dict:
         out["reliability"]["paired_sd_test"] = paired_run_sd_test(
             paired_sd["run_sd_full"].values, paired_sd["run_sd_naive"].values
         )
+    return out
+
+
+def _naive_baseline_mini(d: Dataset, mini) -> dict:
+    """Phase-3 follow-up B (`prereg-iclr2026-phase3`): AIPR-mini vs Direct-mini on
+    the full cohort M (n=300).
+
+    The one-paragraph Direct baseline (`naive_mini`) run on the SAME mini model as
+    ``full_mini``, graded across all 300 cohort-M papers — the POWERED version of
+    the V1 pipeline-vs-prompt comparison, which was p=0.09 ns at the n=100 frontier
+    cohort. Reports Direct-mini's own AUROC and the **paired ΔAUROC(AIPR-mini −
+    Direct-mini)** with bootstrap CI + two-sided p (same-labels, same-papers — the
+    correlated test overlapping marginal CIs cannot resolve). The pre-declared
+    Phase-3 rule reads this CI: excluding 0 ⇒ the pipeline adds discrimination at
+    the mini tier; straddling 0 ⇒ not resolved even at n=300 (report plainly; the
+    value is reliability + grounding). Post-review, NOT pre-registered primary.
+    Self-skips (``{}``) when the export carries no naive_mini gradings."""
+    out: dict = {}
+    nm = _primary(d.config_frame("naive_mini"))
+    if not len(nm) or nm["accept_bool"].nunique() < 2:
+        return out
+    paired = mini.merge(
+        nm[["submission_id", "overall"]].rename(columns={"overall": "overall_nm"}),
+        on="submission_id",
+    )
+    if not len(paired) or paired["accept_bool"].nunique() < 2:
+        return out
+    out["n"] = int(len(paired))
+    # Direct-mini's own discrimination (marginal) and AIPR-mini's, side by side.
+    out["auroc_naive_mini"] = auroc_ci(nm["accept_bool"].values, nm["overall"].values).as_dict()
+    out["auroc_mini"] = auroc_ci(mini["accept_bool"].values, mini["overall"].values).as_dict()
+    # The paired difference (AIPR-mini − Direct-mini) on the SAME 300 papers.
+    out["auroc_diff"] = paired_auroc_diff(
+        paired["accept_bool"].values,
+        paired["overall"].values,       # AIPR-mini (full_mini)
+        paired["overall_nm"].values,    # Direct-mini (naive_mini)
+        seed=GLOBAL_SEED,
+    )
+    return out
+
+
+# Phase-3 Follow-up A: model tier -> (AIPR config, Direct config) for the
+# reliability contrast, and the decision strata the by-tier breakdown walks.
+FOLLOWUP_ARMS = {"frontier": ("full", "naive"), "mini": ("full_mini", "naive_mini")}
+FOLLOWUP_STRATA = ("reject", "poster", "oral")
+
+
+def _followup_reliability(dataset_name: str = "iclr2026_followup") -> dict:
+    """Phase-3 Follow-up A (`prereg-iclr2026-phase3`): the balanced four-arm
+    reliability rerun on a fresh, tier-balanced n=30 cohort (10 reject / 10 poster
+    / 10 oral, disjoint from cohort M/H), each paper graded 3x under ALL FOUR arms
+    — AIPR (`full`, `full_mini`) and Direct (`naive`, `naive_mini`) at both model
+    tiers. Unlike v1's variance sub-study these are fresh, single-config-state runs
+    with NO run-0 citation artifact, so every run counts (``min_run=0``).
+
+    Reports (a) per-arm median within-paper SD of the overall; (b) the AIPR-vs-Direct
+    within-paper-SD contrast at each MODEL tier (paired exact Wilcoxon on the same
+    papers, n=30 — the powered "does prompting buy consistency" test); and (c) the
+    same contrast STRATIFIED by DECISION tier (reject / poster / oral, n≈10 each —
+    descriptive, the pre-declared secondary: *where* prompting buys consistency,
+    a-priori hypothesised largest on rejects, reported for ALL strata regardless of
+    which is largest). ``delta`` is Direct − AIPR median SD: positive = the elaborate
+    prompt is the MORE consistent grader (the pipeline reduces run-to-run noise).
+
+    Loaded from a SEPARATE dataset; self-skips (``{}``) when the export is absent
+    (canonical iclr2026 build unaffected until the followup grades land)."""
+    try:
+        fd = load_dataset(dataset_name)
+    except FileNotFoundError:
+        return {}
+
+    # Per-arm within-paper SD (all runs clean here -> min_run=0), joined with the
+    # decision stratum for the by-tier breakdown. Keep only papers actually
+    # re-graded (n_runs>1) — a single run has no within-paper SD.
+    tier_of = fd.submissions[["submission_id", "decision_tier"]]
+    rv: dict = {}
+    for cfg in ("full", "naive", "full_mini", "naive_mini"):
+        r = fd.run_variance(cfg, min_run=0)
+        rv[cfg] = r[r["n_runs"] > 1].merge(tier_of, on="submission_id")
+    if any(rv[cfg].empty for cfg in rv):
+        return {}
+
+    common_ids = set.intersection(*(set(rv[cfg]["submission_id"]) for cfg in rv))
+    out: dict = {
+        "dataset": dataset_name,
+        "n_papers": len(common_ids),
+        "n_runs": max(int(rv[cfg]["n_runs"].max()) for cfg in rv),
+    }
+
+    def _median_sd(df, ids=None) -> float:
+        s = df if ids is None else df[df["submission_id"].isin(ids)]
+        return float(np.nanmedian(s["run_sd"])) if len(s) else float("nan")
+
+    # (a) per-arm overall median within-paper SD
+    out["arms"] = {cfg: {"median_sd": _median_sd(rv[cfg])} for cfg in rv}
+
+    # AIPR-vs-Direct contrast at one model tier (optionally within a stratum).
+    def _contrast(aipr_cfg: str, direct_cfg: str, ids=None) -> dict:
+        a, b = rv[aipr_cfg], rv[direct_cfg]
+        if ids is not None:
+            a, b = a[a["submission_id"].isin(ids)], b[b["submission_id"].isin(ids)]
+        pair = a.merge(b, on="submission_id", suffixes=("_aipr", "_direct"))
+        c: dict = {
+            "n": int(len(pair)),
+            "aipr_median_sd": _median_sd(a),
+            "direct_median_sd": _median_sd(b),
+        }
+        # delta > 0 <=> AIPR is the more consistent grader (lower SD).
+        c["delta"] = c["direct_median_sd"] - c["aipr_median_sd"]
+        if len(pair):
+            c["paired_sd_test"] = paired_run_sd_test(
+                pair["run_sd_aipr"].values, pair["run_sd_direct"].values
+            )
+        return c
+
+    # (b) overall model-tier contrasts (n=30, powered)
+    out["by_model_tier"] = {
+        tier: _contrast(aipr, direct) for tier, (aipr, direct) in FOLLOWUP_ARMS.items()
+    }
+
+    # (c) stratified by decision tier (n≈10 each; descriptive secondary)
+    out["by_decision_tier"] = {}
+    for stratum in FOLLOWUP_STRATA:
+        sids = set(tier_of.loc[tier_of["decision_tier"] == stratum, "submission_id"])
+        out["by_decision_tier"][stratum] = {
+            "n": len(sids & common_ids),
+            **{tier: _contrast(aipr, direct, ids=sids)
+               for tier, (aipr, direct) in FOLLOWUP_ARMS.items()},
+        }
     return out
 
 
@@ -964,6 +1106,60 @@ def write_macros(R: dict) -> None:
             pp_w = pw["p"]
             cmd("relPairedP", ("p<0.001" if pp_w < 1e-3 else f"p={pp_w:.3f}"))
             cmd("relPairedN", str(pw["n"]))
+
+    # Phase-3 follow-up B (prereg-iclr2026-phase3): the POWERED AIPR-mini vs
+    # Direct-mini comparison on cohort M (n=300). Direct-mini's AUROC and the
+    # paired ΔAUROC + CI + two-sided p — the number that resolves (or doesn't) the
+    # V1 p=0.09. Emitted only when the naive_mini export is present.
+    nbm = R.get("naive_baseline_mini", {})
+    if nbm:
+        cmd("naiveMiniN", str(nbm["n"]))
+        ci_macro("aurocNaiveMini", nbm["auroc_naive_mini"])
+        adm = nbm["auroc_diff"]
+        cmd("aurocDiffMiniMini", f"{adm['delta']:.2f}")
+        cmd("aurocDiffMiniCI", f"[{adm['lo']:.2f}, {adm['hi']:.2f}]")
+        pdm = adm["p"]
+        cmd("aurocDiffMiniP", ("<0.001" if pdm < 1e-3 else f"{pdm:.2f}"))
+        cmd("aurocDiffMiniPrel", ("p<0.001" if pdm < 1e-3 else f"p={pdm:.2f}"))
+
+    # Phase-3 follow-up A (prereg-iclr2026-phase3): balanced four-arm reliability
+    # rerun (n=30, 10/10/10 tiers, 3 clean runs). Per-model-tier AIPR-vs-Direct
+    # within-paper-SD contrast (powered, exact Wilcoxon) + the reject-localized
+    # breakdown (the a-priori "prompting buys the most consistency on rejects").
+    # ALWAYS emitted (`--` placeholders when the followup export is absent) so the
+    # reliability prose lints on every dataset, mirroring the phase2 pattern.
+    fr = R.get("followup_reliability", {})
+    _FOLLOWUP_MACROS = (
+        "followupReliaN", "followupReliaRuns",
+        "followupFrontAiprSD", "followupFrontDirectSD", "followupFrontReliaPrel",
+        "followupMiniAiprSD", "followupMiniDirectSD", "followupMiniReliaPrel",
+        "followupRejectDelta", "followupPosterDelta", "followupOralDelta",
+        "followupRejectAiprSD", "followupRejectDirectSD",
+    )
+    if fr:
+        bmt, bdt = fr["by_model_tier"], fr["by_decision_tier"]
+
+        def _fp(p: float) -> str:
+            return "p<0.001" if p < 1e-3 else f"p={p:.3f}"
+
+        cmd("followupReliaN", str(fr["n_papers"]))
+        cmd("followupReliaRuns", str(fr["n_runs"]))
+        for tier, mac in (("frontier", "Front"), ("mini", "Mini")):
+            t = bmt[tier]
+            cmd(f"followup{mac}AiprSD", f"{t['aipr_median_sd']:.1f}")
+            cmd(f"followup{mac}DirectSD", f"{t['direct_median_sd']:.1f}")
+            cmd(f"followup{mac}ReliaPrel", _fp(t.get("paired_sd_test", {}).get("p", float("nan"))))
+        # Frontier AIPR-vs-Direct SD gap per decision stratum (delta = Direct - AIPR
+        # median SD; larger = the pipeline buys more consistency there).
+        for strat, mac in (("reject", "Reject"), ("poster", "Poster"), ("oral", "Oral")):
+            cmd(f"followup{mac}Delta", f"{bdt[strat]['frontier']['delta']:.1f}")
+        # Reject-stratum raw SDs (frontier): the mechanism — Direct swings, AIPR holds.
+        rf = bdt["reject"]["frontier"]
+        cmd("followupRejectAiprSD", f"{rf['aipr_median_sd']:.1f}")
+        cmd("followupRejectDirectSD", f"{rf['direct_median_sd']:.1f}")
+    else:
+        for name in _FOLLOWUP_MACROS:
+            cmd(name, "--")
 
     # Manuscript-length confounding (rank corr of overall with length metrics).
     lc = R.get("length_confound", {})

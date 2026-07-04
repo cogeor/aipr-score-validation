@@ -480,6 +480,40 @@ def table_pillar1(d, R):
     _w("tab_pillar1.tex", body)
 
 
+def table_followup_reliability(d, R):
+    """Phase-3 Follow-up A: balanced four-arm within-paper reliability (median run-to-run
+    SD of the overall) by decision stratum and model tier. The AIPR pipeline grades far
+    more consistently than the one-paragraph Direct baseline at BOTH model tiers, and the
+    gap is largest on rejects (the a-priori hypothesis). ALWAYS written (placeholder when
+    the followup export is absent) so the appendix \\input target exists on every dataset."""
+    fr = R.get("followup_reliability", {})
+    if not fr:
+        _w("tab_followup_reliability.tex",
+           _placeholder_tabular("Awaiting Phase-3 follow-up data (no iclr2026\\_followup rows)."))
+        return
+    bdt, bmt = fr["by_decision_tier"], fr["by_model_tier"]
+
+    def _cells(node) -> str:
+        # node carries 'frontier'/'mini' sub-dicts, each with aipr/direct median SD
+        return (
+            f"{node['frontier']['aipr_median_sd']:.1f} & {node['frontier']['direct_median_sd']:.1f} & "
+            f"{node['mini']['aipr_median_sd']:.1f} & {node['mini']['direct_median_sd']:.1f}"
+        )
+
+    rows = [rf"{label} & {_cells(bdt[strat])} \\"
+            for strat, label in (("reject", "Reject"), ("poster", "Poster"), ("oral", "Oral"))]
+    body = (
+        "\\begin{tabular}{lcccc}\n\\toprule\n"
+        " & \\multicolumn{2}{c}{Frontier (GPT-5.4)} & \\multicolumn{2}{c}{Mini (GPT-5.4-mini)} \\\\\n"
+        "\\cmidrule(lr){2-3}\\cmidrule(lr){4-5}\n"
+        "Decision tier & AIPR & Direct & AIPR & Direct \\\\\n\\midrule\n"
+        + "\n".join(rows) + "\n\\midrule\n"
+        + rf"All ($n={fr['n_papers']}$) & {_cells(bmt)} \\" + "\n"
+        "\\bottomrule\n\\end{tabular}\n"
+    )
+    _w("tab_followup_reliability.tex", body)
+
+
 def write_all(d, R):
     table_sample(d, R)
     table_headline(d, R)
@@ -499,4 +533,5 @@ def write_all(d, R):
     table_population_boundary(d, R)
     table_phase2_ordinal(d, R)
     table_pillar1(d, R)
+    table_followup_reliability(d, R)
     print(f"wrote tables -> {TAB_DIR}")

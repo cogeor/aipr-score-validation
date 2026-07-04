@@ -92,16 +92,23 @@ TIER_LABELS = {"reject": "Reject", "poster": "Poster", "spotlight": "Spotlight",
 # asserted over these two; the naive baseline below is an extra grading on
 # cohort H and does not participate in the nesting invariant.
 CONFIGS = ("full_mini", "full")
-# Naive-judge baseline (the "why us" experiment): the SAME model as `full_full`,
-# the SAME PDF input, but a single one-paragraph prompt with no rubric/audit/
-# grounding — what a researcher gets pasting a paper into ChatGPT. Graded on
-# cohort H so it is paired with the full-pipeline score; this is rung 0 of the
-# naive->full_mini->full_full value ladder. It honestly produces only an OVERALL
-# grade (no calibrated subscores), so naive rows carry `overall` and leave the
-# five subscores blank. (The former `blinded`/`prior_only` leakage configs were
-# dropped; leakage is now handled by the temporal contamination controls plus a
-# standalone prestige-perturbation experiment — see the paper's Methods.)
-BASELINE_CONFIGS = ("naive",)
+# Naive-judge baseline (the "why us" experiment): the SAME model as the paired
+# AIPR arm, the SAME PDF input, but a single one-paragraph prompt with no
+# rubric/audit/grounding — what a researcher gets pasting a paper into ChatGPT.
+# Two arms, one per model tier (the 2x2 with the two AIPR configs):
+#   `naive`      = Direct on the frontier model (GPT-5.4), graded on cohort H,
+#                  paired with `full`     — the pre-registered V1 comparison.
+#   `naive_mini` = Direct on the mini model (GPT-5.4-mini), graded on cohort M
+#                  (n=300), paired with `full_mini` — the Phase-3 post-review
+#                  follow-up that POWERS the pipeline-vs-prompt comparison the
+#                  n=100 frontier cohort left at p=0.09 (prereg-iclr2026-phase3).
+# Both honestly produce only an OVERALL grade (no calibrated subscores), so
+# naive rows carry `overall` and leave the five subscores blank. (The former
+# `blinded`/`prior_only` leakage configs were dropped; leakage is now handled by
+# the temporal contamination controls plus a standalone prestige-perturbation
+# experiment — see the paper's Methods.) Mirrors aipr
+# ``cli/openreview.py::NAIVE_CONFIG_BY_TIER`` — keep in lockstep.
+BASELINE_CONFIGS = ("naive", "naive_mini")
 # Pillar-1 re-validation config (Phase 2): the SAME frontier model and v6
 # pipeline as the released `full_full`, re-run AFTER the abstract-based
 # citation-audit fix (post-#7), single run on the frozen cohort-H ids
@@ -120,6 +127,7 @@ CONFIG_LABELS = {
     "full_mini": "AIPR (GPT-5.4-mini)",
     "full": "AIPR (GPT-5.4)",
     "naive": "Direct (GPT-5.4)",
+    "naive_mini": "Direct (GPT-5.4-mini)",
     "full_full_p2": "AIPR (GPT-5.4, post-fix citation audit)",
 }
 
@@ -191,7 +199,8 @@ TIER_COLORS = {
 CONFIG_COLORS = {
     "full_mini": "#56B4E9",   # sky blue — the primary large-N cohort
     "full": "#0072B2",        # blue — the frontier (production) cohort
-    "naive": "#F0E442",       # yellow — the baseline floor
+    "naive": "#E69F00",       # orange — the frontier baseline floor
+    "naive_mini": "#CC79A7",  # reddish purple — the mini baseline floor (Okabe-Ito)
 }
 ACCENT = "#0072B2"
 NEUTRAL = "#555555"

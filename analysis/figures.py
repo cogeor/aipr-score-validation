@@ -183,6 +183,7 @@ ROC_OVERLAY = (
     (PRODUCTION_CONFIG, "AIPR (GPT-5.4)", "#0072B2"),
     (PRIMARY_CONFIG, "AIPR (GPT-5.4-mini)", "#56B4E9"),
     ("naive", "Direct (GPT-5.4)", "#E69F00"),
+    ("naive_mini", "Direct (GPT-5.4-mini)", "#CC79A7"),
 )
 
 
@@ -225,24 +226,35 @@ def fig_naive_baseline(d, R):
     # The naive curve is on cohort H (where it is graded); full-mini carries the
     # large-N curve. AUROC scalars come straight from the computed CIs so the legend
     # and Table~\ref{tab:headline} never drift.
+    nbm = R.get("naive_baseline_mini", {})
     auroc_by = {
         PRODUCTION_CONFIG: R[PRODUCTION_CONFIG]["auroc"],
         PRIMARY_CONFIG: R[PRIMARY_CONFIG]["auroc"],
         "naive": nb["auroc_naive"],
     }
+    if nbm.get("auroc_naive_mini"):
+        auroc_by["naive_mini"] = nbm["auroc_naive_mini"]
     for cfg, label, color in ROC_OVERLAY:
+        if cfg not in auroc_by:
+            continue  # config absent in this export (e.g. naive_mini pre-follow-up-B)
         df = _primary(d.config_frame(cfg))
+        # `naive` is graded on cohort H only; `naive_mini` spans the full cohort M
+        # (n=300), parallel to full_mini — show it on its own cohort, not the H subset.
         if cfg == "naive":
             df = df[df["submission_id"].isin(h_ids)]
+        if df.empty or df["accept_bool"].nunique() < 2:
+            continue
         fpr, tpr = roc_points(df["accept_bool"].values, df["overall"].values)
         a = auroc_by[cfg]
-        # Frontier (production) leads; the cheap-model proxy is shown as a thin,
-        # dashed secondary curve so the panel reads as the frontier-score result
-        # with full-mini in support, not as a three-way tie.
+        # Frontier (production) leads; the cheap-model proxies (AIPR-mini,
+        # Direct-mini) are thin secondary curves so the panel reads as the
+        # frontier-score result with the mini tier in support, not a four-way tie.
         if cfg == PRODUCTION_CONFIG:
             style = {"lw": 2.4, "ls": "-", "alpha": 1.0, "zorder": 4}
         elif cfg == PRIMARY_CONFIG:
             style = {"lw": 1.1, "ls": "--", "alpha": 0.7, "zorder": 2}
+        elif cfg == "naive_mini":
+            style = {"lw": 1.1, "ls": ":", "alpha": 0.85, "zorder": 2}
         else:
             style = {"lw": 1.7, "ls": "-", "alpha": 0.95, "zorder": 3}
         axl.plot(fpr, tpr, color=color,

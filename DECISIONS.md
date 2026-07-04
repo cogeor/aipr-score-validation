@@ -341,6 +341,31 @@ reported as such. No v1 or Phase-2 number is recomputed.
   the pre-registered n=10 variance result, not in place of it; if they disagree,
   both are shown and the discrepancy discussed.
 
+**Follow-up A — outcome-stratified consistency (pre-grading addendum, 2026-07-02).**
+Recorded *before* any `iclr2026_followup` grade is run, so the a-priori
+hypothesis is timestamped and not read off the results.
+
+- **Secondary, exploratory** pre-declaration (does NOT alter the frozen
+  `prereg-iclr2026-phase3` primary metric above; the tag is not moved). The n=30
+  balanced draw exists precisely to give each **decision stratum** (reject /
+  poster / oral) equal weight, which the pre-registered n=10 set (4/3/3) could
+  not.
+- **Question:** *where* does the elaborate AIPR prompt buy grading consistency
+  over the one-paragraph Direct baseline — i.e. is the AIPR-vs-Direct
+  within-paper-SD gap uniform across strata, or concentrated in one?
+- **A-priori hypothesis:** the consistency gain is **largest on rejects**
+  (rejects are where a reliable low score carries the most decision value and
+  where the Direct prompt is expected to be noisiest). Stated now; not derived
+  from data.
+- **Metric:** median within-paper SD of `overall` per (arm × decision stratum),
+  and the AIPR-vs-Direct SD contrast **within each stratum**, at each model tier.
+  Reported for all three strata regardless of which is largest — the reject
+  emphasis is a prior, not a filter. n per stratum is 10, so per-stratum CIs are
+  wide and reported as such; this is descriptive/exploratory, never headline.
+- **Outcome-neutral rule:** if the gap is uniform across strata (no reject
+  concentration), that is reported plainly; no stratum is promoted post-hoc for
+  being the largest.
+
 **Scope statement.** No v1 (`prereg-iclr2026-v2`) or Phase-2 number is re-run or
 revised. Every Phase-3 output is an additive grading row (`naive_mini`), an
 additional dataset (`iclr2026_followup`), or an additional figure curve, labelled

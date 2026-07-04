@@ -122,6 +122,21 @@ fixed 60 threshold predicts almost every paper accept (\opSixtyFullAcc\% vs.\
 \opSixtyNaiveAcc\% balanced accuracy for AIPR and Direct) and we do not read it as a
 classifier.
 
+\paragraph{The reliability gap is robust and concentrated on rejects.}
+A pre-registered balanced follow-up (Phase-3; a post-review addition, reported alongside V1
+and never a substitute for it) re-tests reliability on a fresh, tier-balanced cohort of
+\followupReliaN{} ICLR-2026 papers (ten reject, ten poster, ten oral, disjoint from cohorts
+$M$ and $H$), each graded \followupReliaRuns{} times under all four arms. The within-paper-SD
+gap holds at both model tiers: median SD \followupFrontAiprSD{} for AIPR against
+\followupFrontDirectSD{} for Direct at the frontier (exact Wilcoxon \followupFrontReliaPrel,
+$n=\followupReliaN$), and \followupMiniAiprSD{} against \followupMiniDirectSD{} at the mini
+tier (\followupMiniReliaPrel). It is largest exactly where a reliable low score carries the
+most weight: on rejects the Direct prompt swings run to run (median SD \followupRejectDirectSD{})
+while AIPR holds steady (\followupRejectAiprSD{}), and the frontier AIPR-minus-Direct SD gap
+falls from reject to oral (\followupRejectDelta{}, \followupPosterDelta{}, \followupOralDelta{}
+points; Table~\ref{tab:followup-reliability}). This confirms the pre-registered $n=10$ variance
+result and extends it to both model tiers and a balanced outcome mix.
+
 \begin{figure}[t]
   \centering
   \includegraphics[width=\textwidth]{fig_naive}

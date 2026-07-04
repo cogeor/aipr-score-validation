@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from common import ALL_CONFIGS, CONFIGS, DATA_DIR, DIMENSIONS, VENUE_TIERS
+from common import ALL_CONFIGS, BASELINE_CONFIGS, CONFIGS, DATA_DIR, DIMENSIONS, VENUE_TIERS
 
 # The model-output scores carried per grading row. Confidence is intentionally
 # absent: the v6 pipeline currently emits a constant confidence, so exporting it
@@ -176,13 +176,15 @@ def validate(subs: pd.DataFrame, grad: pd.DataFrame, *, require_metadata: bool =
     # 4. n_reviews >= 1
     assert (subs["n_reviews"].astype(int) >= 1).all(), "n_reviews must be >= 1"
 
-    # 5. pipeline version. AIPR grades are uniform v6; the naive baseline carries
-    #    its own marker ("naive") — it is a single prompt, NOT the v6 pipeline, so
-    #    labeling it v6 would imply a pipeline it never ran (cf. the dropped
-    #    confidence column: a name must not claim more than the value delivers).
-    nonnaive_vers = set(grad.loc[grad["config"] != "naive", "pipeline_version"].unique())
+    # 5. pipeline version. AIPR grades are uniform v6; BOTH naive baselines
+    #    (`naive` frontier, `naive_mini` mini) carry their own marker ("naive") —
+    #    a single prompt, NOT the v6 pipeline, so labeling them v6 would imply a
+    #    pipeline they never ran (cf. the dropped confidence column: a name must
+    #    not claim more than the value delivers).
+    is_naive = grad["config"].isin(BASELINE_CONFIGS)
+    nonnaive_vers = set(grad.loc[~is_naive, "pipeline_version"].unique())
     assert nonnaive_vers == {"v6"}, f"non-naive pipeline_version must be uniform v6, got {nonnaive_vers}"
-    naive_vers = set(grad.loc[grad["config"] == "naive", "pipeline_version"].unique())
+    naive_vers = set(grad.loc[is_naive, "pipeline_version"].unique())
     assert naive_vers <= {"naive"}, f"naive pipeline_version must be 'naive', got {naive_vers}"
 
     # 6. config values restricted; run_index a nonnegative integer
@@ -192,11 +194,11 @@ def validate(subs: pd.DataFrame, grad: pd.DataFrame, *, require_metadata: bool =
     assert (ri.astype(int) == ri).all() and (ri >= 0).all(), "run_index must be a nonnegative integer"
 
     # 7. score ranges. `overall` is mandatory on every grading row; the five
-    #    subscores may be NaN ONLY for the naive baseline (a one-paragraph judge
+    #    subscores may be NaN ONLY for the naive baselines (a one-paragraph judge
     #    produces a single overall grade, not five calibrated subscores — emitting
     #    fabricated subscores would be a contract lie). Range-check non-null only.
     assert grad["overall"].notna().all(), "overall must be present on every grading row"
-    nonnaive = grad[grad["config"] != "naive"]
+    nonnaive = grad[~grad["config"].isin(BASELINE_CONFIGS)]
     for c in DIMENSIONS:
         assert nonnaive[c].notna().all(), f"{c} missing on a non-naive grading row"
     for c in SCORE_COLS:
@@ -211,10 +213,14 @@ def validate(subs: pd.DataFrame, grad: pd.DataFrame, *, require_metadata: bool =
     #    exempt — it is an extra grading on cohort H, not part of the ladder)
     ids = {c: set(grad.loc[grad["config"] == c, "submission_id"]) for c in CONFIGS}
     assert ids["full"] <= ids["full_mini"], "cohort H (full) not subset of M (full_mini)"
-    # the naive baseline is graded on the H cohort (paired with a full-text score)
+    # the frontier naive baseline is graded on the H cohort (paired with `full`)
     for lc in ("naive",):
         lc_ids = set(grad.loc[grad["config"] == lc, "submission_id"])
         assert lc_ids <= ids["full"], f"{lc} gradings must be a subset of cohort H"
+    # naive_mini (Direct-mini) is graded on cohort M (paired with full_mini, n=300):
+    # the Phase-3 powered proxy. Nests in M, NOT H.
+    nm_ids = set(grad.loc[grad["config"] == "naive_mini", "submission_id"])
+    assert nm_ids <= ids["full_mini"], "naive_mini gradings must be a subset of cohort M (full_mini)"
     # 9b. Pillar-1 nesting: full_full_p2 (the post-fix citation-audit re-grade)
     #     is graded on the frozen cohort-H ids only.
     p2_ids = set(grad.loc[grad["config"] == "full_full_p2", "submission_id"])

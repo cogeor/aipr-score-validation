@@ -55,6 +55,9 @@ _LATEX_BUILTINS = {
     "operatorname", "overline", "hat", "bar", "mathit", "mathbb",
     # TeX conditional toggle for the anonymized/named exemplar variant (main.tex).
     "newif", "ifanonymous", "anonymoustrue", "anonymousfalse", "else", "fi",
+    # TeX conditional toggle for the NMI vs arXiv build variant (main_nmi.tex vs
+    # main.tex share the section files; \ifnmibuild selects per-build content).
+    "ifnmibuild", "nmibuildtrue", "nmibuildfalse",
 }
 
 

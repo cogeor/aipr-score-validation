@@ -269,6 +269,20 @@ decision labels permuted, the overall-score AUROC is $\approx 0.5$.
   \label{fig:run-variance}
 \end{figure}
 
+\begin{table}[h]
+  \centering
+  \caption{\textbf{Balanced four-arm reliability follow-up} (Phase-3, post-review; a fresh
+  cohort of \followupReliaN{} ICLR-2026 papers, ten per decision tier, disjoint from cohorts
+  $M$ and $H$, each graded \followupReliaRuns{} times under all four arms). Median within-paper
+  SD of the overall score by decision tier and model tier. AIPR grades far more consistently
+  than the one-paragraph Direct baseline at both model tiers, and the gap is largest on
+  rejects. The frontier tier is significant at exact Wilcoxon \followupFrontReliaPrel{} and the
+  mini tier at \followupMiniReliaPrel{} ($n=\followupReliaN$). Reported alongside the
+  pre-registered $n=10$ variance sub-study (Fig.~\ref{fig:run-variance}), which it confirms.}
+  \label{tab:followup-reliability}
+  \input{tables/tab_followup_reliability}
+\end{table}
+
 \paragraph{Multiple comparisons.} The five per-dimension discrimination tests are
 controlled at FDR $0.05$ by the Benjamini--Hochberg procedure; adjusted $q$-values
 accompany Table~\ref{tab:subscores-app}. The confirmatory hypotheses H1--H4 are
