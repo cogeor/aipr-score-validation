@@ -42,6 +42,8 @@ paper/main.pdf
 paper/main-anon.pdf
 paper/main_nmi.pdf
 paper/ANONYMOUS.flag
+paper/*.zip
+paper/submission/*.pdf
 
 # Scratch / tooling
 paper/main.extracted.txt

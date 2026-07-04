@@ -20,7 +20,8 @@ little between runs (within-paper SD \fullRunSD{} vs.\ \naiveRunSD{} for the bar
 Such clustering is a known behaviour of scalar LLM judges, which compress toward the top
 of the scale and are unstable under resampling \citep{girrbach2025referencefree}, and for
 a deployed grader reliability rather than spread is the property that governs whether the
-score can be trusted \citep{gu2024surveyllmjudge,schroeder2024trustllm}. We trade spread
+score can be trusted \citep{gu2024surveyllmjudge,schroeder2024trustllm}; reliability alone does
+not establish validity \citep{norman2026reliability}, which is why we validate both. We trade spread
 for stability deliberately: a stable estimate near a reference value is easier to act on
 than a wider-ranging but noisier one. The reference is concrete in this cohort: the
 production score's bottom quintile tops out at \bottomBandHiFrontier{} points and is
@@ -36,15 +37,6 @@ not higher than the bare prompt's), nor that it improves reviewers' actual decis
 which we have not measured and which would need a calibration study or a user trial; the
 claim is about the estimator and how it is read, not measured downstream behaviour. On
 that bounded basis, a stable compressed scalar is a better-behaved object to act on.
-
-\paragraph{An obvious next step: grounded citation checking.}
-The deployed score includes a lightly weighted citation dimension that was uninformative
-in this run for a technical reason in its audit and is excluded from the analysis here
-(the headline is unchanged without it). Adding a grounded, search-backed citation signal,
-which looks references up against real records rather than generating them, is the natural
-next addition and the same reliability lesson as our headline; it matters given fabricated
-references in accepted papers at NeurIPS~2025 \citep{neurips2025citations}. We omit it here
-rather than report a known-broken dimension.
 
 \paragraph{Do the subscores reflect independent assessment?}
 A multi-dimensional score invites the halo question: does the model judge each dimension
@@ -92,7 +84,11 @@ truth, and that ground truth may itself be partly LLM-assisted
 \citep{liang2024monitoring}, a ceiling on H4. The scale rests on the cheap-model bridge,
 which is weakest at the low end, which is why we report the deployable flag on AIPR
 (GPT-5.4) directly. The primary cohort is one venue in one field, so we do not claim
-cross-field generalization. And the scorer is proprietary: the released data, labels, and
+cross-field generalization. The lightly weighted citation dimension was uninformative in this
+evaluation and is excluded, leaving the headline unchanged; since then the production pipeline
+searches and reads prior work automatically, an obvious aid to estimating novelty and to
+flagging fabricated references in accepted papers \citep{neurips2025citations}, which we leave
+to future validation. And the scorer is proprietary: the released data, labels, and
 analysis code make the score-to-outcome study fully reproducible, but the
 manuscript-to-score function is audited through its outputs rather than re-implemented, a
 defensible posture for a deployed instrument that pre-registration before unblinding lets

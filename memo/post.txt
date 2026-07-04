@@ -1,0 +1,29 @@
+Is my AI solution worth it? An ongoing case study.
+
+I'm a solo builder working on an AI product, and one question follows me around: who's going to pay for this? Everyone already has coding agents.
+
+It's a good question to have. The only way to survive the AI wave is to have a solid answer to it.
+
+What can a third-party solution offer that model-makers can't or won't build themselves? Software gets built so fast that a good idea can be irrelevant in a few months. Consultants will be fine, there are always more people to teach. But if you want to build something, what's left?
+
+I can only answer for my own product. I'm building AI Peer Review (aipr.pub), a semi-automated system for reviewing scientific publications. The bet is that AIPR can triage submissions and flag clearly weak papers before they reach human reviewers. That saves reviewer time and lets reviewers spend their attention on papers that deserve it. A niche product, for a famously demanding audience.
+
+There are technical blockers to adoption that make third-party solutions a good fit, at least in theory. But I can't rest on that alone. The day those frictions disappear, so does my moat.
+
+So instead of pitching, I did what my customers do all day: I put the claim to the test. I ran a study against 300 ICLR submissions with known review outcomes, using a pre-registered analysis plan.
+
+Three numbers from the results:
+
+1. Score the same paper repeatedly with a bare prompt and the grades swing by a median of 2.8 points. With AIPR, 0.7. Same model, four times more consistent.
+
+2. Every single paper in our lowest-scoring quintile was rejected by the venue. If you had used AIPR to filter out the bottom 20%, you would not have lost one accepted paper.
+
+3. A frontier model reaches 0.87 AUROC at separating accepted from rejected papers. The intelligence is already there.
+
+That last point is why the paper is titled "Intelligence is not the bottleneck." The models are smart enough. The work is getting them to do the right thing every time, and that work is exactly what a bare prompt doesn't give you.
+
+The full results are live at aipr.pub/publications, and the arXiv preprint is coming soon.
+
+I won't dress this up as advice, because I don't know yet if it works. It's an experiment, and the rationale goes like this: my customers already have a language they trust, and that language is science. So instead of marketing, I wrote a paper. The publication is getting its final touches now. We'll see.
+
+Does any of this validate the business? Not yet. That's why the title says ongoing. The case study isn't the paper, it's the startup. Next time I write about it, one of two things will have happened: I'll have my first client, or I'll be telling you what went wrong. Follow along to find out which.

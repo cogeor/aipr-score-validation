@@ -39,6 +39,8 @@
 % removes the flag.
 \newif\ifanonymous\anonymousfalse
 \IfFileExists{ANONYMOUS.flag}{\anonymoustrue}{}
+% false in the arXiv build; main_nmi.tex sets it true to relocate heavy methods detail to the SI.
+\newif\ifnmibuild
 
 \title{\textbf{Intelligence Is Not the Bottleneck:\\
 Validating an LLM First-Pass Manuscript Score Against Peer-Review Outcomes}}

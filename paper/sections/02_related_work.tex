@@ -1,24 +1,60 @@
+\ifnmibuild
+% --- Nature Machine Intelligence variant: prior work FOLDED into the opening section, no
+% heading (NMI majority convention). Input inline from 01_introduction between the gap
+% statement and the method; ~2 dense paragraphs, length-matched to NMI norms. ---
+Using LLMs to assist peer review has moved from speculation to deployment
+\citep{zhuang2025asprsurvey}: a randomized study at ICLR~2025 improved review informativeness
+with an LLM feedback agent \citep{thakkar2026feedback}, and AAAI~2026 ran an AI-review pilot at
+scale \citep{biswas2026aaai}. GPT-4 review comments overlap human comments about as much as two
+humans overlap \citep{liang2024llm}; pipeline systems raise specificity \citep{darcy2024marg};
+and critical work documents brittleness, hidden-prompt attacks, and inflated scores
+\citep{lin2025hidden,russolatona2024lottery,zhu2025reviewer} that prompt journals to restrict
+undisclosed use \citep{science2025funding}. Almost all of this evaluates generated review
+\emph{text}. Separately, \emph{grading by prompting} is established: strong LLMs score open-ended
+text against rubrics with near-human agreement \citep{zheng2023judging,liu2023geval}, and their
+run-to-run noise is reduced by established techniques such as self-consistency and ensembling
+\citep{wang2023selfconsistency}.
+
+Any claim that a signal tracks ``quality'' must be calibrated against the unreliability of the
+human ground truth: the NeurIPS consistency experiments found that roughly half of accepted
+papers would change under a re-run, and that review rejects weak work well but struggles to rank
+strong work \citep{cortes2021inconsistency,beygelzimer2023arbitrary}. For validating a score
+against noisy, ordinal outcomes the field uses rank correlation and threshold-free AUROC on
+open-review corpora such as PeerRead, NLPeer, and MOPRD
+\citep{kang2018peerread,dycke2023nlpeer,lin2023moprd}. The prior paradigm instead \emph{trains}
+on reviews and decisions to predict acceptance \citep{kang2018peerread}, or validates prompt-only
+scores only against weak proxies \citep{thelwall2024chatgpt}; criterion validation of prompted
+scores against real outcomes is emerging concurrently in other domains \citep{chen2026criterion},
+and the gap between an LLM judge's reliability and its validity is documented
+\citep{norman2026reliability}. To our knowledge this is nonetheless the first study to validate a
+training-free, prompt-only manuscript quality \emph{score} against the public \emph{reject} class
+and reviewer ratings, and to decompose how much of that validity comes from the model versus the
+engineered pipeline.
+\else
+% --- arXiv variant: full Related Work (three paragraphs) --------------------
 \section{Related Work}
 \label{sec:related}
 
 \paragraph{Automated review, and grading by prompting.}
-Using LLMs to assist peer review has moved from speculation to deployment: a randomized
-study at ICLR~2025 improved review informativeness with an LLM feedback agent
-\citep{thakkar2026feedback}, and AAAI~2026 ran an AI-review pilot at scale
+Using LLMs to assist peer review has moved from speculation to deployment
+\citep{zhuang2025asprsurvey}: a randomized study at ICLR~2025 improved review informativeness with
+an LLM feedback agent \citep{thakkar2026feedback}, and AAAI~2026 ran an AI-review pilot at scale
 \citep{biswas2026aaai}. The anchor empirical study found GPT-4 review comments overlap
 human comments about as much as two humans overlap \citep{liang2024llm}; multi-agent and
 pipeline systems raise specificity \citep{darcy2024marg,lu2024aiscientist}; recent
 benchmarks measure LLM reviewer ability and its divergence from humans
 \citep{li2026llmreviewer,reviewertoo2025}; and critical work documents brittleness,
 hidden-prompt attacks, and inflated scores
-\citep{du2024llmsassist,zhou2024reliable,lin2025hidden,zhou2025positivereview,russolatona2024lottery,pangram2026iclr},
+\citep{du2024llmsassist,zhou2024reliable,lin2025hidden,zhou2025positivereview,russolatona2024lottery,pangram2026iclr,zhu2025reviewer},
 prompting funding agencies and journals to restrict undisclosed AI review
 \citep{science2025funding}. Almost all of this evaluates generated review \emph{text}.
 Separately, \emph{grading by prompting} is an established paradigm: strong LLMs score
 open-ended text against rubrics with near-human agreement (LLM-as-a-judge;
 \citealp{zheng2023judging,liu2023geval}), and prompt-only scoring has been validated
 against human grades in automated essay scoring \citep{mizumoto2023exploring}. We build
-on that paradigm rather than claim it.
+on that paradigm rather than claim it; the run-to-run reliability of such scores is likewise
+addressed by established techniques such as self-consistency and ensembling
+\citep{wang2023selfconsistency}.
 
 \paragraph{Noisy ground truth, and how to validate against it.}
 Any claim that a signal tracks ``quality'' must be calibrated against the unreliability
@@ -29,7 +65,8 @@ weak papers but struggles to rank strong ones
 well documented \citep{tomkins2017reviewerbias,stelmakh2019biases,shah2022challenges}.
 For validating a score against noisy, ordinal outcomes the field uses rank correlation,
 threshold-free AUROC, and calibration assessment \citep{spearman1904,guo2017calibration},
-on corpora such as PeerRead and NLPeer \citep{kang2018peerread,dycke2023nlpeer};
+on corpora such as PeerRead, NLPeer, and MOPRD
+\citep{kang2018peerread,dycke2023nlpeer,lin2023moprd};
 \citet{checco2021aiassisted} validated a learned score against decisions and ratings,
 though with a trained classifier rather than an LLM.
 
@@ -39,7 +76,10 @@ The older paradigm for scholarly assessment \emph{trains} on reviews and decisio
 generators \citep{idahl2025openreviewer}. Prompt-only treatment of manuscripts has so
 far targeted feedback \emph{text} \citep{liang2024llm} or has been validated only against
 weak proxies, such as an author's own ratings of his own papers
-\citep{thelwall2024chatgpt}. To our knowledge this is the first study to validate a
+\citep{thelwall2024chatgpt}. Criterion validation of prompted scores against real downstream
+outcomes is emerging concurrently in other domains \citep{chen2026criterion}, and the
+distinction between an LLM judge's reliability and its validity is now documented
+\citep{norman2026reliability}. To our knowledge this is the first study to validate a
 training-free, prompt-only manuscript quality \emph{score} against the public \emph{reject}
 class and reviewer ratings, and to decompose how much of that validity comes from the
 underlying model versus the engineered pipeline. The individual ingredients each have
@@ -47,3 +87,4 @@ precedent: prompting, pre-registration, and outcome validation are all establish
 is new is their combination on the observable reject class, together with the
 model-versus-pipeline reliability finding. The novelty is the validity result, not the
 prompting.
+\fi

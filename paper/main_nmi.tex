@@ -1,8 +1,9 @@
 % ===========================================================================
 % Score-validation study — Nature Machine Intelligence (Analysis) variant.
-% Condensed main text (Introduction -> Results -> Discussion -> Methods) with the
-% current appendix reused as Supplementary Information. Shares ALL generated
-% numbers/figures/tables with main.tex via the same macros + figures/ + tables/.
+% Doc-to-doc translation of the arXiv manuscript: the SAME section files, reordered to the
+% NMI main-text sequence (Introduction -> Results -> Discussion -> Methods/Data), with the
+% arXiv appendix reused verbatim as Supplementary Information. Only the abstract is bespoke
+% (frontier headline + 150-word cap). Prose and figure placement track the arXiv build.
 % Build:  python cli.py paper --nmi   (run analysis first to populate macros)
 % Title is intentionally identical to main.tex (kept per author decision).
 % ===========================================================================
@@ -33,11 +34,13 @@
 \IfFileExists{macros/secondary_macros.tex}{\input{macros/secondary_macros.tex}}{}
 \input{macros.tex} % \providecommand defaults; fills any gap so the doc always builds
 
-% The NMI main text is de-identified by construction (no named exemplars); the
-% appendix-as-SI keeps the named case studies. \anonymousfalse => named SI, matching
-% the canonical build. The toggle is defined so shared inputs that branch on it work.
+% \anonymousfalse => named exemplars, matching the arXiv build (main.pdf); the reused
+% arXiv sections carry the same named case studies.
 \newif\ifanonymous\anonymousfalse
 \IfFileExists{ANONYMOUS.flag}{\anonymoustrue}{}
+% Relocate heavy detail (e.g. the scoring formula) to the SI for the NMI length budget,
+% while the arXiv build keeps it inline. Used by the shared arXiv section files.
+\newif\ifnmibuild\nmibuildtrue
 
 \title{\textbf{Intelligence Is Not the Bottleneck:\\
 Validating an LLM First-Pass Manuscript Score Against Peer-Review Outcomes}}
@@ -63,16 +66,19 @@ Validating an LLM First-Pass Manuscript Score Against Peer-Review Outcomes}}
 
 \input{sections/nmi_00_abstract}
 
-% NMI main-text order: Introduction (no heading) -> Results -> Discussion -> Methods.
-\input{sections/nmi_01_intro}
-\input{sections/nmi_02_results}
-\input{sections/nmi_03_discussion}
-\input{sections/nmi_04_methods}
+% arXiv section files, reused verbatim, reordered to the NMI sequence. Figure placement is
+% arXiv's: the study-design and validation figures live in the SI (09_appendix), not here.
+\input{sections/01_introduction}  % folds 02_related_work inline (NMI majority style)
+\input{sections/05_results}
+\input{sections/06b_discussion}
+\input{sections/03_data}
+\input{sections/04_methods}
 
 % --- End-of-paper statements (Nature Portfolio required sections) -----------
 \section*{Data availability}
 The data supporting the findings of this study are openly available at
-\url{https://github.com/cogeor/aipr-score-validation}, anchored to the pre-registration tag
+\url{https://github.com/cogeor/aipr-score-validation} and permanently archived at
+\url{https://doi.org/10.5281/zenodo.21105072}, anchored to the pre-registration tag
 \texttt{prereg-iclr2026-v2}. The release contains the two-table contract every analysis
 reads: per-submission labels (decision tier, mean reviewer rating) and per-grading-run
 scores, keyed by public OpenReview submission identifiers. All decision outcomes, ratings,
@@ -84,10 +90,11 @@ request.
 
 \section*{Code availability}
 All analysis code needed to reproduce the study is openly available at
-\url{https://github.com/cogeor/aipr-score-validation}; a single command regenerates every
-figure, table, and statistic in this paper and its Supplementary Information from the released
-data. The manuscript-to-score function evaluated here---AIPR's grading rubric, prompts, and
-model configuration---is a proprietary production system and is not released as source.
+\url{https://github.com/cogeor/aipr-score-validation} and permanently archived at
+\url{https://doi.org/10.5281/zenodo.21105072}; a single command regenerates every figure,
+table, and statistic in this paper and its Supplementary Information from the released data. The
+manuscript-to-score function evaluated here (AIPR's grading rubric, prompts, and model
+configuration) is a proprietary production system and is not released as source.
 Consistent with its role as the validated instrument, it is audited through its outputs and
 can be exercised on new manuscripts via \url{https://aipr.pub}, with the rubric, prompts, and
 configuration made available confidentially to editors, reviewers, or auditors on request.
@@ -109,6 +116,21 @@ a baseline designed to make the pipeline redundant.
 % appendix (pre-registration, schema, robustness suite, failure-mode case studies).
 \appendix
 \renewcommand{\appendixname}{Supplementary Information}
+
+\section{Scoring formula}
+The overall AIPR score is the fixed weighted mean of the five dimension scores (novelty,
+rigor, applicability, clarity, citation),
+\begin{equation}
+  \text{overall} = \frac{4\,s_{\text{nov}} + 2\,s_{\text{rig}}
+  + 4\,s_{\text{app}} + 1\,s_{\text{cla}} + 0.5\,s_{\text{cit}}}{11.5},
+  \label{eq:overall}
+\end{equation}
+with novelty and applicability weighted most and citation least. The weights were set by
+internal validation on a held-out manuscript set and frozen before this study, not fit to
+any outcome used here.
+
 \input{sections/09_appendix}
+\input{sections/06_failure_modes}
+\input{sections/07_limitations}
 
 \end{document}

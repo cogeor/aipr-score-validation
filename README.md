@@ -1,4 +1,5 @@
 [![CI](https://github.com/cogeor/aipr-score-validation/actions/workflows/ci.yml/badge.svg)](https://github.com/cogeor/aipr-score-validation/actions/workflows/ci.yml)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21105072.svg)](https://doi.org/10.5281/zenodo.21105072)
 
 # Validating an Automated Paper-Scoring System Against Peer-Review Outcomes
 
@@ -136,9 +137,7 @@ If you use this code or data, please cite the paper and the archived release
 
 - **Preprint:** https://arxiv.org/abs/2606.15887
 - **Interactive companion:** https://aipr.pub/publications
-- **Archived release (Zenodo):** DOI minted on first GitHub release — add the
-  badge and DOI here once available:
-  `[![DOI](https://zenodo.org/badge/DEPOSIT_ID.svg)](https://doi.org/10.5281/zenodo.XXXXXXX)`
+- **Archived release (Zenodo, all versions):** https://doi.org/10.5281/zenodo.21105072
 
 ## License
 

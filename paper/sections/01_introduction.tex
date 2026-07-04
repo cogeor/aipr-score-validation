@@ -1,5 +1,9 @@
+% NMI majority style: no "Introduction" heading (the opening runs unlabelled); the arXiv
+% build keeps the heading.
+\ifnmibuild\else
 \section{Introduction}
 \label{sec:intro}
+\fi
 
 Peer review is the gate through which scientific work passes, and it is under strain.
 Submission volumes have grown faster than the reviewer pool, and the process is
@@ -18,11 +22,18 @@ signal of the quality humans perceive. A score is what triages a queue or flags 
 submission for a second look, so it must be validated as a measurement against an
 external outcome.
 
+% NMI majority style: prior work is folded into the opening section, here between the gap
+% statement and the method. In the arXiv build this is skipped and Related Work is its own
+% section (main.tex inputs 02_related_work separately).
+\ifnmibuild\input{sections/02_related_work}\fi
+
 \textsc{AIPR} is an interactive platform for reviewing manuscripts: it reads a submitted
 PDF and returns a structured, evidence-grounded review, of which a weighted overall
 quality score across five dimensions is one component (\S\ref{sec:methods}). The score is
-an AI first-pass signal, not a final human-reviewed verdict; in deployment a reviewer
-reads and acts on it interactively. AIPR grades by \emph{prompting alone}: it is not
+an AI first-pass signal, not a final human-reviewed verdict; AIPR is a human-in-the-loop
+system in which a reviewer reads and can edit every part of the review, including the
+passage-level highlights anchored on the manuscript, so the tool assists rather than
+replaces the reviewer. AIPR grades by \emph{prompting alone}: it is not
 fine-tuned on reviews, decisions, or ratings, so the score is a property of a prompted
 frontier model, not of a classifier trained on outcomes. Here we isolate and benchmark
 that first-pass score on first read, the hardest case for an automated signal and the one

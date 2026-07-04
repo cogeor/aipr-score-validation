@@ -10,7 +10,13 @@ and emits the five dimension scores with justifications and verbatim-anchored
 highlights. An \emph{audit} pass re-reads the paper with a live literature-search tool,
 checks each highlight against the manuscript, and proposes missing citations against a
 real bibliographic index, so a recommended citation is always a record the tool
-returned, not a generated string. The overall score is a fixed weighted mean of the five
+returned, not a generated string.
+\ifnmibuild
+The overall score is a fixed weighted mean of the five dimensions (the weighting formula is
+given in the Supplementary Information), with novelty and applicability weighted most and
+citation least; the model does not emit the overall directly.
+\else
+The overall score is a fixed weighted mean of the five
 dimensions,
 \begin{equation}
   \text{overall} = \frac{4\,s_{\text{nov}} + 2\,s_{\text{rig}}
@@ -18,7 +24,8 @@ dimensions,
   \label{eq:overall}
 \end{equation}
 with novelty and applicability weighted most and citation least; the model does not emit
-the overall directly. The pipeline's product is this structured, evidence-grounded
+the overall directly.
+\fi The pipeline's product is this structured, evidence-grounded
 review; the overall score is a by-product of producing it, not the system's purpose, and
 the baseline of \S\ref{sec:res-value} returns only the number. The system is prompt-only:
 it is not fine-tuned on reviews, decisions, or ratings, and no model here is trained on

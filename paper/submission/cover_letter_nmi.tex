@@ -1,0 +1,96 @@
+% ===========================================================================
+% Cover letter — Nature Machine Intelligence submission. One page.
+% Standalone: compiles on its own. Build:  pdflatex cover_letter_nmi.tex
+% TODO before sending:
+%   [ ] Confirm article type (Analysis vs Article).
+%   [ ] Add suggested / opposed reviewers (comment below the signature).
+%   [ ] Pin exact competing-interest wording (ownership / equity / patents).
+% ===========================================================================
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=0.85in]{geometry}
+\usepackage[colorlinks=true,allcolors=blue]{hyperref}
+\usepackage{parskip}
+\setlength{\parskip}{2pt plus 1pt}
+\pagestyle{empty}
+
+\newcommand{\myname}{Costa Georgantas}
+\newcommand{\papertitle}{Intelligence Is Not the Bottleneck: Validating an LLM
+  First-Pass Manuscript Score Against Peer-Review Outcomes}
+
+\begin{document}
+
+\noindent
+\myname\\
+Independent Researcher, Lausanne, Switzerland\\
+\href{mailto:costa.georgantas@gmail.com}{costa.georgantas@gmail.com} \quad
+ORCID: \href{https://orcid.org/0009-0008-8891-4582}{0009-0008-8891-4582}
+
+\smallskip
+\noindent\today
+
+\smallskip
+\noindent The Editors, \textit{Nature Machine Intelligence}
+
+\smallskip
+\noindent Dear Editors,
+
+I submit ``\papertitle'' for consideration as an \textbf{Analysis}. % TODO: or Article
+
+Large language models are increasingly used to assist peer review, yet evaluations judge the
+text a model writes, not the validity of the numeric score it assigns, the signal a flagging
+use depends on. I validate AIPR, a prompt-only manuscript scorer, against
+the public OpenReview record of a major machine-learning venue that publishes its rejected
+submissions, so the reject class my central claim concerns is fully observable.
+
+The contribution is twofold and, to my knowledge, new. First, this is the first validation of
+a training-free, prompt-only manuscript-quality score against a real venue's reject class and
+mean reviewer ratings, with hypotheses pre-registered before any score met any outcome. Second,
+it decomposes, against those outcomes, where the score's value comes from: a bare one-paragraph
+prompt on the same model already carries most of the discriminative signal, and what the
+engineered pipeline adds is reliability, not sharper discrimination. I do not claim to introduce
+score stabilization, which is established (self-consistency, ensembling, rubric conditioning),
+nor the reliability-versus-validity distinction, which recent work documents in other settings;
+the contribution is bringing that discipline to peer review, validating a prompt-only score
+against a real venue's reject class and reviewer ratings under pre-registration.
+
+I am candid about evidentiary weight. The validity is pre-registered and strong (AUROC 0.87 on
+the production model, 0.82 replicated on 300 papers, rising across decision tiers). The
+pipeline's discrimination advantage over the bare prompt is not statistically resolved at the
+sample size I committed to in advance ($n=100$; $p=0.09$), and I report it as such. The
+statistically clear result is reliability: the production score barely moves across repeated
+gradings of the same manuscript (within-paper SD 0.7 vs.\ 2.8 points for the bare prompt;
+Wilcoxon $p=0.014$). AIPR is human-in-the-loop; every part of the review, including the passage
+highlights on the manuscript, is editable.
+
+I have a declared stake: I founded and operate AIPR
+(\href{https://aipr.pub}{aipr.pub}), the commercial system evaluated here. The safeguards are
+structural: the analysis plan was frozen at a public pre-registration tag before any score met
+any outcome, the scores, labels, and code are openly released
+(\href{https://github.com/cogeor/aipr-score-validation}{github.com/cogeor/aipr-score-validation};
+\href{https://doi.org/10.5281/zenodo.21105072}{Zenodo}) and regenerate every figure, and the
+primary comparison includes a baseline built to make my own pipeline redundant. The proprietary
+scorer is validated through its outputs, with prompts available confidentially to editors and
+reviewers. AI tools assisted drafting; I verified all content and take responsibility, as
+disclosed in the manuscript. A preprint is on arXiv (Creative Commons); an interactive companion
+is at \href{https://aipr.pub/publications}{aipr.pub/publications}; I have had no prior editorial
+discussions.
+
+I am glad to strengthen the study during revision, most usefully by grading more manuscripts to
+resolve the pipeline-versus-prompt comparison, adding a temporal replication on an adjacent ICLR
+year, or discussing release of the prompts. The manuscript is my own work as sole author and is
+not under consideration elsewhere.
+
+Thank you for considering it.
+
+\smallskip
+\noindent Sincerely,\\[0.3em]
+\myname
+
+% TODO reviewers (cover letter is not seen by referees):
+% Suggested, none with a conflict: (1) ..., (2) ..., (3) ...
+% Opposed, with reason: ...
+
+\end{document}
