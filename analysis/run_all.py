@@ -256,6 +256,11 @@ def compute(d: Dataset) -> dict:
     # the followup grades land. Post-review, NOT pre-registered primary.
     R["followup_reliability"] = _followup_reliability()
 
+    # ---- model-separating re-analyses (cohort H, all four arms, no new grading) ---
+    # Interaction (pipeline helps frontier more than mini?), adjacent-boundary
+    # ordinal AUROCs, continuous Spearman. Post-review follow-up; self-skips.
+    R["model_separation"] = _model_separation(d)
+
     # ---- manuscript-length confounding: does AIPR just reward length? -----
     R["length_confound"] = _length_confound(mini)
 
@@ -663,6 +668,78 @@ def _followup_reliability(dataset_name: str = "iclr2026_followup") -> dict:
             **{tier: _contrast(aipr, direct, ids=sids)
                for tier, (aipr, direct) in FOLLOWUP_ARMS.items()},
         }
+    return out
+
+
+def _model_separation(d: Dataset) -> dict:
+    """Model-separating re-analyses on cohort H (all four arms, the same 100 papers,
+    zero new grading): metrics that surface a model or pipeline difference the binary
+    reject/accept AUROC saturates away. Post-review follow-up (Phase-3), exploratory —
+    reported with its own CIs, never a headline. Self-skips (``{}``) unless all four
+    arms cover cohort H with both decision classes present.
+
+    (a) **model x pipeline interaction** (difference-in-differences): is the pipeline's
+        discrimination gain over the bare prompt larger at the frontier than at the mini
+        tier? ``DiD = [AUROC(full) - AUROC(naive)] - [AUROC(full_mini) - AUROC(naive_mini)]``
+        with a paired, class-stratified bootstrap CI (same papers resampled once per rep,
+        so the four AUROCs move together). Turns "frontier suggestive vs mini null" into
+        one number with a CI.
+    (b) **adjacent-boundary (ordinal) AUROCs**: reject|poster and poster|oral per arm —
+        where fine discrimination lives (binary reject/accept collapses the poster|oral
+        boundary, which is also the within-accept ranking).
+    (c) **continuous agreement**: paired Spearman(score, mean reviewer rating), AIPR vs
+        Direct at each model tier."""
+    out: dict = {}
+    full = _primary(d.config_frame("full"))
+    h_ids = set(full["submission_id"])
+    arms = {cfg: _primary(d.config_frame(cfg)) for cfg in ("full", "naive", "full_mini", "naive_mini")}
+    arms = {cfg: f[f["submission_id"].isin(h_ids)] for cfg, f in arms.items()}
+    if any(len(arms[c]) < len(h_ids) or arms[c]["accept_bool"].nunique() < 2 for c in arms):
+        return out
+
+    # Align all four arms + labels on the same papers (so the bootstrap resamples rows,
+    # not configs, and every rep re-scores the identical paper set under all four arms).
+    base = arms["full"][["submission_id", "accept_bool", "mean_reviewer_rating", "decision_tier"]].copy()
+    for cfg in arms:
+        base = base.merge(
+            arms[cfg][["submission_id", "overall"]].rename(columns={"overall": f"s_{cfg}"}),
+            on="submission_id",
+        )
+    y = base["accept_bool"].values.astype(float)
+    s = {c: base[f"s_{c}"].values for c in arms}
+
+    # (a) interaction — difference-in-differences, paired class-stratified bootstrap
+    def _gaps(idx):
+        yy = y[idx]
+        front = auroc(yy, s["full"][idx]) - auroc(yy, s["naive"][idx])
+        mini = auroc(yy, s["full_mini"][idx]) - auroc(yy, s["naive_mini"][idx])
+        return front - mini, front, mini
+
+    rng = np.random.default_rng(GLOBAL_SEED)
+    pos, neg = np.where(y == 1)[0], np.where(y == 0)[0]
+    did_pt, gap_front, gap_mini = _gaps(np.arange(len(y)))
+    reps = np.array([
+        _gaps(np.concatenate([rng.choice(pos, len(pos), True), rng.choice(neg, len(neg), True)]))[0]
+        for _ in range(4000)
+    ])
+    lo, hi = np.percentile(reps, [2.5, 97.5])
+    out["interaction"] = {
+        "did": float(did_pt), "lo": float(lo), "hi": float(hi),
+        "p": float(min(1.0, 2 * min((reps <= 0).mean(), (reps >= 0).mean()))),
+        "n": int(len(y)), "gap_frontier": float(gap_front), "gap_mini": float(gap_mini),
+    }
+
+    # (b) adjacent-boundary ordinal AUROCs (reject|poster, poster|oral) per arm
+    tier_order = tiers_for(PRIMARY_VENUE[0], PRIMARY_VENUE[1])
+    out["boundary"] = {
+        cfg: {k: float(v["point"]) for k, v in
+              adjacent_boundary_aurocs(base[f"s_{cfg}"].values, base["decision_tier"].values, tier_order).items()}
+        for cfg in arms
+    }
+
+    # (c) continuous agreement — paired Spearman(score, mean reviewer rating) per arm
+    r = base["mean_reviewer_rating"].values
+    out["spearman_rating"] = {cfg: spearman_ci(base[f"s_{cfg}"].values, r).as_dict() for cfg in arms}
     return out
 
 
@@ -1159,6 +1236,24 @@ def write_macros(R: dict) -> None:
         cmd("followupRejectDirectSD", f"{rf['direct_median_sd']:.1f}")
     else:
         for name in _FOLLOWUP_MACROS:
+            cmd(name, "--")
+
+    # Phase-3 model-separating re-analyses (cohort H, all four arms): the pipeline x
+    # model-tier interaction (difference-in-differences) headline + the two per-tier
+    # pipeline-vs-prompt AUROC gaps. ALWAYS emitted (`--` placeholders when absent).
+    ms = R.get("model_separation", {})
+    _MODELSEP_MACROS = ("interactionDiD", "interactionDiDCI", "interactionDiDPrel",
+                        "interactionN", "gapFrontierAUROC", "gapMiniAUROC")
+    if ms:
+        it = ms["interaction"]
+        cmd("interactionDiD", f"{it['did']:.2f}")
+        cmd("interactionDiDCI", f"[{it['lo']:.2f}, {it['hi']:.2f}]")
+        cmd("interactionDiDPrel", ("p<0.001" if it["p"] < 1e-3 else f"p={it['p']:.2f}"))
+        cmd("interactionN", str(it["n"]))
+        cmd("gapFrontierAUROC", f"{it['gap_frontier']:.2f}")
+        cmd("gapMiniAUROC", f"{it['gap_mini']:.2f}")
+    else:
+        for name in _MODELSEP_MACROS:
             cmd(name, "--")
 
     # Manuscript-length confounding (rank corr of overall with length metrics).

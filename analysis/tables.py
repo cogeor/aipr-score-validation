@@ -514,6 +514,36 @@ def table_followup_reliability(d, R):
     _w("tab_followup_reliability.tex", body)
 
 
+def table_model_separation(d, R):
+    """Model-separating re-analyses on cohort H (all four arms, no new grading):
+    adjacent-boundary (ordinal) AUROCs and the continuous score<->mean-rating
+    Spearman, per grader. Surfaces where a model or pipeline difference lives that
+    the binary reject/accept AUROC saturates (the poster|oral boundary is also the
+    within-accept ranking). ALWAYS written (placeholder when the four-arm export is
+    absent) so the follow-up section's \\input target exists on every dataset."""
+    ms = R.get("model_separation", {})
+    if not ms:
+        _w("tab_model_separation.tex",
+           _placeholder_tabular("Awaiting four-arm cohort-H data (all of full/naive/full\\_mini/naive\\_mini)."))
+        return
+    bnd, sp = ms["boundary"], ms["spearman_rating"]
+    order = [("full", "AIPR (GPT-5.4)"), ("naive", "Direct (GPT-5.4)"),
+             ("full_mini", "AIPR (GPT-5.4-mini)"), ("naive_mini", "Direct (GPT-5.4-mini)")]
+    rows = []
+    for cfg, label in order:
+        rp = bnd[cfg].get("reject|poster", float("nan"))
+        po = bnd[cfg].get("poster|oral", float("nan"))
+        rho = sp[cfg]["point"]
+        rows.append(rf"{label} & {rp:.2f} & {po:.2f} & {rho:.2f} \\")
+    body = (
+        "\\begin{tabular}{lccc}\n\\toprule\n"
+        "Grader & reject$|$poster & poster$|$oral & $\\rho$(rating) \\\\\n\\midrule\n"
+        + "\n".join(rows)
+        + "\n\\bottomrule\n\\end{tabular}\n"
+    )
+    _w("tab_model_separation.tex", body)
+
+
 def write_all(d, R):
     table_sample(d, R)
     table_headline(d, R)
@@ -534,4 +564,5 @@ def write_all(d, R):
     table_phase2_ordinal(d, R)
     table_pillar1(d, R)
     table_followup_reliability(d, R)
+    table_model_separation(d, R)
     print(f"wrote tables -> {TAB_DIR}")
