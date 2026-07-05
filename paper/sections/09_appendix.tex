@@ -283,6 +283,34 @@ decision labels permuted, the overall-score AUROC is $\approx 0.5$.
   \input{tables/tab_followup_reliability}
 \end{table}
 
+\paragraph{Richer discrimination metrics do not surface a hidden pipeline benefit.}
+Binary reject-vs-accept AUROC can saturate away a finer model or pipeline effect, so on
+cohort $H$ (all four arms, the same \interactionN{} papers, no new grading) we re-examine
+discrimination with three sharper metrics (Table~\ref{tab:model-separation}). The
+model$\times$pipeline interaction, testing whether the pipeline adds more discrimination at
+the frontier than at the mini tier, is directional but unresolved: difference-in-differences
+\interactionDiD{} (95\% CI \interactionDiDCI, \interactionDiDPrel), with a frontier
+pipeline-vs-prompt AUROC gap of \gapFrontierAUROC{} against \gapMiniAUROC{} at the mini tier.
+The adjacent-boundary (ordinal) AUROCs and the continuous score-versus-rating Spearman agree:
+the pipeline edges the bare prompt at most boundaries and at both model tiers, but no gap is
+large or statistically resolved. This reinforces the main finding that the engineering does
+not buy much raw discrimination at any model tier; its value is the reliability of
+\S\ref{sec:res-value} and the grounded review, not a hidden discrimination advantage.
+
+\begin{table}[h]
+  \centering
+  \caption{\textbf{Model-separating re-analyses} (cohort $H$, all four arms, the same
+  \interactionN{} papers; post-review, exploratory). Adjacent-boundary (ordinal) AUROCs at
+  the reject$|$poster and poster$|$oral boundaries, and the continuous Spearman correlation
+  between the grader's overall score and the mean reviewer rating. AIPR edges the
+  one-paragraph Direct baseline at most boundaries and at both model tiers, but no gap is
+  large; the model$\times$pipeline interaction is directional yet unresolved
+  (difference-in-differences \interactionDiD{}, 95\% CI \interactionDiDCI,
+  \interactionDiDPrel).}
+  \label{tab:model-separation}
+  \input{tables/tab_model_separation}
+\end{table}
+
 \paragraph{Multiple comparisons.} The five per-dimension discrimination tests are
 controlled at FDR $0.05$ by the Benjamini--Hochberg procedure; adjusted $q$-values
 accompany Table~\ref{tab:subscores-app}. The confirmatory hypotheses H1--H4 are
