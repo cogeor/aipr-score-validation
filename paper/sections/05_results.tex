@@ -95,7 +95,14 @@ consistent with a pipeline advantage and the result is suggestive rather than nu
 post-hoc power analysis (Appendix~\ref{app:power}) puts the smallest paired AUROC gap
 detectable with 80\% power at this $n$ near \mdeAUROCdiff, above the observed
 \aurocDiffFullNaive, so we claim neither superiority nor equivalence (ROC,
-Fig.~\ref{fig:naive}a). The validated agreement of \S\ref{sec:res-validity} is therefore
+Fig.~\ref{fig:naive}a). A pre-registered follow-up (Phase-3, post-review) powers the same
+comparison at the mini tier: across all \naiveMiniN{} cohort-$M$ papers, AIPR (GPT-5.4-mini)
+and the Direct (GPT-5.4-mini) prompt separate reject from accept identically (paired
+$\Delta$AUROC \aurocDiffMiniMini{}, 95\% CI \aurocDiffMiniCI, \aurocDiffMiniPrel{},
+$n=\naiveMiniN$), a properly powered null where the frontier gap was only underpowered.
+Elaborating the prompt does not add discrimination; whatever separation exists is carried by
+the model, so the pipeline earns its keep on reliability and grounded output rather than raw
+separation. The validated agreement of \S\ref{sec:res-validity} is therefore
 not manufactured by the engineering; with or without the rubric, a frontier model produces
 a first-pass score that tracks the human outcome, and raw intelligence is not the
 bottleneck. The open question is \emph{where} the signal comes from, not \emph{whether} it
@@ -140,10 +147,11 @@ result and extends it to both model tiers and a balanced outcome mix.
 \begin{figure}[t]
   \centering
   \includegraphics[width=\textwidth]{fig_naive}
-  \caption{\textbf{What the engineering adds: a strong model made reliable} (cohort $H$;
-  pre-registered comparison V1, same model and submitted PDF throughout). \textbf{(a)}
+  \caption{\textbf{What the engineering adds: a strong model made reliable} (cohort $H$ unless
+  noted; pre-registered comparison V1, same model and submitted PDF throughout). \textbf{(a)}
   Reject-vs-accept ROC for AIPR (GPT-5.4) (lead), AIPR (GPT-5.4-mini), and the Direct
-  (GPT-5.4) baseline; all three clear the diagonal. The legend gives each grader's AUROC
+  (GPT-5.4) baseline on cohort $H$, with the Direct (GPT-5.4-mini) baseline from the powered
+  Phase-3 follow-up (cohort $M$, $n=\naiveMiniN$); all four clear the diagonal. The legend gives each grader's AUROC
   (95\% CIs in Table~\ref{tab:headline}); the AIPR$-$Direct paired difference (stratified
   bootstrap, $n=\naiveN$) is not statistically resolved (\aurocDiffPrel), so the
   engineering is not buying raw discrimination. \textbf{(b)} Where it pays off: within-paper score SD across repeated
